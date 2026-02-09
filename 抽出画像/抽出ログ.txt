@@ -1,0 +1,217 @@
+# 抽出画像一覧
+
+ファイル名: 2011_p4-p5_img01.jpeg
+  元PDF: 2011協会誌p4-p5
+  サイズ: 3307x2338 (698.7KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p4-p5_img01.jpeg
+
+ファイル名: 2011_p6-p7_img01.jpeg
+  元PDF: 2011協会誌p6-p7
+  サイズ: 3307x2338 (706.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p6-p7_img01.jpeg
+
+ファイル名: 2011_p8-p9_img01.jpeg
+  元PDF: 2011協会誌p8-p9
+  サイズ: 3307x2338 (816.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p8-p9_img01.jpeg
+
+ファイル名: 2011_p10-p11_img01.jpeg
+  元PDF: 2011協会誌p10-p11
+  サイズ: 3307x2338 (857.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p10-p11_img01.jpeg
+
+ファイル名: 2011_p12-p13_img01.jpeg
+  元PDF: 2011協会誌p12-p13
+  サイズ: 3307x2338 (840.8KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p12-p13_img01.jpeg
+
+ファイル名: 2011_p14-p15_img01.jpeg
+  元PDF: 2011協会誌p14-p15
+  サイズ: 3307x2338 (813.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2011/2011_p14-p15_img01.jpeg
+
+ファイル名: 2012_p4-p5_img01.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 216x162 (87.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img01.png
+
+ファイル名: 2012_p4-p5_img02.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 216x162 (85.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img02.png
+
+ファイル名: 2012_p4-p5_img03.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 216x162 (70.7KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img03.png
+
+ファイル名: 2012_p4-p5_img04.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 215x172 (93.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img04.png
+
+ファイル名: 2012_p4-p5_img05.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 251x188 (123.3KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img05.png
+
+ファイル名: 2012_p4-p5_img06.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 244x183 (87.2KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img06.png
+
+ファイル名: 2012_p4-p5_img07.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 284x213 (148.7KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img07.png
+
+ファイル名: 2012_p4-p5_img08.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 256x192 (113.2KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img08.png
+
+ファイル名: 2012_p4-p5_img09.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 127x95 (29.1KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img09.png
+
+ファイル名: 2012_p4-p5_img10.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 248x166 (89.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img10.png
+
+ファイル名: 2012_p4-p5_img11.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 162x122 (50.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img11.png
+
+ファイル名: 2012_p4-p5_img12.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 153x115 (41.9KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img12.png
+
+ファイル名: 2012_p4-p5_img13.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 110x146 (37.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img13.png
+
+ファイル名: 2012_p4-p5_img14.png
+  元PDF: 2012 P4-P5_sam4
+  サイズ: 152x203 (70.3KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p4-p5_img14.png
+
+ファイル名: 2012_p6-p7_img01.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 287x216 (138.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img01.png
+
+ファイル名: 2012_p6-p7_img02.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 267x201 (131.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img02.png
+
+ファイル名: 2012_p6-p7_img03.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 290x213 (147.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img03.png
+
+ファイル名: 2012_p6-p7_img04.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 154x115 (44.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img04.png
+
+ファイル名: 2012_p6-p7_img05.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 174x128 (43.7KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img05.png
+
+ファイル名: 2012_p6-p7_img06.png
+  元PDF: 2012 P6-P7_sam3
+  サイズ: 155x116 (47.3KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p6-p7_img06.png
+
+ファイル名: 2012_p8-p9_img01.png
+  元PDF: 2012 P8-P9_sam4
+  サイズ: 204x153 (76.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p8-p9_img01.png
+
+ファイル名: 2012_p8-p9_img02.png
+  元PDF: 2012 P8-P9_sam4
+  サイズ: 214x161 (89.5KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p8-p9_img02.png
+
+ファイル名: 2012_p8-p9_img03.png
+  元PDF: 2012 P8-P9_sam4
+  サイズ: 206x275 (141.9KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p8-p9_img03.png
+
+ファイル名: 2012_p8-p9_img04.png
+  元PDF: 2012 P8-P9_sam4
+  サイズ: 427x320 (336.2KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p8-p9_img04.png
+
+ファイル名: 2012_p8-p9_img05.png
+  元PDF: 2012 P8-P9_sam4
+  サイズ: 258x194 (87.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p8-p9_img05.png
+
+ファイル名: 2012_p10-p11_img01.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 251x188 (109.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img01.png
+
+ファイル名: 2012_p10-p11_img02.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 380x285 (171.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img02.png
+
+ファイル名: 2012_p10-p11_img03.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 236x177 (97.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img03.png
+
+ファイル名: 2012_p10-p11_img04.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 233x175 (98.9KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img04.png
+
+ファイル名: 2012_p10-p11_img05.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 243x182 (94.4KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img05.png
+
+ファイル名: 2012_p10-p11_img06.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 178x133 (44.3KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img06.png
+
+ファイル名: 2012_p10-p11_img07.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 163x122 (44.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img07.png
+
+ファイル名: 2012_p10-p11_img08.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 259x194 (112.3KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img08.png
+
+ファイル名: 2012_p10-p11_img09.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 228x171 (88.8KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img09.png
+
+ファイル名: 2012_p10-p11_img10.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 233x175 (95.0KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img10.png
+
+ファイル名: 2012_p10-p11_img11.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 199x149 (69.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img11.png
+
+ファイル名: 2012_p10-p11_img12.png
+  元PDF: 2012 P10-P11_sam3
+  サイズ: 188x141 (64.6KB)
+  パス: /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/抽出画像/2012/2012_p10-p11_img12.png
+

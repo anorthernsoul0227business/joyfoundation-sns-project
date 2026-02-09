@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNSコンテンツサンプル（2011-2012年協会誌より）ver.2</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            padding: 25px 35px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            page-break-after: always;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        h1 {
+            font-size: 22px;
+            color: #2c5530;
+            border-bottom: 3px solid #2c5530;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+        h2 {
+            font-size: 17px;
+            color: #4a7c59;
+            margin: 25px 0 12px;
+            padding-left: 12px;
+            border-left: 4px solid #4a7c59;
+        }
+        h3 {
+            font-size: 15px;
+            color: #555;
+            margin: 18px 0 10px;
+        }
+
+        /* Instagram投稿スタイル */
+        .instagram-post {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #dee2e6;
+        }
+        .instagram-post .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .instagram-post .account-icon {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .instagram-post .account-name {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .instagram-post .image-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 150px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            margin-bottom: 12px;
+            text-align: center;
+            padding: 10px;
+        }
+        .instagram-post .caption {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        .instagram-post .hashtags {
+            color: #0095f6;
+            font-size: 11px;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        .instagram-post .post-number {
+            background: #e1306c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+
+        /* note記事スタイル */
+        .note-article {
+            background: white;
+            border: 2px solid #41c9b4;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 15px 0;
+        }
+        .note-article .article-header {
+            border-bottom: 2px solid #41c9b4;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .note-article .article-number {
+            background: #41c9b4;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .note-article .article-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .note-article .article-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+        .note-article .article-body {
+            font-size: 14px;
+            line-height: 1.9;
+        }
+        .note-article .article-body p {
+            margin-bottom: 14px;
+            text-indent: 1em;
+        }
+        .note-article .article-body p.no-indent {
+            text-indent: 0;
+        }
+        .note-article .highlight-box {
+            background: #f0fdf9;
+            border-left: 4px solid #41c9b4;
+            padding: 15px 18px;
+            margin: 18px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note-article .highlight-box p {
+            margin-bottom: 8px;
+            text-indent: 0;
+        }
+        .note-article .quote-box {
+            background: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            padding: 15px 18px;
+            margin: 18px 0;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+        .note-article .data-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 18px;
+            margin: 18px 0;
+        }
+        .note-article .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #dee2e6;
+            font-size: 13px;
+        }
+        .note-article .data-item:last-child {
+            border-bottom: none;
+        }
+        .note-article .section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #2c5530;
+            margin: 22px 0 12px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .note-article .cta {
+            background: linear-gradient(135deg, #41c9b4 0%, #2ecc71 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .note-article ul {
+            margin: 12px 0 12px 25px;
+        }
+        .note-article li {
+            margin-bottom: 6px;
+        }
+
+        .source-info {
+            font-size: 11px;
+            color: #999;
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+
+        .usage-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 12px;
+        }
+
+        .page-title {
+            background: #2c5530;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        @media print {
+            body { background: white; }
+            .page { box-shadow: none; margin: 0; padding: 15px 25px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ページ1: Instagram投稿サンプル -->
+<div class="page">
+    <h1>Instagram投稿サンプル（3点）</h1>
+    <p style="color: #666; margin-bottom: 15px; font-size: 13px;">出典: 2011-2012年 サウンドヒーリング協会誌 ／ 画像フォルダ: <code>抽出画像/2011/</code> <code>抽出画像/2012/</code></p>
+
+    <!-- Instagram 1 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #1｜知識提供→LINE誘導型</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2011_p8-p9_img01.jpeg<br>
+            （Resonanceワークショップ風景）
+        </div>
+        <div class="caption">
+            <strong>【保存推奨】自分の声が最強のヒーリング音になる理由</strong><br><br>
+            高価な機材も、特別な場所も必要ありません。<br>
+            あなたの「声」が、最も身近で最強のヒーリングツールです。<br><br>
+            ━━━━━━━━━━<br>
+            <strong>なぜ「声」が効くのか？</strong><br>
+            ━━━━━━━━━━<br><br>
+            人間の体は約70%が水分。<br>
+            声を出すと、その振動が体内の水を通じて<br>
+            全身の細胞に伝わります。<br><br>
+            この「内側からの振動」が、<br>
+            外から音を聴くだけでは得られない<br>
+            深いリラックス効果を生み出すのです。<br><br>
+            ━━━━━━━━━━<br>
+            <strong>実践：5分間の声のワーク</strong><br>
+            ━━━━━━━━━━<br><br>
+            1. 楽な姿勢で座り、目を閉じる<br>
+            2. 深く息を吸い、ゆっくり吐く（3回）<br>
+            3. 「あー」と低い声を出す（5秒）<br>
+            4. 体のどこが振動しているか感じる<br>
+            5. 音程を変えて繰り返す<br><br>
+            たったこれだけで、<br>
+            終わった後の体の軽さが違います。<br><br>
+            ━━━━━━━━━━<br><br>
+            <strong>▼ もっと詳しく知りたい方へ</strong><br><br>
+            LINE登録で「声のセルフヒーリング完全ガイド」<br>
+            PDFを無料プレゼント中<br><br>
+            プロフィールのリンクから<br>
+            今すぐ受け取ってください
+        </div>
+        <div class="hashtags">
+            #サウンドヒーリング #声のワーク #セルフケア #セルフヒーリング #呼吸法 #マインドフルネス #自律神経を整える #ストレス解消 #朝のルーティン #夜のルーティン #瞑想 #ヨガ #ウェルビーイング #心身調和 #無料プレゼント
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P8-P9「Resonance レゾナンスワークショップ」</div>
+    </div>
+
+    <!-- Instagram 2 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #2｜ストーリー型→note誘導</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2011_p12-p13_img01.jpeg<br>
+            （スターライトシネマ2010 恵比寿）
+        </div>
+        <div class="caption">
+            <strong>「自然音」には"時間"が封じ込められている</strong><br><br>
+            これ、知っていましたか？<br><br>
+            森で録音した音には、<br>
+            単なる「鳥の声」「風の音」だけでなく<br>
+            <strong>その瞬間の空間情報</strong>が含まれています。<br><br>
+            ━━━━━━━━━━<br>
+            <strong>朝・昼・夜で音が違う理由</strong><br>
+            ━━━━━━━━━━<br><br>
+            ・朝の自然音 → 体を活動モードに<br>
+            ・昼の音 → 心を穏やかに<br>
+            ・夜の音 → 体を休息モードに<br><br>
+            これを「概日リズム」と言います。<br><br>
+            自然界の音には、<br>
+            何百万年もかけて進化した<br>
+            「生命のリズム」が刻まれているのです。<br><br>
+            ━━━━━━━━━━<br>
+            <strong>都市でも自然とつながれる</strong><br>
+            ━━━━━━━━━━<br><br>
+            2010年、恵比寿ガーデンプレイスで<br>
+            「スターライトシネマ」を開催しました。<br><br>
+            ビルに囲まれた都市空間で、<br>
+            参加者が「森林浴のような心地よさ」を体験。<br><br>
+            自然と離れた生活をしていても、<br>
+            音を通じて自然とつながれる。<br>
+            それがサウンドヒーリングの可能性です。<br><br>
+            ━━━━━━━━━━<br><br>
+            <strong>▼ この話の続き、noteで詳しく書きました</strong><br><br>
+            「なぜ自然音が心を癒すのか」<br>
+            科学的なメカニズムと実践法を解説<br><br>
+            プロフィールのリンクから読めます
+        </div>
+        <div class="hashtags">
+            #自然音 #サウンドヒーリング #森林浴 #自律神経 #概日リズム #睡眠の質 #リラクゼーション #環境音楽 #アンビエント #マインドフルネス #ストレスケア #都市生活 #癒し #note更新
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P12-P13「スターライトシネマ2010」</div>
+    </div>
+</div>
+
+<!-- ページ2: Instagram投稿サンプル続き -->
+<div class="page">
+    <!-- Instagram 3 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #3｜データ訴求→有料note誘導</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2012_p8-p9_img03.png または img04.png<br>
+            （学会発表データ・グラフ）
+        </div>
+        <div class="caption">
+            <strong>【学会発表データ公開】音で体が変わる科学的根拠</strong><br><br>
+            「音で癒される」って本当？<br>
+            それ、気のせいじゃない？<br><br>
+            この疑問に答えるため、<br>
+            私たちは20年以上データを取り続けてきました。<br><br>
+            ━━━━━━━━━━<br>
+            <strong>第76回 日本温泉気候物理医学会</strong><br>
+            <strong>発表データ（セッション前後比較）</strong><br>
+            ━━━━━━━━━━<br><br>
+            肌の水分量<br>
+            32.7% → 40.4%（<strong>+23%</strong>）<br><br>
+            手の温度<br>
+            29.67℃ → 31.42℃（<strong>+1.75℃</strong>）<br><br>
+            足の温度<br>
+            21.8℃ → 24.3℃（<strong>+2.5℃</strong>）<br><br>
+            状態不安指数（STAI）<br>
+            39.52 → 28.28（<strong>-28%</strong>）<br><br>
+            ━━━━━━━━━━<br>
+            <strong>このデータが意味すること</strong><br>
+            ━━━━━━━━━━<br><br>
+            <strong>✓ 末端の冷えが改善</strong><br>
+            →自律神経が整い血流が改善<br><br>
+            <strong>✓ 肌の水分量アップ</strong><br>
+            →リラックスで血管拡張、肌への血流増加<br><br>
+            <strong>✓ 不安指数-28%</strong><br>
+            →統計的に有意な変化<br><br>
+            「なんとなく気持ちいい」には<br>
+            ちゃんと理由があったのです。<br><br>
+            ━━━━━━━━━━<br><br>
+            <strong>▼ さらに詳しいメカニズムを知りたい方へ</strong><br><br>
+            noteで「体感音響の科学」を連載中<br><br>
+            ・なぜ体の70%が水だと音が効くのか<br>
+            ・セロトニン×音の最新研究<br>
+            ・自宅でできる体感音響の代替法<br><br>
+            プロフィールのリンクから<br>
+            マガジンをチェックしてください
+        </div>
+        <div class="hashtags">
+            #体感音響 #サウンドヒーリング #科学的根拠 #学会発表 #エビデンス #自律神経を整える #冷え性改善 #温活 #美肌ケア #ストレス解消 #リラクゼーション #セロトニン #研究データ #ウェルネス #note連載中
+        </div>
+        <div class="source-info">出典: 2012年協会誌「第76回日本温泉気候物理医学会発表」喜田圭一郎</div>
+    </div>
+
+    <h2>Instagram運用のポイント（LINE/note誘導）</h2>
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 12px; font-size: 13px;">
+        <p style="margin-bottom: 10px;"><strong>■ 投稿の役割分担</strong></p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li><strong>#1 知識提供型:</strong> 実践的なノウハウ → LINE登録で「続き」を渡す</li>
+            <li><strong>#2 ストーリー型:</strong> 興味を引く話 → noteで詳細記事に誘導</li>
+            <li><strong>#3 データ型:</strong> 科学的根拠で信頼構築 → 有料noteマガジンへ</li>
+        </ul>
+        <p style="margin-bottom: 10px;"><strong>■ 誘導の導線設計</strong></p>
+        <ul style="margin-left: 20px; margin-bottom: 15px;">
+            <li><strong>無料LINE登録:</strong> PDFプレゼント、限定動画など「すぐ受け取れる価値」</li>
+            <li><strong>無料note:</strong> 読み応えある記事で信頼構築</li>
+            <li><strong>有料note/会員:</strong> より深い内容、実践サポート</li>
+        </ul>
+        <p style="margin-bottom: 10px;"><strong>■ プロフィールリンクの設定</strong></p>
+        <ul style="margin-left: 20px;">
+            <li>Linktree等で複数リンクを設置</li>
+            <li>① LINE登録 ② note ③ 公式サイト の順に配置</li>
+            <li>投稿内容に合わせて「今はこれを見て」と誘導</li>
+        </ul>
+    </div>
+</div>
+
+<!-- ページ3: note記事サンプル1 -->
+<div class="page">
+    <h1>note無料記事サンプル #1</h1>
+
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #1｜実践者インタビュー系</span>
+            <div class="article-title">北海道から届いた「音の癒し」実践レポート</div>
+            <div class="article-subtitle">エステ×サウンドヒーリングで見えてきた「思考が現実を創る」という真実</div>
+        </div>
+        <div class="article-body">
+            <p class="no-indent">「思考・感情が現実を創る」</p>
+
+            <p>この言葉を、あなたは信じますか？スピリチュアルな話に聞こえるかもしれません。でも、北海道でエステサロンを営む新谷香代さんは、この言葉を「身をもって体験した」と語ります。</p>
+
+            <div class="section-title">日本最北のサウンドヒーリングサロン</div>
+
+            <p>新谷さんは、サウンドヒーリング協会のセラピスト資格を取得した10期生。北海道という、協会の拠点である東京から遠く離れた地で、エステの施術にサウンドヒーリングを取り入れる実践を始めました。</p>
+
+            <p>「最初は半信半疑でした」と新谷さんは振り返ります。「エステで体を整えることはできても、心までケアできるのか。音にそんな力があるのか、正直わかりませんでした」</p>
+
+            <div class="section-title">お客様の変化、そして自分自身の変化</div>
+
+            <p>転機は、施術を重ねる中で訪れました。体感音響を取り入れたセッションを受けたお客様から、こんな声が届くようになったのです。</p>
+
+            <div class="quote-box">
+                「体だけじゃなくて、心まで軽くなった気がする」<br>
+                「なぜか涙が出てきた。でも、すっきりした」<br>
+                「自分を責めていた気持ちが、少し和らいだ」
+            </div>
+
+            <p>お客様の心身の変化を間近で見ているうちに、新谷さん自身にも変化が起きました。</p>
+
+            <div class="highlight-box">
+                <strong>新谷さんの気づき</strong><br>
+                <p>「お客様の変化を見ていて、ふと気づいたんです。私自身も変わっていたことに。以前は『うまくいかないかも』と不安になることが多かったのに、いつの間にか『きっと大丈夫』と思えるようになっていた。『思考・感情が現実を創る』という言葉を、身をもって体験しました」</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ページ4: note記事サンプル1（続き） -->
+<div class="page">
+    <div class="note-article" style="border-top: none; margin-top: 0;">
+        <div class="article-body">
+            <div class="section-title">なぜ「音」が心に作用するのか</div>
+
+            <p>サウンドヒーリング協会の研究によれば、音が心身に作用するメカニズムには科学的な根拠があります。</p>
+
+            <p>人間の体は約70%が水で構成されています。音は振動であり、水は振動を伝えやすい媒体です。つまり、私たちの体は音の影響を非常に受けやすい構造になっているのです。</p>
+
+            <p>協会理事長の喜田圭一郎氏は、こう説明します。</p>
+
+            <div class="quote-box">
+                「音の振動は縦の波で、水分子の溶解力を高めます。体に当てると、固執した思いを手放しやすくなる。古代より音の癒しは、宇宙に満ちる秩序と調和の力を地上とつなぐものとされてきました」
+            </div>
+
+            <p>また、脳科学の観点からも音の効果は説明できます。2010年に開催された「第4回サウンドヒーリング研究会」では、脳科学者の有田秀穂氏が登壇し、セロトニンと音の関係について講演しました。</p>
+
+            <p>セロトニンは「幸せホルモン」とも呼ばれ、心の安定に深く関わる神経伝達物質。リズミカルな音や自然音は、このセロトニンの分泌を促進すると考えられています。</p>
+
+            <div class="section-title">エステ×サウンドヒーリングという新しい形</div>
+
+            <p>新谷さんのサロン「サロン・ド・ボーテ・エクラ」では、エステの施術前後にサウンドヒーリングの要素を取り入れています。</p>
+
+            <ul>
+                <li>施術前：自然音を流しながら深い呼吸を促し、心身をリラックス状態へ</li>
+                <li>施術中：体感音響を使い、体の深部まで振動を届ける</li>
+                <li>施術後：静かな時間を設け、体の変化を感じてもらう</li>
+            </ul>
+
+            <p>「エステで体を整え、サウンドヒーリングで心を整える。この組み合わせが、お客様の自己変容を促すことを、日々の施術の中で実感しています」と新谷さんは語ります。</p>
+
+            <div class="section-title">「どこでも、誰でも」という希望</div>
+
+            <p>新谷さんの実践が示しているのは、サウンドヒーリングは特別な場所でなくても実践できるということです。</p>
+
+            <p>協会の拠点は東京ですが、北海道でも、富山でも、全国各地でセラピストたちが活動しています。同じく10期生の恒田由華さんは富山で「Total Salon VITA」を運営し、地域に根ざしたサウンドヒーリングの実践を続けています。</p>
+
+            <p>日本最北のサロンから届いたこのレポートは、「どこでも、誰でも、音の力を活用できる」という希望のメッセージでもあるのです。</p>
+
+            <div class="highlight-box">
+                <strong>この記事のポイント</strong>
+                <ul style="margin-top: 8px;">
+                    <li>「思考が現実を創る」は実践者の体験で裏付けられている</li>
+                    <li>体の70%は水。音（振動）の影響を受けやすい構造</li>
+                    <li>セロトニンと音の関係は脳科学でも研究されている</li>
+                    <li>エステ×サウンドヒーリングという新しいアプローチ</li>
+                    <li>場所を選ばず、全国で実践可能</li>
+                </ul>
+            </div>
+
+            <div class="cta">
+                サウンドヒーリングを学びたい方へ<br>
+                <span style="font-size: 12px; font-weight: normal;">セラピスト資格認定研修会の詳細はこちら</span>
+            </div>
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P4-P5「セラピスト活動報告」新谷香代さん（セラピスト10期生）</div>
+    </div>
+</div>
+
+<!-- ページ5: note記事サンプル2 -->
+<div class="page">
+    <h1>note無料記事サンプル #2</h1>
+
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #2｜教育×ヒーリング</span>
+            <div class="article-title">学習塾に「音の癒し」を導入してみた結果</div>
+            <div class="article-subtitle">子どもたちのストレスケアに、サウンドヒーリングができること</div>
+        </div>
+        <div class="article-body">
+            <p class="no-indent">受験勉強、習い事、友人関係、SNS...</p>
+
+            <p>現代の子どもたちは、大人が想像する以上のストレスを抱えています。文部科学省の調査によれば、小中学生の不登校児童生徒数は年々増加し、2022年度には約29万人に達しました。</p>
+
+            <p>「成績を上げること」だけが教育の目的なのか。子どもたちの心のケアは、誰がするのか。学習塾「れもんの木」を運営する藤部久子さん（セラピスト11期生）は、この問いに向き合い続けてきました。</p>
+
+            <div class="section-title">学習塾でサウンドヒーリング？</div>
+
+            <p>「最初は周りから不思議がられました」と藤部さんは笑います。「学習塾でヒーリング？何それ？って」</p>
+
+            <p>しかし藤部さんには、明確な問題意識がありました。</p>
+
+            <div class="quote-box">
+                「塾に来る子どもたちの中に、明らかに疲れている子がいるんです。勉強以前に、心がいっぱいいっぱいになっている。その状態で詰め込んでも、効果は薄い。まず心を整えることが、学びの土台になるんじゃないかと思ったんです」
+            </div>
+
+            <div class="section-title">5分間の「音の時間」</div>
+
+            <p>藤部さんが導入したのは、授業前の5分間、自然音を聴く時間でした。</p>
+
+            <p>森の音、川のせせらぎ、鳥のさえずり。サウンドヒーリング協会が制作した自然音源を、教室に静かに流します。子どもたちには、目を閉じて、深い呼吸をするよう促します。</p>
+
+            <p>最初は落ち着かなかった子どもたちも、回を重ねるうちに変化が現れました。</p>
+
+            <div class="highlight-box">
+                <strong>子どもたちの変化</strong>
+                <ul style="margin-top: 8px;">
+                    <li>「音の時間」の後、明らかに集中力が上がる</li>
+                    <li>イライラしていた子が、穏やかな表情になる</li>
+                    <li>「今日も音聴ける？」と楽しみにする子が増えた</li>
+                    <li>保護者から「家でも落ち着いている」という報告</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ページ6: note記事サンプル2（続き） -->
+<div class="page">
+    <div class="note-article" style="border-top: none; margin-top: 0;">
+        <div class="article-body">
+            <div class="section-title">なぜ自然音が子どもの心を整えるのか</div>
+
+            <p>サウンドヒーリング協会の研究によれば、自然音には「概日リズム」が封じ込められています。</p>
+
+            <ul>
+                <li><strong>朝の自然音:</strong> 体を活動モードにする</li>
+                <li><strong>昼の音:</strong> 心を穏やかにする</li>
+                <li><strong>夜の音:</strong> 体を休息モードにする</li>
+            </ul>
+
+            <p>協会理事長の喜田圭一郎氏は、自然音の効果についてこう説明します。</p>
+
+            <div class="quote-box">
+                「自然音は意識して聴かなくても、室内に流し、身体に浴びる感覚で聴くと良い。テレビや他の音楽を聞いていても、自然音はぶつかり合うことなく、室内が快適になります。目を閉じて視覚情報をストップし、自然音に意識を集中すると、五感の働きが高まり、直観力が磨かれます」
+            </div>
+
+            <p>産業の発展とともに、私たちの周りには人工的なノイズが増えました。スマートフォンの通知音、車の騒音、エアコンの作動音...。子どもたちは、知らず知らずのうちにこうしたノイズにさらされ、無意識に体に力が入っています。</p>
+
+            <p>自然音は、そうした緊張を解きほぐし、本来の「安心する音」を思い出させてくれるのです。</p>
+
+            <div class="section-title">「水と音で世界を平和に」</div>
+
+            <p>同じく協会で学んだ松尾千鶴さん（アイリ認定校セラピスト1期生）は、「水と音で世界を平和に」というテーマで活動しています。</p>
+
+            <p>水と音と振動による感情解放のワーク。一見、教育とは関係なさそうですが、松尾さんはこう語ります。</p>
+
+            <div class="quote-box">
+                「子どもたちの問題行動の多くは、感情の抑圧から来ています。怒り、悲しみ、不安...。それらを安全に解放する場があれば、子どもたちはもっと楽になれる。音は、言葉にできない感情を解放する助けになるんです」
+            </div>
+
+            <div class="section-title">教育の新しい形</div>
+
+            <p>学校でも塾でも、「成績」という結果が求められる場所。でも本当に大切なのは、子どもたちが安心して学べる環境ではないでしょうか。</p>
+
+            <p>サウンドヒーリング協会は2001年の設立以来、「音を変えれば人が変わる、人が変われば社会が変わる」という理念を掲げてきました。</p>
+
+            <p>藤部さんの実践は、その理念を教育現場で具現化したものと言えます。「学ぶ」と「癒される」が共存する空間づくり。それは、これからの教育に必要な視点かもしれません。</p>
+
+            <div class="highlight-box">
+                <strong>この記事のポイント</strong>
+                <ul style="margin-top: 8px;">
+                    <li>現代の子どもたちは想像以上のストレスを抱えている</li>
+                    <li>学習の前に「心を整える」ことが効果的</li>
+                    <li>授業前5分の「音の時間」で集中力が向上</li>
+                    <li>自然音には概日リズムが封じ込められている</li>
+                    <li>音は言葉にできない感情の解放を助ける</li>
+                </ul>
+            </div>
+
+            <div class="cta">
+                教育関係者向けワークショップ開催中<br>
+                <span style="font-size: 12px; font-weight: normal;">学校・塾への導入相談も受付中</span>
+            </div>
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P6-P7「私の活動・ストレスケア in 学習塾」藤部久子さん（セラピスト11期生）</div>
+    </div>
+</div>
+
+<!-- ページ7: note記事サンプル3 -->
+<div class="page">
+    <h1>note無料記事サンプル #3</h1>
+
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #3｜科学的エビデンス系</span>
+            <div class="article-title">「体感音響」の効果を学会で発表しました</div>
+            <div class="article-subtitle">第76回日本温泉気候物理医学会での研究報告</div>
+        </div>
+        <div class="article-body">
+            <p class="no-indent">「サウンドヒーリングって、本当に効果があるの？」</p>
+
+            <p>この疑問は、私たちが最もよく受ける質問のひとつです。「なんとなく気持ちいい」「リラックスする気がする」...でも、それって気のせいじゃないの？プラセボ効果じゃないの？</p>
+
+            <p>この疑問に科学的に答えるため、サウンドヒーリング協会では20年以上にわたり、継続的な効果測定と学会発表を行っています。</p>
+
+            <div class="section-title">第76回日本温泉気候物理医学会での発表</div>
+
+            <p>2012年、協会理事長の喜田圭一郎は、日本温泉気候物理医学会で「体感音響が与える体と心への影響」と題した研究発表を行いました。</p>
+
+            <p>体感音響とは、音を「聴く」だけでなく、振動として「体で感じる」システムです。専用の機器を通じて、音楽や自然音の振動を体の深部まで届けます。</p>
+
+            <p>この研究では、体感音響セッションの前後で、複数の生理指標を測定しました。</p>
+
+            <div class="data-box">
+                <strong>体感音響セッション前後の変化（測定データ）</strong>
+                <div class="data-item">
+                    <span>顔面水分量</span>
+                    <span>32.7% → <strong style="color: #2ecc71;">40.4%</strong>（+23.5%）</span>
+                </div>
+                <div class="data-item">
+                    <span>手掌温度</span>
+                    <span>29.67℃ → <strong style="color: #2ecc71;">31.42℃</strong>（+1.75℃）</span>
+                </div>
+                <div class="data-item">
+                    <span>足部温度</span>
+                    <span>21.8℃ → <strong style="color: #2ecc71;">24.3℃</strong>（+2.5℃）</span>
+                </div>
+                <div class="data-item">
+                    <span>状態不安指数（STAI）</span>
+                    <span>39.52 → <strong style="color: #2ecc71;">28.28</strong>（-28.4%）</span>
+                </div>
+            </div>
+
+            <div class="section-title">このデータが意味すること</div>
+
+            <p>これらの数値は、何を意味しているのでしょうか。</p>
+
+            <p><strong>1. 肌の水分量が上がった（32.7%→40.4%）</strong></p>
+            <p>肌の水分量は、自律神経の状態と密接に関係しています。緊張状態では血管が収縮し、肌への血流が減少して水分量が低下します。逆に、リラックス状態では血管が拡張し、肌への血流が増加して水分量が上がります。</p>
+
+            <p><strong>2. 末端の温度が上がった（手+1.75℃、足+2.5℃）</strong></p>
+            <p>「冷え性」に悩む方は多いですが、末端の冷えは自律神経の乱れのサインとも言われます。体感音響後に手足の温度が上昇したことは、副交感神経が優位になり、末端まで血流が行き届くようになったことを示唆しています。</p>
+        </div>
+    </div>
+</div>
+
+<!-- ページ8: note記事サンプル3（続き） -->
+<div class="page">
+    <div class="note-article" style="border-top: none; margin-top: 0;">
+        <div class="article-body">
+            <p><strong>3. 状態不安指数が下がった（39.52→28.28）</strong></p>
+            <p>STAI（State-Trait Anxiety Inventory）は、心理学で広く使われる不安測定尺度です。「今、この瞬間」の不安レベルを数値化します。28%以上の低下は、統計的にも有意な変化と言えます。</p>
+
+            <div class="section-title">なぜ「体で聴く」ことが重要なのか</div>
+
+            <p>一般的な音楽療法と体感音響の違いは、「耳で聴く」だけでなく「体で聴く」点にあります。</p>
+
+            <p>人間の体は約70%が水で構成されています。音は振動であり、水は振動を伝えやすい媒体です。体感音響では、この原理を利用して、音の振動を体の深部まで届けます。</p>
+
+            <div class="quote-box">
+                「音の振動は縦の波で振動し、水分子の溶解力を高める。体に当てると固執した思いを手放しやすくなる」<br>
+                ──喜田圭一郎（サウンドヒーリング協会理事長）
+            </div>
+
+            <p>協会のアドバイザーであるロナルド・ピーターズ博士（米国）は、現代の多くの病気は「生活スタイルからくる文明病（慢性疾患）」であり、薬で症状を抑えるだけでは根本的に治らないと指摘します。</p>
+
+            <p>博士が挙げる「病気を予防し根本から治す4つのポイント」は：</p>
+            <ul>
+                <li>毎日の食事</li>
+                <li>体を動かす</li>
+                <li>デトックス</li>
+                <li>ストレスケア</li>
+            </ul>
+
+            <p>喜田理事長はこれに加えて、「呼吸法」「肯定的な言葉」「音（自然音、体感音響）」を実践し、「30年以上、病院のお世話にならずにいます」と語ります。</p>
+
+            <div class="section-title">「感覚」と「科学」の両立</div>
+
+            <p>サウンドヒーリングの世界では、「感覚」を大切にします。数値では測れない、言葉では表現しにくい「心地よさ」「安心感」「解放感」。それらは確かに存在し、体験した人には伝わります。</p>
+
+            <p>一方で、「それって本当なの？」という疑問に答えるためには、科学的なエビデンスも必要です。</p>
+
+            <p>私たちは、「感覚」と「科学」の両方を大切にしながら、音の可能性を探求し続けます。</p>
+
+            <div class="highlight-box">
+                <strong>この記事のポイント</strong>
+                <ul style="margin-top: 8px;">
+                    <li>体感音響は「耳で聴く」だけでなく「体で聴く」システム</li>
+                    <li>学会発表されたデータで効果を客観的に確認</li>
+                    <li>肌の水分量+23%、末端温度上昇、不安指数-28%</li>
+                    <li>体の70%は水。音（振動）の影響を受けやすい</li>
+                    <li>20年以上の継続的な研究と実践</li>
+                </ul>
+            </div>
+
+            <div class="cta">
+                体感音響を体験できるイベント情報<br>
+                <span style="font-size: 12px; font-weight: normal;">Resonanceワークショップ（月1回・自由が丘）</span>
+            </div>
+        </div>
+        <div class="source-info">出典: 2012年協会誌「第76回日本温泉気候物理医学会発表」喜田圭一郎</div>
+    </div>
+</div>
+
+</body>
+</html>
