@@ -1,5 +1,273 @@
 # 開発ログ (DEVLOG)
 
+## 2026-03-09（NotebookLM共有ノートブック確認・SNS方針反映）
+
+### NotebookLM ノートブック調査
+
+#### 確認結果
+- 圭一郎さん（keiichiro.kita@gmail.com）から**28件のNotebookLM招待**がGmailに到着
+- ソース: ミーティング録音（m4a）、YouTube動画等をNotebookLMにアップロードしたもの
+- ✅ **全28件受諾完了**（Gmail招待リンク経由で全件NotebookLMに追加済み）
+
+#### 受諾済みノートブック（全28件）
+
+**カテゴリA: サウンドヒーリング科学・メソッド（7件）**
+1. Harmonic Healing: Breathing with Infinite Words — 呼吸法×サウンドクッション×骨伝導
+2. Harmonic Healing: Autonomic Resilience through Sound and Vibration — 自律神経×音×振動
+3. Sound Healing: Nature, Harmony, and Bone Conduction Methods — 自然音×骨伝導メソッド
+4. Resonant Harmony: The Evolution of Sound Healing — サウンドヒーリングの進化
+5. Harmony of the Body: Sound, Nature, and Self-Healing — 身体×自然×自己治癒
+6. Sound Healing and the Resonance of Nature — 自然の共鳴
+7. Resonating Wellness: Sound Therapy and the Cellular Flow of Life — 細胞レベルの音響療法
+
+**カテゴリB: 自然音・地球の音アーカイブ（4件）**
+8. The Resonant Soul of Nature — 自然の響き
+9. The Healing Power and Global Branding of Japanese Nature Sounds — 日本の自然音ブランディング
+10. Earth Sound Archives and the Spirit of Nature — 地球の音アーカイブ
+11. Earthly Soundscapes and the Preservation of Natural Heritage — 自然遺産の保存
+
+**カテゴリC: ビジネス・ブランディング・イベント（4件）**
+12. Global Networking for Harmonic Healing Workshops — ワークショップネットワーク
+13. Global Healing: Planning Interactive Amneck Online Workshops — オンラインワークショップ企画
+14. Taiyo Foods and Sound Healing Association Collaborative Event 2026 — 太陽フーズコラボ
+15. Sonic Branding and Sleep Environments for Professional Athletes — アスリート睡眠環境
+
+**カテゴリD: 哲学・スピリチュアル・意識（7件）**
+16. Awakening the Divine Genetic Blueprint for 2026 — 遺伝子の覚醒
+17. The Sound of Self-Love and Inner Resilience — 自己愛と内なる回復力
+18. The Sound of Universal Grace: Cultivating the Inner Mother — 宇宙の恩寵
+19. Spiritual Independence Through Mindful Association Content — スピリチュアル自立
+20. The Creative Power of Language and Resonance — 言葉と共鳴の創造力
+21. Eternal Presence and the Dawn of Open Contact — 永遠の存在
+22. Awakening the Divine Blueprint for 2026 — 神聖な青写真
+
+**カテゴリE: AI・テクノロジー・アート（3件）**
+23. The Harmony Place: Cultivating Human Sensibility in the AI Age — AI時代の人間感性
+24. The Vibration of Intelligence: Resonance Beyond AI — AI超越の振動
+25. The Vibration of Being: Art, Consciousness, and Cosmic Resonance — 宇宙的共鳴
+
+**カテゴリF〜H（各1件）**
+26. The Resonance of Physical Joy and Emotional Peace — ウェルビーイング
+27. The Art of Nature and the Nature of Art — イェール大学シンポジウム
+28. Guide to the School Public Transmission Compensation System — 法律・制度
+
+#### SNS戦略への反映ポイント
+- **高優先**: アスリート×睡眠×自然音（企業案件テーマ）、呼吸法メソッド（実践系コンテンツ）
+- **中優先**: AI時代の感性論、自然音グローバルブランディング
+- **note向け**: バイブレーション哲学、静寂と真の音、芸術×科学の融合
+
+#### 保存場所
+- `NotebookLM_アップロード用/NotebookLM_ノートブック一覧.md` に全28件の一覧・分類・詳細・方針を保存
+
+#### 既存ノートブック（マイノートブック）も確認
+- 協会誌シリーズ（2011-2025）: 計107ソース
+- 自然音・体感音響 解説①②: 計55ソース
+- 学術論文・学会発表: 38ソース
+- 体験談・事例集: 8ソース
+→ これらと新規ノートブックを組み合わせた深いSNSコンテンツ制作が可能
+
+### 次のアクション
+1. ~~残り23件のNotebookLM招待を受諾~~ ✅完了
+2. ~~各ノートブックの内容確認・概要追記~~ ✅完了（全28件の概要・SNS活用案を追記済み）
+3. 確認内容をInstagram/X/note投稿計画に反映
+4. アスリート×睡眠テーマを企業案件カテゴリの新規SNSシリーズとして企画
+5. 太陽フーズイベント（2026.4.2-4「ここちよい音の日」）の告知コンテンツを早急に準備
+6. X API クレジット購入の判断（圭一郎さんに確認）
+7. Instagram/LINE APIセットアップ（圭一郎さんの依頼事項完了待ち）
+
+---
+
+## 2026-03-09（X API セットアップ完了・課金確認）
+
+### X Developer Console セットアップ
+
+#### 完了項目
+- Developer登録完了（アカウントID: 2029826061224267778）
+- アプリ作成済み: 「2029826061224267778SFH_Science」（App ID: 32523502, Status: ACTIVE）
+- ユーザー認証設定: Read+Write権限、ウェブアプリ/ボット、コールバックURI設定済み
+- 全認証情報取得済み:
+  - Bearer Token
+  - Consumer Key (API Key + API Secret)
+  - Access Token + Access Token Secret（@SFH_Science用、Read+Write権限）
+  - OAuth 2.0 Client ID + Client Secret
+- `.env` ファイル作成済み（sns-auto-poster/.env）
+- 認証テスト成功: `@SFH_Science`（サウンドヒーリング協会）として認証確認
+
+#### 課題: API クレジット不足
+- X API は「Pay Per Use」方式に移行済み
+- 現在のクレジット残高: **$0.00**
+- ツイート投稿（POST /2/tweets）には**クレジット購入が必要**（402 Payment Required）
+- 認証・読み取り（GET）は成功するが、書き込み（POST）は有料
+- → クレジット購入（最低$5〜）の判断が必要
+
+### 次のステップ
+1. X API クレジット購入の判断（圭一郎さんに確認）
+2. 圭一郎さんへの依頼事項実施（下記参照）
+3. Instagram API / LINE API セットアップ
+
+---
+
+## 2026-03-06（Instagram API セットアップ調査）
+
+### 調査結果
+
+#### Facebookページ確認
+- **ページ名**: サウンドヒーリング協会 The Society for Harmonic Science
+- **URL**: https://www.facebook.com/harmonicscience
+- **フォロワー**: 601人
+- **カテゴリ**: 団体
+- ※既存ページあり。管理者は圭一郎さん（推定）
+
+#### Instagramアカウントセンター確認
+- @harmonicscience_jp はビジネスアカウント（確認済み）
+- Facebookページとは**未接続**
+- アカウントセンターにInstagramのみ表示、Facebookアカウント未追加
+
+### 圭一郎さんへの依頼事項（まとめて実施）
+
+以下3点を圭一郎さんに依頼する必要あり：
+
+1. **Facebookページの管理者追加**
+   - 「サウンドヒーリング協会」Facebookページ（https://www.facebook.com/harmonicscience）に康二郎さんのFacebookアカウントを管理者として追加
+   - 手順: Facebookページ → 設定 → ページの役割 → 管理者を追加
+
+2. **InstagramとFacebookページの接続**
+   - @harmonicscience_jp を「サウンドヒーリング協会」Facebookページに紐付け
+   - 手順: Instagramアプリ → 設定 → ビジネスツールと管理 → リンク済みのアカウント → Facebook → ページを選択
+   - ※圭一郎さんのFacebookアカウントでInstagram管理権限がある場合はそちらから実施
+
+3. **Facebook Developer登録（オプション）**
+   - https://developers.facebook.com/ で開発者登録
+   - 電話番号認証が必要
+   - ※康二郎さんのFacebookアカウントでも可（ページ管理者に追加後）
+
+4. **LINE公式アカウントのログイン情報確認**
+   - LINE公式アカウント（@868hqnfw）の管理画面ログインに使ったアカウント情報を共有
+   - 管理画面: https://manager.line.biz/
+   - Messaging API有効化のためにログインが必要
+
+### 依頼後に康二郎さんが行う作業
+- Facebook Developer Appの作成
+- Instagram Graph APIの権限追加
+- アクセストークン生成
+- `.env` ファイルへの設定
+
+---
+
+## 2026-03-02（SNS Auto Poster: Instagram API実装・コンテンツ変換）
+
+### 実施内容
+
+#### 1. 環境構築・ビルド修正
+- `date-fns-tz` v2→v3 にアップグレード（date-fns v3との互換性）
+- `@line/bot-sdk` v9 の型定義変更に対応
+  - 旧 `Message` 型と新 `messagingApi.Message` 型の互換性問題を修正
+  - `getNumberOfFollowers` → `getFollowers` APIに移行
+- `twitter-api-v2` の `media_ids` タプル型修正
+- 未使用import一掃（`isBefore`, `logger` in test scripts）
+- `npm run build` ゼロエラー達成
+
+#### 2. Instagram Graph API 実装（Phase 5完了）
+- `src/platforms/instagram.ts` フル実装
+  - 単一画像投稿: コンテナ作成 → ステータス確認 → 公開の3ステップ
+  - カルーセル投稿: アイテムコンテナ → カルーセルコンテナ → 公開
+  - キャプション整形（2200文字制限、ハッシュタグ30個制限）
+  - 認証確認（`verifyCredentials`）
+  - アカウント情報取得（`getAccountInfo`）
+- `src/platforms/index.ts` にInstagramハンドラー登録
+- `src/scripts/test-instagram.ts` テストスクリプト作成
+
+#### 3. コンテンツ変換スクリプト
+- `src/scripts/convert-content.ts` 作成
+  - X投稿90本.md → 90件のYAMLファイル
+  - Instagram投稿48本.md → 13件のYAMLファイル（キャプション付きのみ）
+  - 合計103件のスケジュール済みYAMLファイル生成
+  - 2026-03〜05の3ヶ月間にスケジュール配置
+
+#### 4. 動作検証
+- `npm run build` — ゼロエラー
+- `npx tsx src/scripts/convert-content.ts` — 103ファイル生成成功
+- `npm start` — メインフロー正常動作（104投稿読み込み、0件投稿対象）
+
+### 生成ファイル
+| ディレクトリ | ファイル数 | 内容 |
+|-------------|-----------|------|
+| content/posts/2026-03/ | 42 | X + Instagram投稿 |
+| content/posts/2026-04/ | 30 | X投稿 |
+| content/posts/2026-05/ | 31 | X + Instagram投稿 |
+
+### Phase完了状況
+| Phase | 内容 | 状態 |
+|-------|------|------|
+| Phase 1 | プロジェクト構築 | ✅ 完了 |
+| Phase 2 | Twitter API | ✅ 完了 |
+| Phase 3 | LINE API | ✅ 完了 |
+| Phase 4 | スケジューラー | ✅ 完了 |
+| Phase 5 | Instagram API | ✅ 完了 |
+
+### 次のステップ
+- [ ] Instagram APIのアクセストークン取得・.env設定
+- [ ] 各プラットフォームの認証テスト実行
+- [ ] 画像URLの準備（Instagram投稿用に公開URLが必要）
+- [ ] GitHub Actionsの定期実行テスト
+
+---
+
+## 2026-02-24（noteアカウント開設・海外展開調査）
+
+### 実施内容
+- **noteアカウント開設完了**
+  - アカウント名: サウンドヒーリング協会
+  - メール認証: 完了
+  - 投稿可能状態
+
+### 海外展開調査結果
+
+#### noteの海外対応状況
+- 2026年2月〜: 自動多言語対応機能テスト開始予定
+- GoogleのAI翻訳で英語など多言語に自動変換
+- 現時点では日本国内向けサービスがメイン
+
+#### 海外向け代替プラットフォーム
+| プラットフォーム | 特徴 | 用途 |
+|-----------------|------|------|
+| **Medium** | 海外版note的存在、SEO強い | 英語圏への情報発信 |
+| **Substack** | ニュースレター特化 | ファンとの深い関係構築 |
+
+#### Instagram/X/YouTube 海外向け戦略
+- **Instagram**: ビジュアル中心で言語の壁を超えやすい。日英併記キャプション推奨
+- **YouTube**: タイトル・説明文の翻訳追加、字幕設定が重要
+- **X**: 英語ハッシュタグ活用（#soundhealing #naturetherapy #meditation）
+
+#### 推奨戦略（2段階）
+```
+【Phase 1】国内基盤構築（現在）
+├── note: 日本語コンテンツ蓄積
+├── Instagram/X/YouTube: 日本語メイン
+└── LINE: 国内会員向け
+
+【Phase 2】多言語展開（今後）
+├── Medium: 英語記事（noteの翻訳版）
+├── Instagram: 日英併記キャプション
+├── YouTube: 字幕・翻訳タイトル追加
+└── X: 英語ハッシュタグ追加
+```
+
+### 次回やること
+- [ ] noteプロフィール設定（アイコン、自己紹介、URL）
+- [ ] note初回記事投稿
+- [ ] Medium アカウント作成検討
+
+### 開設済みSNSアカウント一覧
+| プラットフォーム | アカウント | 状態 |
+|-----------------|-----------|------|
+| Instagram | @harmonicscience_jp | 開設済み |
+| X | @SFH_Science | 開設済み |
+| LINE公式 | @868hqnfw | 開設済み |
+| note | サウンドヒーリング協会 | **本日開設** |
+
+---
+
 ## 2026-02-24（ミーティング議事録確認・海外展開追加）
 
 ### 実施内容
