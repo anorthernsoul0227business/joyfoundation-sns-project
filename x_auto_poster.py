@@ -41,24 +41,19 @@ load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 # 定数
 SPREADSHEET_ID = '1yv9-rnytRH6jEzzFeNHye0T1JnR4aQvr0bryZUJr7iM'
-SHEET_NAME = 'X投稿v2'
+SHEET_NAME = 'X投稿キュー'
 
-# 列マッピング（0-indexed）
-COL_DAY = 0          # A: Day
-COL_TYPE = 1         # B: 投稿タイプ
-COL_TEXT = 2         # C: 投稿テキスト
-COL_IMG_PREVIEW = 3  # D: 画像（プレビュー）
-COL_IMG_LINK = 4     # E: 画像リンク
-COL_IMG2_PREVIEW = 5 # F: 画像2
-COL_IMG2_LINK = 6    # G: 画像リンク2
-COL_IMG3_PREVIEW = 7 # H: 画像3
+# 列マッピング（0-indexed）- X投稿キューのシンプル構成
+# A:投稿日時 B:投稿テキスト C:画像1 D:画像リンク1 E:画像2 F:画像リンク2 G:画像3 H:画像リンク3 I:ステータス J:メモ
+COL_TEXT = 1         # B: 投稿テキスト
+COL_IMG_LINK = 3     # D: 画像リンク1
+COL_IMG2_LINK = 5    # F: 画像リンク2
+COL_IMG3_LINK = 7    # H: 画像リンク3
 COL_IMG3_LINK = 8    # I: 画像リンク3
 COL_REPLY = 9        # J: リプ投稿
-COL_COUNT = 10       # K: Xカウント
-COL_TIME = 11        # L: 投稿時間
-COL_STATUS = 12      # M: ステータス
-COL_CONFIRM = 13     # N: 確認
-COL_MEMO = 14        # O: メモ
+COL_TIME = 0         # A: 投稿日時
+COL_STATUS = 8       # I: ステータス
+COL_MEMO = 9         # J: メモ
 
 # ステータス値
 STATUS_SCHEDULED = '投稿予約'
@@ -252,8 +247,6 @@ def get_scheduled_posts(ws):
 
         posts.append({
             'row': row_idx,
-            'day': row[COL_DAY],
-            'type': row[COL_TYPE],
             'text': row[COL_TEXT],
             'image_urls': image_urls,
             'post_time': post_time_str,
@@ -278,7 +271,7 @@ def run_scheduled(dry_run=False):
     auth = get_x_auth()
 
     for post in posts:
-        logger.info(f"Row {post['row']}: {post['day']} - {post['text'][:50]}...")
+        logger.info(f"Row {post['row']}: {post['text'][:50]}...")
 
         if dry_run:
             logger.info(f"  [ドライラン] スキップ (画像{len(post['image_urls'])}枚)")
@@ -309,19 +302,18 @@ def list_scheduled():
     ws = get_sheet()
     all_data = ws.get_all_values()
 
-    print("\n=== X投稿v2 予約状況 ===\n")
+    print("\n=== X投稿キュー 予約状況 ===\n")
     for row_idx, row in enumerate(all_data[1:], start=2):
         if len(row) <= COL_STATUS:
             continue
         status = row[COL_STATUS].strip() if row[COL_STATUS] else '-'
-        day = row[COL_DAY] if row[COL_DAY] else ''
         post_time = row[COL_TIME] if len(row) > COL_TIME and row[COL_TIME] else '未設定'
         text_preview = row[COL_TEXT][:40] if row[COL_TEXT] else ''
         img_count = sum(1 for c in [COL_IMG_LINK, COL_IMG2_LINK, COL_IMG3_LINK]
                        if len(row) > c and row[c].strip())
 
         icon = {'投稿予約': '🕐', '投稿済み': '✅', '投稿失敗': '❌'}.get(status, '📝')
-        print(f"  {icon} Row{row_idx:2d} | {day:20s} | {post_time:16s} | 画像{img_count} | {status:6s} | {text_preview}")
+        print(f"  {icon} Row{row_idx:2d} | {post_time:16s} | 画像{img_count} | {status:6s} | {text_preview}")
 
     print()
 
