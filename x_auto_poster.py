@@ -16,6 +16,7 @@ import sys
 import io
 import time
 import logging
+from typing import Any, Optional
 from datetime import datetime
 from dotenv import load_dotenv
 import gspread
@@ -63,6 +64,12 @@ COL_MEMO = 14        # O: メモ
 STATUS_SCHEDULED = '投稿予約'
 STATUS_POSTED = '投稿済み'
 STATUS_FAILED = '投稿失敗'
+
+# APIエンドポイント（2026年時点）
+X_POST_ENDPOINTS = [
+    os.getenv('X_POST_API_URL', 'https://api.x.com/2/tweets'),
+    'https://api.twitter.com/2/tweets',  # 後方互換フォールバック
+]
 
 
 def get_x_auth():
@@ -121,6 +128,35 @@ def upload_image_to_x(image_url, auth):
         return None
 
 
+def _parse_json_safely(resp: requests.Response) -> Optional[Any]:
+    """JSONレスポンスを安全にパース（空ボディ対応）"""
+    body = (resp.text or '').strip()
+    if not body:
+        return None
+    try:
+        return resp.json()
+    except ValueError:
+        return None
+
+
+def _extract_error_message(resp: requests.Response) -> str:
+    """X APIのエラーメッセージを抽出"""
+    data = _parse_json_safely(resp)
+    if not data:
+        return '(レスポンス本文なし)'
+
+    if isinstance(data, dict):
+        if 'detail' in data and data['detail']:
+            return str(data['detail'])
+        errors = data.get('errors')
+        if isinstance(errors, list) and errors:
+            first = errors[0]
+            if isinstance(first, dict):
+                return str(first.get('message') or first.get('detail') or first)
+            return str(first)
+    return str(data)
+
+
 def post_tweet(text, image_urls=None, auth=None):
     """ツイートを投稿（画像付き対応）"""
     if auth is None:
@@ -139,20 +175,41 @@ def post_tweet(text, image_urls=None, auth=None):
     if media_ids:
         payload['media'] = {'media_ids': media_ids}
 
-    resp = requests.post(
-        'https://api.twitter.com/2/tweets',
-        auth=auth,
-        json=payload
-    )
+    last_error = None
+    for endpoint in X_POST_ENDPOINTS:
+        try:
+            resp = requests.post(
+                endpoint,
+                auth=auth,
+                json=payload,
+                timeout=30
+            )
+        except requests.RequestException as e:
+            last_error = f"{endpoint} への接続失敗: {e}"
+            logger.error(last_error)
+            continue
 
-    if resp.status_code in (200, 201):
-        data = resp.json()
-        tweet_id = data['data']['id']
-        logger.info(f"投稿成功! Tweet ID: {tweet_id} (画像{len(media_ids)}枚)")
-        return tweet_id
-    else:
-        logger.error(f"投稿失敗 ({resp.status_code}): {resp.text}")
-        return None
+        req_id = resp.headers.get('x-request-id', '-')
+        if resp.status_code in (200, 201):
+            data = _parse_json_safely(resp) or {}
+            tweet_id = ((data.get('data') or {}).get('id')) if isinstance(data, dict) else None
+            if tweet_id:
+                logger.info(f"投稿成功! Tweet ID: {tweet_id} (画像{len(media_ids)}枚) endpoint={endpoint} request_id={req_id}")
+                return tweet_id
+            logger.error(f"投稿成功ステータスだがTweet IDを取得できませんでした endpoint={endpoint} request_id={req_id}")
+            return None
+
+        error_message = _extract_error_message(resp)
+        last_error = f"投稿失敗 status={resp.status_code} endpoint={endpoint} request_id={req_id} error={error_message}"
+        logger.error(last_error)
+
+        # 認可/課金系のエラーは別エンドポイントで再試行しても改善しないため即終了
+        if resp.status_code in (400, 401, 402, 403):
+            break
+
+    if last_error:
+        logger.error(f"最終エラー: {last_error}")
+    return None
 
 
 def get_scheduled_posts(ws):
