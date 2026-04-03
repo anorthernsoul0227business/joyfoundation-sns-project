@@ -238,11 +238,57 @@ sns-auto-poster/
 | 項目 | コスト |
 |------|--------|
 | GitHub Actions | 無料（月2,000分） |
-| X API Free tier | 無料（月1,500ツイート） |
+| X API（Pay-per-use） | 従量課金（先にクレジット購入。消費量に応じて減算） |
 | Instagram Graph API | 無料 |
 | Google Sheets/Drive API | 無料 |
 | Vercel（カレンダーUI） | 無料枠 |
-| **合計** | **$0/月** |
+| **合計** | **X APIの利用量次第** |
+
+> 2026-04時点では旧「Free tier前提」の見積もりは非推奨。X APIはPay-per-use前提で設計する。
+
+---
+
+## X投稿エラー（画像は成功・投稿だけ失敗）トラブルシュート
+
+### 症状
+- `upload.twitter.com/1.1/media/upload.json` は成功し `media_id` は取得できる
+- `POST /2/tweets` だけ失敗（空レスポンス、または403/402）
+
+### 典型原因
+1. **App権限とトークン権限の不一致**
+   - AppをRead/Writeに変更しても、古いAccess Tokenを使うと失敗する。
+2. **認証方式/権限不足**
+   - OAuth 1.0a User Context、またはOAuth2 User Context(`tweet.write`)が必要。
+3. **課金クレジット不足**
+   - Pay-per-useで残高不足時は書き込み系が失敗する。
+4. **エンドポイント/ホスト差異**
+   - `api.x.com/2/tweets` を優先。互換のため `api.twitter.com/2/tweets` をフォールバック。
+5. **エラーボディ非表示**
+   - レスポンスが空に見える実装だと原因判定ができない。
+
+### 解決手順（推奨順）
+1. Developer Portalで対象Appを **Read and Write** に設定。
+2. **Access Token / Secretを再生成** して `.env` を更新（権限変更後は再発行必須）。
+3. `GET /2/users/me` でユーザー文脈認証が通ることを確認。
+4. `POST /2/tweets` を最小本文（例: `"test"`）で実行して、HTTPステータスと`x-request-id`を記録。
+5. 失敗時は以下で切り分け。
+   - `402`: クレジット残高・Billing設定を確認
+   - `401/403`: トークン再生成漏れ、App権限、プロジェクト紐付けを確認
+   - 空レスポンス: ログ実装を改善し、status/header/request_idを必ず保存
+6. 画像付きのみ失敗する場合は、まずテキスト単体投稿が通るか確認してから `media_id` を添付。
+
+### 実装上の対策
+- 投稿処理で `api.x.com` 優先 + `api.twitter.com` フォールバック
+- エラー時に `status / endpoint / x-request-id / エラー本文` を必ずログ出力
+- `timeout` を設定して無限待機を防止
+
+### FAQ（運用判断）
+- **Q. 従量課金プランで投稿は使える？**  
+  A. 使える。前提は「課金有効 + 残高あり + write権限つきユーザー文脈トークン」。
+- **Q. v1.1は完全廃止？**  
+  A. 完全廃止ではない。少なくとも画像アップロードは `v1.1 media/upload` を併用する構成が実務上まだ一般的。
+- **Q. 画像は成功するのに投稿だけ失敗する理由は？**  
+  A. media/upload成功は「画像系エンドポイントに到達できた」ことのみを示し、`POST /2/tweets` の write権限・課金・認証条件を満たす保証にはならない。
 
 ---
 
