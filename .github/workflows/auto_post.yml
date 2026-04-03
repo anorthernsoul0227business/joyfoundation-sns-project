@@ -60,12 +60,12 @@ jobs:
           X_CONSUMER_SECRET: ${{ secrets.X_CONSUMER_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
         run: |
-          DRY=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
-          python sns_auto_poster.py --platform "${{ inputs.platform }}" $DRY
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python x_auto_poster.py --dry
+          else
+            python x_auto_poster.py
+          fi
 
       - name: Run auto poster (schedule)
         if: github.event_name == 'schedule'
@@ -74,10 +74,8 @@ jobs:
           X_CONSUMER_SECRET: ${{ secrets.X_CONSUMER_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
         run: |
-          python sns_auto_poster.py --platform all
+          python x_auto_poster.py
 
       - name: Upload logs
         if: always()
