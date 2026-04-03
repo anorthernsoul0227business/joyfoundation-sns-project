@@ -2,10 +2,7 @@ name: SNS Auto Poster
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # JST 09:00 (fallback sweep)
-    - cron: '0 11 * * *'  # JST 20:00
-    - cron: '0 12 * * *'  # JST 21:00
-    - cron: '0 13 * * *'  # JST 22:00
+    - cron: '*/5 * * * *'  # 5分おきに実行（任意の時間に投稿可能）
   workflow_dispatch:
     inputs:
       dry_run:
