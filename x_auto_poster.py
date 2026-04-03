@@ -223,13 +223,22 @@ def get_scheduled_posts(ws):
         post_time_str = row[COL_TIME].strip() if len(row) > COL_TIME else ''
         if post_time_str:
             try:
-                # "YYYY-MM-DD HH:MM" または "HH:MM" 形式に対応
-                if len(post_time_str) > 5:
-                    post_time = datetime.strptime(post_time_str, '%Y-%m-%d %H:%M')
-                else:
-                    # 時間のみの場合は今日の日付を付与
-                    today = now.strftime('%Y-%m-%d')
-                    post_time = datetime.strptime(f"{today} {post_time_str}", '%Y-%m-%d %H:%M')
+                # 複数フォーマットに対応
+                normalized = post_time_str.replace('/', '-')  # スラッシュをハイフンに統一
+                post_time = None
+                for fmt in ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%H:%M']:
+                    try:
+                        if fmt == '%H:%M':
+                            today = now.strftime('%Y-%m-%d')
+                            post_time = datetime.strptime(f"{today} {normalized}", f'%Y-%m-%d {fmt}')
+                        else:
+                            post_time = datetime.strptime(normalized, fmt)
+                        break
+                    except ValueError:
+                        continue
+
+                if post_time is None:
+                    raise ValueError(f"未対応の形式: {post_time_str}")
 
                 if post_time > now:
                     continue  # まだ時間になっていない
