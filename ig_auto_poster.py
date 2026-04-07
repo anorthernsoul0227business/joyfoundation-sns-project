@@ -13,12 +13,16 @@ Instagram自動投稿システム - スプレッドシート連携版
 
 import os
 import sys
+import io
+import base64
 import time
+import tempfile
 import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import gspread
 import requests
+from PIL import Image, ImageOps
 
 # ログ設定
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
@@ -75,6 +79,89 @@ def get_sheet():
     return sh.worksheet(SHEET_NAME)
 
 
+IG_TARGET_WIDTH = 1080
+IG_TARGET_HEIGHT = 1350
+IG_BG_COLOR = (255, 255, 255)  # 白
+
+
+def download_drive_image(drive_url):
+    """Google Drive画像をダウンロードしてPIL Imageで返す"""
+    if 'drive.google.com' in drive_url:
+        if '/d/' in drive_url:
+            file_id = drive_url.split('/d/')[1].split('/')[0].split('?')[0]
+        elif 'id=' in drive_url:
+            file_id = drive_url.split('id=')[1].split('&')[0]
+        else:
+            return None
+        dl_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    else:
+        dl_url = drive_url
+
+    resp = requests.get(dl_url, timeout=30)
+    if resp.status_code != 200:
+        logger.warning(f"画像ダウンロード失敗: {resp.status_code}")
+        return None
+    return Image.open(io.BytesIO(resp.content))
+
+
+def resize_for_ig(img):
+    """画像を4:5（1080x1350）にリサイズ。余白は白で埋める"""
+    # EXIF回転を適用
+    img = ImageOps.exif_transpose(img)
+
+    # RGBA/P → RGB変換
+    if img.mode in ('RGBA', 'P'):
+        bg = Image.new('RGB', img.size, IG_BG_COLOR)
+        if img.mode == 'RGBA':
+            bg.paste(img, mask=img.split()[3])
+        else:
+            bg.paste(img)
+        img = bg
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    # アスペクト比を維持してフィット
+    target_w, target_h = IG_TARGET_WIDTH, IG_TARGET_HEIGHT
+    img_w, img_h = img.size
+    scale = min(target_w / img_w, target_h / img_h)
+    new_w = int(img_w * scale)
+    new_h = int(img_h * scale)
+    img_resized = img.resize((new_w, new_h), Image.LANCZOS)
+
+    # 白余白で中央配置
+    result = Image.new('RGB', (target_w, target_h), IG_BG_COLOR)
+    offset_x = (target_w - new_w) // 2
+    offset_y = (target_h - new_h) // 2
+    result.paste(img_resized, (offset_x, offset_y))
+
+    logger.info(f"リサイズ: {img_w}x{img_h} → {target_w}x{target_h} (白余白パディング)")
+    return result
+
+
+def upload_to_imgbb(img):
+    """PIL ImageをimgBBにアップロードして公開URLを返す"""
+    api_key = os.getenv('IMGBB_API_KEY')
+    if not api_key:
+        logger.warning("IMGBB_API_KEY未設定。lh3 URLにフォールバック")
+        return None
+
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=90)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+
+    resp = requests.post(
+        'https://api.imgbb.com/1/upload',
+        data={'key': api_key, 'image': b64, 'expiration': 600}  # 10分後に期限切れ
+    )
+    if resp.status_code == 200:
+        url = resp.json()['data']['url']
+        logger.info(f"imgBBアップロード成功: {url[:60]}...")
+        return url
+
+    logger.warning(f"imgBBアップロード失敗: {resp.status_code} {resp.text}")
+    return None
+
+
 def drive_url_to_lh3(drive_url):
     """Google DriveのURLをlh3形式の公開URLに変換"""
     if not drive_url or 'drive.google.com' not in drive_url:
@@ -88,9 +175,24 @@ def drive_url_to_lh3(drive_url):
     return f"https://lh3.googleusercontent.com/d/{file_id}"
 
 
+def prepare_image_url(drive_url):
+    """画像をダウンロード→リサイズ→公開URLを返す"""
+    img = download_drive_image(drive_url)
+    if img is None:
+        return drive_url_to_lh3(drive_url)  # フォールバック
+
+    resized = resize_for_ig(img)
+    public_url = upload_to_imgbb(resized)
+    if public_url:
+        return public_url
+
+    # imgBB使えない場合はlh3にフォールバック
+    return drive_url_to_lh3(drive_url)
+
+
 def post_single_image(image_url, caption, token, account_id):
     """単画像投稿"""
-    public_url = drive_url_to_lh3(image_url)
+    public_url = prepare_image_url(image_url)
     logger.info(f"画像URL: {public_url[:80]}...")
 
     # Step 1: Container作成
@@ -141,7 +243,7 @@ def post_carousel(image_urls, caption, token, account_id):
     """カルーセル投稿（複数画像）"""
     children_ids = []
     for url in image_urls:
-        public_url = drive_url_to_lh3(url)
+        public_url = prepare_image_url(url)
         resp = requests.post(
             f"{GRAPH_API_BASE}/{account_id}/media",
             data={
