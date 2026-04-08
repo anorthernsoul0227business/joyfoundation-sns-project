@@ -224,13 +224,24 @@ def drive_url_to_lh3(drive_url):
 
 
 def prepare_image_url(drive_url):
-    """画像をダウンロード→リサイズ→公開URLを返す（戻り値: public_url, cleanup_key）"""
+    """画像をダウンロード→公開URLを返す（戻り値: public_url, cleanup_key）"""
     img = download_drive_image(drive_url)
     if img is None:
         return drive_url_to_lh3(drive_url), None  # フォールバック
 
-    resized = resize_for_ig(img)
-    public_url, cleanup_key = upload_to_r2(resized)
+    # RGB変換のみ（リサイズなし・元サイズで投稿）
+    if img.mode in ('RGBA', 'P'):
+        bg = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'RGBA':
+            bg.paste(img, mask=img.split()[3])
+        else:
+            bg.paste(img)
+        img = bg
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    logger.info(f"画像サイズ: {img.size[0]}x{img.size[1]} (元サイズで投稿)")
+    public_url, cleanup_key = upload_to_r2(img)
     if public_url:
         return public_url, cleanup_key
 
