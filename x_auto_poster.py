@@ -44,7 +44,7 @@ SPREADSHEET_ID = '1yv9-rnytRH6jEzzFeNHye0T1JnR4aQvr0bryZUJr7iM'
 SHEET_NAME = 'X投稿キュー'
 
 # 列マッピング（0-indexed）- X投稿キューのシンプル構成
-# A:投稿日時 B:投稿テキスト C:画像1 D:画像リンク1 E:画像2 F:画像リンク2 G:画像3 H:画像リンク3 I:ステータス J:メモ
+# A:投稿日時 B:投稿テキスト C:画像1 D:画像リンク1 E:画像2 F:画像リンク2 G:画像3 H:画像リンク3 I:ステータス J:メモ K:リプライテキスト
 COL_TEXT = 1         # B: 投稿テキスト
 COL_IMG_LINK = 3     # D: 画像リンク1
 COL_IMG2_LINK = 5    # F: 画像リンク2
@@ -52,6 +52,7 @@ COL_IMG3_LINK = 7    # H: 画像リンク3
 COL_TIME = 0         # A: 投稿日時
 COL_STATUS = 8       # I: ステータス
 COL_MEMO = 9         # J: メモ
+COL_REPLY = 10       # K: リプライテキスト
 
 # ステータス値
 STATUS_SCHEDULED = '投稿予約'
@@ -150,8 +151,8 @@ def _extract_error_message(resp: requests.Response) -> str:
     return str(data)
 
 
-def post_tweet(text, image_urls=None, auth=None):
-    """ツイートを投稿（画像付き対応）"""
+def post_tweet(text, image_urls=None, auth=None, reply_to=None):
+    """ツイートを投稿（画像付き・リプライ対応）"""
     if auth is None:
         auth = get_x_auth()
 
@@ -167,6 +168,8 @@ def post_tweet(text, image_urls=None, auth=None):
     payload = {'text': text}
     if media_ids:
         payload['media'] = {'media_ids': media_ids}
+    if reply_to:
+        payload['reply'] = {'in_reply_to_tweet_id': reply_to}
 
     last_error = None
     for endpoint in X_POST_ENDPOINTS:
@@ -257,6 +260,7 @@ def get_scheduled_posts(ws):
             'text': row[COL_TEXT],
             'image_urls': image_urls,
             'post_time': post_time_str,
+            'reply_text': row[COL_REPLY].strip() if len(row) > COL_REPLY and row[COL_REPLY] else '',
         })
 
     return posts
@@ -287,11 +291,23 @@ def run_scheduled(dry_run=False):
         tweet_id = post_tweet(post['text'], post['image_urls'], auth)
 
         if tweet_id:
-            # ステータスを「投稿済み」に更新
-            ws.update_cell(post['row'], COL_STATUS + 1, STATUS_POSTED)
-            # メモにツイートIDと投稿日時を記録
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
             memo = f"投稿済 {timestamp} ID:{tweet_id}"
+
+            # リプライ送信
+            reply_text = post.get('reply_text', '')
+            if reply_text:
+                time.sleep(5)  # 親ツイート反映を待つ
+                reply_id = post_tweet(reply_text, auth=auth, reply_to=tweet_id)
+                if reply_id:
+                    logger.info(f"  リプライ成功! Reply ID: {reply_id}")
+                    memo += f" Reply:{reply_id}"
+                else:
+                    logger.warning(f"  リプライ失敗（本体は投稿済み）")
+                    memo += " リプライ失敗"
+
+            # ステータスを「投稿済み」に更新
+            ws.update_cell(post['row'], COL_STATUS + 1, STATUS_POSTED)
             ws.update_cell(post['row'], COL_MEMO + 1, memo)
             logger.info(f"  ステータス更新完了")
         else:
