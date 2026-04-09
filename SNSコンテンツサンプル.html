@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サウンドヒーリング協会 SNSコンテンツサンプル</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* 表紙 */
+        .cover {
+            background: linear-gradient(135deg, #1a5f4a 0%, #2d8f6f 50%, #3eb489 100%);
+            color: white;
+            padding: 80px 40px;
+            text-align: center;
+            border-radius: 20px;
+            margin-bottom: 60px;
+            page-break-after: always;
+        }
+
+        .cover h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: 0.1em;
+        }
+
+        .cover .subtitle {
+            font-size: 1.3em;
+            font-weight: 300;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .cover .org-name {
+            font-size: 1.1em;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .cover .date {
+            font-size: 0.9em;
+            margin-top: 10px;
+            opacity: 0.7;
+        }
+
+        /* セクションタイトル */
+        .section-title {
+            background: linear-gradient(90deg, #1a5f4a, #2d8f6f);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            margin: 60px 0 40px;
+            page-break-before: always;
+        }
+
+        .section-title h2 {
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        .section-title p {
+            font-size: 0.95em;
+            opacity: 0.9;
+            margin-top: 8px;
+        }
+
+        /* インスタグラム投稿カード */
+        .instagram-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            page-break-inside: avoid;
+        }
+
+        .instagram-header {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .instagram-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1a5f4a, #3eb489);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            margin-right: 12px;
+        }
+
+        .instagram-username {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .instagram-image {
+            width: 100%;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .instagram-image .image-concept {
+            font-size: 0.85em;
+            color: #1a5f4a;
+            background: rgba(255,255,255,0.9);
+            padding: 20px 30px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .instagram-image .image-concept strong {
+            display: block;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            color: #0d3d2e;
+        }
+
+        .instagram-caption {
+            padding: 20px;
+        }
+
+        .instagram-caption .post-number {
+            display: inline-block;
+            background: #1a5f4a;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .instagram-caption p {
+            font-size: 14px;
+            line-height: 1.9;
+            color: #333;
+        }
+
+        .instagram-hashtags {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #1a5f4a;
+        }
+
+        /* note記事カード */
+        .note-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            page-break-inside: avoid;
+        }
+
+        .note-header {
+            background: linear-gradient(135deg, #41c9b4, #2d8f6f);
+            padding: 30px;
+            color: white;
+        }
+
+        .note-header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .note-header .badge.paid {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .note-header h3 {
+            font-size: 1.5em;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        .note-header .price {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .note-thumbnail {
+            height: 200px;
+            background: linear-gradient(135deg, #e0f2f1, #b2dfdb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .note-thumbnail .thumbnail-desc {
+            background: rgba(255,255,255,0.95);
+            padding: 20px 30px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #1a5f4a;
+            max-width: 80%;
+            text-align: center;
+        }
+
+        .note-content {
+            padding: 30px;
+        }
+
+        .note-content h4 {
+            font-size: 1.1em;
+            color: #1a5f4a;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0f2f1;
+        }
+
+        .note-content p {
+            font-size: 14px;
+            line-height: 2;
+            margin-bottom: 20px;
+        }
+
+        .note-content .excerpt {
+            background: #f8fffe;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2d8f6f;
+        }
+
+        .note-content .toc {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .note-content .toc h5 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: #666;
+        }
+
+        .note-content .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .note-content .toc li {
+            font-size: 13px;
+            padding: 6px 0;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .note-content .toc li:last-child {
+            border-bottom: none;
+        }
+
+        /* フッター */
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 12px;
+            margin-top: 60px;
+            border-top: 1px solid #ddd;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                padding: 0;
+            }
+            .instagram-card, .note-card {
+                box-shadow: none;
+                border: 1px solid #eee;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 表紙 -->
+        <div class="cover">
+            <h1>SNSコンテンツ<br>サンプル集</h1>
+            <p class="subtitle">Instagram投稿 10本 / note記事 6本</p>
+            <p class="org-name">NPO法人 サウンドヒーリング協会</p>
+            <p class="date">2026年2月</p>
+        </div>
+
+        <!-- Instagram セクション -->
+        <div class="section-title">
+            <h2>Instagram 投稿サンプル</h2>
+            <p>キャプション 200-300字 / 画像イメージ案付き / 全10投稿</p>
+        </div>
+
+        <!-- 投稿1 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    朝霧に包まれた屋久島の森。<br>
+                    苔むした岩と木漏れ日。<br>
+                    「自然音」の文字をオーバーレイ。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 1/10</span>
+                <p>
+                    【自然音で心と体をリセット】<br><br>
+                    屋久島、宮古島、白神山地...日本各地の自然音には、10,000Hz以上の高周波成分が含まれています。<br><br>
+                    この「聞こえにくい音」が実は大切。皮膚から体の恒常性維持機能に働きかけ、心と体に自然のリズムを取り戻してくれます。<br><br>
+                    1997年から累計20万人以上が活用している自然音。<br><br>
+                    テレビを見ながらでも、仕事中でも、ただ流しておくだけでOK。意識して聴かなくても、体は自然のゆらぎを感じています。
+                </p>
+                <p class="instagram-hashtags">
+                    #自然音 #サウンドヒーリング #屋久島 #ヒーリング #リラックス #自然療法 #音の力 #心身調和 #ウェルネス #NPO法人サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿2 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    チェロを弾く人のシルエット。<br>
+                    音の波動が体に広がるイメージ。<br>
+                    温かみのある茶系の色調。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 2/10</span>
+                <p>
+                    【体感音響 - 宮沢賢治「セロ弾きのゴーシュ」の世界】<br><br>
+                    日本のロケット開発の父・糸川英夫博士。趣味はチェロ演奏でした。<br><br>
+                    博士はチェロから体に伝わる振動に着目。150Hz以下の低い音の振動を骨伝導で伝える「体感音響」を発案しました。<br><br>
+                    これはまさに宮沢賢治の童話「セロ弾きのゴーシュ」の再現。動物たちがゴーシュのチェロで癒されたように、音の振動が細胞レベルで体を整えます。<br><br>
+                    最も大切なのは道具ではなく「自分の意識と手」です。
+                </p>
+                <p class="instagram-hashtags">
+                    #体感音響 #糸川英夫 #セロ弾きのゴーシュ #宮沢賢治 #音響振動 #ヒーリング #骨伝導 #細胞活性 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿3 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    種を植える手のイラスト。<br>
+                    種から芽が出て花が咲く過程。<br>
+                    「言葉の種」というコンセプト。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 3/10</span>
+                <p>
+                    【心の奥庭に、どんな種を植えていますか？】<br><br>
+                    毎日発する言葉や思考は、心の奥庭（潜在意識）に植える種。<br><br>
+                    「無理かも」と思えば無理になる種を、「うまくいく」と言えばうまくいく種を植えています。<br><br>
+                    ネガティブを取り除こうとするより、ポジティブにフォーカスする練習が大事。<br><br>
+                    感謝の心と感謝の言葉が、感謝の出来事を起こす。<br><br>
+                    今日から意識してみませんか？「ありがとう」の種をたくさん蒔いていきましょう。
+                </p>
+                <p class="instagram-hashtags">
+                    #言葉の力 #潜在意識 #ポジティブ思考 #感謝 #ありがとう #マインドセット #引き寄せ #自己啓発 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿4 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    銀河系のイメージ写真。<br>
+                    地球が太陽系の中で回転する図解。<br>
+                    宇宙的なスケール感。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 4/10</span>
+                <p>
+                    【私たちは宇宙を旅している】<br><br>
+                    地球は時速約10万kmで太陽の周りを回り、太陽系は時速79万kmで銀河の中を移動しています。<br><br>
+                    止まっているように見える私たちの足元は、驚くほどの速さで宇宙を旅しているのです。<br><br>
+                    そして、目に見える物質は宇宙のたった4%。残り96%はまだ解明されていない「何か」。<br><br>
+                    私たちの体も宇宙の一部。宇宙に満ちる調和の力は、あなたの中にも流れています。
+                </p>
+                <p class="instagram-hashtags">
+                    #宇宙 #銀河系 #地球 #つながり #自然の法則 #調和 #スピリチュアル #サイエンス #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿5 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    朝日・昼の光・月明かりの3分割。<br>
+                    それぞれの時間帯の自然風景。<br>
+                    時計のアイコンを添えて。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 5/10</span>
+                <p>
+                    【朝・昼・夜、自然音の使い分け】<br><br>
+                    太陽の光に輝く音と、月の光が満ちる音は違います。<br><br>
+                    ◎ 朝の自然音：体を活動モードに<br>
+                    ◎ 昼の音：心を穏やかに<br>
+                    ◎ 夜の音：体を休息モードに<br><br>
+                    自然音には「概日リズム」が封じ込められています。<br><br>
+                    現代の生活は天体の営みと合っておらず、そのズレが心身の不調の原因に。<br><br>
+                    自然音を時間帯で使い分けて、体本来のリズムを取り戻しましょう。
+                </p>
+                <p class="instagram-hashtags">
+                    #概日リズム #自然音 #朝活 #睡眠 #体内時計 #ウェルネス #健康習慣 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿6 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    瞑想している人のシルエット。<br>
+                    声の波動が広がるイメージ。<br>
+                    柔らかい紫〜青のグラデーション。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 6/10</span>
+                <p>
+                    【声を出すことは、体を楽器にすること】<br><br>
+                    米国の名医ミッチェル・ゲイナー博士の言葉です。<br><br>
+                    「内なる宇宙に心を澄ませ、声を響かせることで、自然の力、宇宙に満ちる調和した法則を取り入れることができる」<br><br>
+                    呼吸を整え、「Infinite Harmony」「私は健康」など肯定的な言葉を声に出す。<br><br>
+                    これは古代から続く、生命の源の力と共鳴する方法。<br><br>
+                    今日5分、静かな場所で声を出してみませんか？
+                </p>
+                <p class="instagram-hashtags">
+                    #呼吸法 #発声 #瞑想 #マントラ #ゲイナー博士 #声の力 #調和 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿7 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    ハワイの海と空。<br>
+                    ホクレア号（古代カヌー）。<br>
+                    「言葉にはマナが宿る」の文字。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 7/10</span>
+                <p>
+                    【言葉には聖なる力（マナ）が宿っている】<br><br>
+                    ハワイの伝統文化継承者ダニエル・アカカJr.氏の教えです。<br><br>
+                    「自分が一度吐いた言葉は二度と取り戻すことができない。言葉はポジティブにもネガティブにも働くことを知りましょう」<br><br>
+                    ホクレア号のクルーとして古代ポリネシアン航海を体験した彼は、言葉を慎重に選び、肯定的な相手を思いやる言葉だけで会話します。<br><br>
+                    あなたの言葉には、どんなマナが宿っていますか？
+                </p>
+                <p class="instagram-hashtags">
+                    #ハワイ #マナ #言葉の力 #ホクレア #アロハスピリット #ポジティブ #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿8 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    プラネタリウムの星空。<br>
+                    寝そべって星を見上げる人々。<br>
+                    幻想的な青と紫の光。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 8/10</span>
+                <p>
+                    【星空の癒し - スターライトヒーリング】<br><br>
+                    夜空を見上げると、日常の雑念を忘れ、心がすっきりしませんか？<br><br>
+                    遠く離れた星を見ると心が解放され、気持ちに余裕が生まれます。<br><br>
+                    サウンドヒーリング協会は1995年からプラネタリウムで「スターライトヒーリング」を開催。星空＋自然音＋香りで「やすらぎと活力」を提供してきました。<br><br>
+                    現在はさいたま市宇宙劇場で毎月開催中。<br><br>
+                    ハワイの星空と自然音で、心の旅に出かけませんか？
+                </p>
+                <p class="instagram-hashtags">
+                    #プラネタリウム #星空 #スターライトヒーリング #ハワイ #癒し #さいたま #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿9 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    卵型の図（心の地図）。<br>
+                    顕在意識と潜在意識の層を表現。<br>
+                    上部に光る「本心」。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 9/10</span>
+                <p>
+                    【アサジョリ博士の「心の地図」】<br><br>
+                    イタリアの心理学者ロベルト・アサジョリ博士は、心を卵形の図で表しました。<br><br>
+                    ◎ 意識の自分（支店）<br>
+                    ◎ 無意識の自分（本店）<br>
+                    ◎ トランスパーソナルセルフ（本心）<br><br>
+                    無意識は1秒間に2,000万もの情報を処理。意識はたった40。<br><br>
+                    「意志」を発揮して無意識の自分と交流を深める。<br>
+                    「自分を敬う」とは「無意識の自分を敬う」こと。<br><br>
+                    本当の自分とつながる旅を始めませんか？
+                </p>
+                <p class="instagram-hashtags">
+                    #アサジョリ #心理学 #潜在意識 #本心 #自己探求 #意識革命 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- 投稿10 -->
+        <div class="instagram-card">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+            <div class="instagram-image">
+                <div class="image-concept">
+                    <strong>画像イメージ</strong>
+                    日本庭園の静けさ。<br>
+                    竹林と木漏れ日。<br>
+                    「和」の文字を添えて。
+                </div>
+            </div>
+            <div class="instagram-caption">
+                <span class="post-number">投稿 10/10</span>
+                <p>
+                    【和の精神が体にもたらすもの】<br><br>
+                    サウンドヒーリングの実験で確認された効果：<br><br>
+                    ✓ 自律神経のバランスが回復<br>
+                    ✓ 血液循環が改善<br>
+                    ✓ よく眠れるようになる<br>
+                    ✓ セロトニンが増え心が安定<br><br>
+                    メソッドや道具を普及するのではなく、先ず自分の心を調和する。<br><br>
+                    日本の「和の精神」を音の力を借りて養う。<br><br>
+                    REIKIと並んで、日本発で世界に発信しているサウンドヒーリング。その奥深さが今、注目されています。
+                </p>
+                <p class="instagram-hashtags">
+                    #和の精神 #日本文化 #自律神経 #セロトニン #睡眠改善 #サウンドヒーリング協会
+                </p>
+            </div>
+        </div>
+
+        <!-- note無料記事 セクション -->
+        <div class="section-title">
+            <h2>note 無料記事サンプル</h2>
+            <p>約1,500字 / 全3本</p>
+        </div>
+
+        <!-- 無料記事1 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge">無料記事</span>
+                <h3>自然音の力で心と体をリセットする<br>〜20万人が実践した「流すだけ」の健康法〜</h3>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：森林の木漏れ日、<br>
+                    「自然音で心をリセット」のコピー
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次</h5>
+                    <ul>
+                        <li>1. なぜ今「自然音」が注目されているのか</li>
+                        <li>2. 聞こえない音が体に効く？ 10,000Hz以上の高周波</li>
+                        <li>3. 「流すだけ」でOKの理由</li>
+                        <li>4. 実践方法：まずは朝から始めよう</li>
+                    </ul>
+                </div>
+
+                <h4>1. なぜ今「自然音」が注目されているのか</h4>
+                <p>
+                    産業の発展とともに、私たちの周りには人工的なノイズが増えました。エアコンの音、車の走行音、スマートフォンの通知音...。知らず知らずのうちに、体には力が入り、ストレスが蓄積されています。
+                </p>
+                <p>
+                    一方で、自然の中にいると心が解放され、体の機能が働きやすくなることは、誰もが経験的に知っています。森林浴や海辺での休息が心地よいのは、そこに「安心する音」があるからです。
+                </p>
+
+                <h4>2. 聞こえない音が体に効く</h4>
+                <p>
+                    サウンドヒーリング協会が監修する自然音には、10,000Hz以上の高周波成分が常に含まれています。これは耳には聞こえにくい周波数ですが、皮膚から体の恒常性維持機能に働きかけます。
+                </p>
+                <p>
+                    屋久島、宮古島、石垣島、白神山地、富士山、霧島連山...日本各地で収録された自然音には、その場所のエネルギーが封じ込められています。1997年から累計20万人以上の方が活用し、植物やペットも元気になったという声が届いています。
+                </p>
+
+                <h4>3.「流すだけ」でOKの理由</h4>
+                <p>
+                    自然音の特徴は、意識して聴かなくても効果があること。テレビを見ていても、仕事をしていても、BGMとして流しておくだけで、秒速340mで伝わる音の風が空気の淀みをとり、環境を快適にします。
+                </p>
+
+                <h4>4. 実践方法：まずは朝から始めよう</h4>
+                <p>
+                    朝起きたら、まず自然音をかけてみてください。朝の自然音は体を活動モードにしてくれます。時間がある時は、目を閉じてヘッドフォンで聴くのがおすすめ。自然音のゆらぎが直接耳の鼓膜を刺激し、脳を活性化してくれます。
+                </p>
+
+                <div class="excerpt">
+                    <strong>まとめ：</strong>自然音は「聴く」というより「浴びる」感覚で取り入れましょう。難しいことは何もありません。ただ流すだけで、心と体は自然のリズムを取り戻していきます。
+                </div>
+            </div>
+        </div>
+
+        <!-- 無料記事2 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge">無料記事</span>
+                <h3>言葉の力 〜毎日の「ありがとう」が人生を変える科学的理由〜</h3>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：種から芽が出るイラスト、<br>
+                    「言葉の種を蒔く」のコピー
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次</h5>
+                    <ul>
+                        <li>1. 心の奥庭に植える「種」</li>
+                        <li>2. ハワイの叡智「ホ・オポノポノ」</li>
+                        <li>3. 無意識の驚くべき処理能力</li>
+                        <li>4. 今日からできる言葉の実践</li>
+                    </ul>
+                </div>
+
+                <h4>1. 心の奥庭に植える「種」</h4>
+                <p>
+                    毎日発する言葉や思考は、心の奥庭（潜在意識）に植える種のようなものです。「無理かも」と思えば無理になる種を、「うまくいく」と言えばうまくいく種を、私たちは無意識のうちに植え続けています。
+                </p>
+                <p>
+                    ネガティブな考えを取り除こうとするのではなく、ポジティブにフォーカスする練習が大切。感謝の心と感謝の言葉が、感謝の出来事を起こすのです。
+                </p>
+
+                <h4>2. ハワイの叡智「ホ・オポノポノ」</h4>
+                <p>
+                    ハワイには400年以上前から伝わる叡智「ホ・オポノポノ」があります。「ありがとう、ごめんなさい、許してください、愛してます」という4つの言葉を繰り返すシンプルな方法です。
+                </p>
+                <p>
+                    また、五井昌久氏が国連で提唱した「世界人類が平和でありますように」、日本古来の「言霊（ことだま）」の概念も、言葉の力を活用する知恵です。
+                </p>
+
+                <h4>3. 無意識の驚くべき処理能力</h4>
+                <p>
+                    細胞生物学者ブルース・リプトン博士によると、意識は1秒間に40の情報しか処理できませんが、無意識は2,000万もの情報を処理しています。私たちの行動の大部分は、この無意識によって動かされているのです。
+                </p>
+                <p>
+                    だからこそ、意識的に良い言葉を使い、無意識の領域に良い種を蒔き続けることが大切なのです。
+                </p>
+
+                <h4>4. 今日からできる言葉の実践</h4>
+                <p>
+                    まずは朝起きた時と夜寝る前に「ありがとう」と言ってみましょう。自分の体に、今日一日に、周りの人に。難しく考える必要はありません。プラスの言葉を唱え続けることは、誰にでもできます。
+                </p>
+
+                <div class="excerpt">
+                    <strong>まとめ：</strong>言葉は単なるコミュニケーションツールではありません。私たちの現実を創造する力を持っています。今日から意識して、良い種を蒔いていきましょう。
+                </div>
+            </div>
+        </div>
+
+        <!-- 無料記事3 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge">無料記事</span>
+                <h3>サウンドヒーリング入門<br>〜音で「やすらぎと活力」を得る3つの方法〜</h3>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：音波のイメージと自然風景、<br>
+                    「音で心身を整える」のコピー
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次</h5>
+                    <ul>
+                        <li>1. サウンドヒーリングとは何か</li>
+                        <li>2. 3つのメソッド紹介</li>
+                        <li>3. なぜ「音」が効くのか</li>
+                        <li>4. 始め方ガイド</li>
+                    </ul>
+                </div>
+
+                <h4>1. サウンドヒーリングとは何か</h4>
+                <p>
+                    「Sound」という英語には「音」という意味と「健全な」という意味があります。「Healing」の語源は「神聖な（holy）」「全体（whole）」。つまりサウンドヒーリングとは、音を通じて人間の全体性を取り戻し、健康を促す方法です。
+                </p>
+                <p>
+                    重要なのは、「音が癒す」のでも「音を扱う人が癒す」のでもないこと。癒しの力を発揮する主役は、あなた自身の心身に内在する「生命の力」なのです。
+                </p>
+
+                <h4>2. 3つのメソッド</h4>
+                <p>
+                    <strong>① 自然音（Harmonic Ambience）</strong><br>
+                    空間に流すだけで環境を快適に。心と体に自然のリズムを取り戻します。
+                </p>
+                <p>
+                    <strong>② 体感音響（Harmonic Massage）</strong><br>
+                    低周波の振動を骨伝導で伝え、細胞レベルで体を整えます。
+                </p>
+                <p>
+                    <strong>③ 呼吸と声（Divine Resonance）</strong><br>
+                    呼吸を整え、肯定的な言葉を声に出すことで、生命の源と共鳴します。
+                </p>
+
+                <h4>3. なぜ「音」が効くのか</h4>
+                <p>
+                    音は記憶と深い結びつきがあります。心地よい音の記憶が積み重なると、思考が明るくなり、体の治癒システムにスイッチが入ります。ネガティブな記憶が、快適な記憶に徐々に淘汰されていくのです。
+                </p>
+
+                <h4>4. 始め方ガイド</h4>
+                <p>
+                    まずは自然音から始めてみましょう。朝の時間に流すだけでOK。難しい技術は必要ありません。「やすらぎと活力」を感じることが、サウンドヒーリングの第一歩です。
+                </p>
+
+                <div class="excerpt">
+                    <strong>まとめ：</strong>サウンドヒーリングは特別な能力を必要としません。誰でも、今日から始められます。音の力を借りて、自分の中に眠る生命力を目覚めさせましょう。
+                </div>
+            </div>
+        </div>
+
+        <!-- note有料記事 セクション -->
+        <div class="section-title">
+            <h2>note 有料記事サンプル</h2>
+            <p>約3,000字 / 500円 / 全3本</p>
+        </div>
+
+        <!-- 有料記事1 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge paid">有料記事</span>
+                <h3>13歳で大病を経験した理事長が辿り着いた<br>「音で生命力を高める」方法</h3>
+                <p class="price">500円</p>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：光が差し込む病室のイメージ、<br>
+                    希望を感じさせる構図
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次（全文約3,000字）</h5>
+                    <ul>
+                        <li>1. 「一生治らない」と宣告された13歳の少年</li>
+                        <li>2. 音楽が心を慰めてくれた入院生活</li>
+                        <li>3. 自然療法との出会い〜病気を治すのは自分の力〜</li>
+                        <li>4. 30代の断食体験「思いが現実を創る」</li>
+                        <li>5. 音楽の中の「糧」を探し求めて</li>
+                        <li>6. ミッチェル・ゲイナー博士との運命の出会い</li>
+                        <li>7. 49年間病院知らず〜ピンチは正にチャンス〜</li>
+                        <li>8. あなたにも眠っている生命の力</li>
+                    </ul>
+                </div>
+
+                <h4>冒頭部分（無料公開）</h4>
+                <p>
+                    私は13歳のとき、原因不明の病気になりました。母と病院を転々とし、ようやく「ネフローゼ腎炎」という診断がつきました。そして先生から告げられた言葉は「一生治らないかもしれない」。
+                </p>
+                <p>
+                    未来が見えなくなったあの日のことを、今でも鮮明に覚えています。病室で私の心を慰めてくれたのは、大好きな音楽でした。体がつらくても、音楽を聴いている間は心がほぐれました。
+                </p>
+                <p>
+                    約1年の闘病生活。中学1年を2回経験しました。自分に自信をなくし、本当の気持ちを言えない自分がいました。しかし、この病気が私の人生に大きなギフトを与えてくれたのです...
+                </p>
+
+                <div class="excerpt">
+                    <strong>この続きでは...</strong><br>
+                    ・母が連れて行ってくれた自然療法の道場での気づき<br>
+                    ・30代で経験した断食と「思いが現実を創る」体験<br>
+                    ・音楽の中に感じた「生命の糧」とは<br>
+                    ・ニューヨークの名医との出会いと協会設立の経緯<br>
+                    ・49年間病院に行かずに過ごせている理由<br>
+                    ...を詳しくお伝えします。
+                </div>
+            </div>
+        </div>
+
+        <!-- 有料記事2 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge paid">有料記事</span>
+                <h3>【体感音響の科学】<br>細胞レベルで体を整えるメカニズム完全解説</h3>
+                <p class="price">500円</p>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：細胞と音波のイメージ、<br>
+                    科学的な雰囲気
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次（全文約3,000字）</h5>
+                    <ul>
+                        <li>1. ロケット博士が発案した「体感音響」の原点</li>
+                        <li>2. 宮沢賢治「セロ弾きのゴーシュ」との深い関係</li>
+                        <li>3. 150Hz以下の低周波が体に与える影響</li>
+                        <li>4. 骨伝導のメカニズム〜なぜ振動が効くのか〜</li>
+                        <li>5. ロナルド・ピーターズ博士の医療への応用</li>
+                        <li>6. 「体の叡智（Wisdom of Body）」を働かせる</li>
+                        <li>7. 道具より大切な「意識と手」</li>
+                        <li>8. 家庭でできる実践ガイド</li>
+                    </ul>
+                </div>
+
+                <h4>冒頭部分（無料公開）</h4>
+                <p>
+                    日本のロケット開発の父と呼ばれる糸川英夫博士。実は、チェロの演奏を趣味にしていました。博士はチェロから体に感じる音響振動（ボーンコンダクション）を大切にし、その心地よい振動を電気的に再現する特殊なスピーカーの必要性を訴えていました。
+                </p>
+                <p>
+                    これが「体感音響」の始まりです。150Hz以下の低い音の振動を骨伝導で伝え、心身の緊張をほぐす。宮沢賢治の童話「セロ弾きのゴーシュ」で、動物たちがチェロの音で癒されたのと同じ原理です。
+                </p>
+                <p>
+                    では、なぜ低周波の振動が体に良い影響を与えるのでしょうか...
+                </p>
+
+                <div class="excerpt">
+                    <strong>この続きでは...</strong><br>
+                    ・低周波振動が細胞に与える具体的な影響<br>
+                    ・米国Mind Body Medicine Centerでの医療応用<br>
+                    ・ピーターズ博士が語る「体の叡智」の概念<br>
+                    ・道具がなくてもできる手当法の実践<br>
+                    ・家族で使い合う方法と注意点<br>
+                    ...を詳しく解説します。
+                </div>
+            </div>
+        </div>
+
+        <!-- 有料記事3 -->
+        <div class="note-card">
+            <div class="note-header">
+                <span class="badge paid">有料記事</span>
+                <h3>【保存版】3つのメソッドで始める<br>サウンドヒーリング実践ガイド</h3>
+                <p class="price">500円</p>
+            </div>
+            <div class="note-thumbnail">
+                <div class="thumbnail-desc">
+                    サムネイル：3つの円が重なるイメージ、<br>
+                    「自然音・体感音響・呼吸と声」
+                </div>
+            </div>
+            <div class="note-content">
+                <div class="toc">
+                    <h5>目次（全文約3,000字）</h5>
+                    <ul>
+                        <li>1. Harmonic Revolution とは</li>
+                        <li>2. 【メソッド①】自然音の効果的な使い方</li>
+                        <li>3. 【メソッド②】体感音響の実践ステップ</li>
+                        <li>4. 【メソッド③】呼吸と声のワーク</li>
+                        <li>5. 3つを組み合わせた1日のルーティン例</li>
+                        <li>6. よくある質問Q&A</li>
+                        <li>7. 効果を実感するまでの期間</li>
+                        <li>8. 次のステップ〜研修会のご案内〜</li>
+                    </ul>
+                </div>
+
+                <h4>冒頭部分（無料公開）</h4>
+                <p>
+                    サウンドヒーリング協会が提案する「Harmonic Revolution」は、自分の外（社会）への変革を求めるものではありません。自分の内側への変革です。自分の存在や生き方を通して、自然と周りに大調和の変革を生み出していく。
+                </p>
+                <p>
+                    その核となるのが3つのメソッドです。
+                </p>
+                <p>
+                    ① 自然音（Harmonic Ambience）〜空間を快適にする<br>
+                    ② 体感音響（Harmonic Massage）〜体内環境を整える<br>
+                    ③ 呼吸と声（Divine Resonance）〜高次元の響きに共鳴する
+                </p>
+                <p>
+                    この3つは独立したものではなく、互いに補い合う関係にあります。では、それぞれの具体的な実践方法を見ていきましょう...
+                </p>
+
+                <div class="excerpt">
+                    <strong>この続きでは...</strong><br>
+                    ・自然音を時間帯別に使い分ける方法<br>
+                    ・体感音響を自分で実践するステップ<br>
+                    ・呼吸法と発声の具体的なやり方<br>
+                    ・朝・昼・夜の実践ルーティン例<br>
+                    ・初心者からよく寄せられる質問への回答<br>
+                    ...を詳しくお伝えします。
+                </div>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <div class="footer">
+            <p>NPO法人 サウンドヒーリング協会</p>
+            <p>https://www.sound-healing.jp/</p>
+            <p style="margin-top: 15px;">本資料はSNSコンテンツのサンプルです。</p>
+            <p>実際の投稿・公開時には、画像制作・校正を行ってください。</p>
+        </div>
+    </div>
+</body>
+</html>

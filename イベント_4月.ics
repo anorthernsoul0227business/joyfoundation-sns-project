@@ -1,0 +1,64 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SH協会//イベント//JP
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:SH協会 イベント
+X-WR-TIMEZONE:Asia/Tokyo
+BEGIN:VTIMEZONE
+TZID:Asia/Tokyo
+BEGIN:STANDARD
+DTSTART:19700101T000000
+TZOFFSETFROM:+0900
+TZOFFSETTO:+0900
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+UID:event-kokochiyo-0402@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260402T130000
+DTEND;TZID=Asia/Tokyo:20260402T160000
+SUMMARY:🌿 ここちよい音の日
+DESCRIPTION:太陽食品世田谷店 & SH協会コラボ\\n体験500円\\n13:00〜16:00\\n約10分のサウンドヒーリング体験
+LOCATION:太陽食品世田谷店（東急大井町線 尾山台駅 徒歩3分）
+END:VEVENT
+BEGIN:VEVENT
+UID:event-kokochiyo-0403@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260403T130000
+DTEND;TZID=Asia/Tokyo:20260403T160000
+SUMMARY:🌿 ここちよい音の日
+DESCRIPTION:太陽食品世田谷店 & SH協会コラボ\\n体験500円\\n13:00〜16:00\\n約10分のサウンドヒーリング体験
+LOCATION:太陽食品世田谷店（東急大井町線 尾山台駅 徒歩3分）
+END:VEVENT
+BEGIN:VEVENT
+UID:event-kokochiyo-0404@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260404T130000
+DTEND;TZID=Asia/Tokyo:20260404T160000
+SUMMARY:🌿 ここちよい音の日
+DESCRIPTION:太陽食品世田谷店 & SH協会コラボ\\n体験500円\\n13:00〜16:00\\n約10分のサウンドヒーリング体験
+LOCATION:太陽食品世田谷店（東急大井町線 尾山台駅 徒歩3分）
+END:VEVENT
+BEGIN:VEVENT
+UID:event-malama-0412@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260412T133000
+DTEND;TZID=Asia/Tokyo:20260412T142000
+SUMMARY:⭐ スターライトヒーリング マラマハワイ追加公演
+DESCRIPTION:大人620円 / 小人310円\\nハワイの星空と自然音の癒し体験\\n後援: ハワイ州観光局
+LOCATION:さいたま市宇宙劇場（JACK大宮3階）
+END:VEVENT
+BEGIN:VEVENT
+UID:event-online-0414@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260414T100000
+DTEND;TZID=Asia/Tokyo:20260414T120000
+SUMMARY:🎓 オンライン講座「音のウェルビーイング」第1回
+DESCRIPTION:Zoom開催\\n参加費: 4\,000円\\n「音の旅シリーズ」
+LOCATION:Zoom
+END:VEVENT
+BEGIN:VEVENT
+UID:event-online-0423@shkyoukai.calendar
+DTSTART;TZID=Asia/Tokyo:20260423T100000
+DTEND;TZID=Asia/Tokyo:20260423T120000
+SUMMARY:🎓 オンライン講座「音のウェルビーイング」第2回
+DESCRIPTION:Zoom開催\\n参加費: 4\,000円
+LOCATION:Zoom
+END:VEVENT
+END:VCALENDAR

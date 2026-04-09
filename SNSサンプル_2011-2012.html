@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNSコンテンツサンプル（2011-2012年協会誌より）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            padding: 30px 40px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            page-break-after: always;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        h1 {
+            font-size: 24px;
+            color: #2c5530;
+            border-bottom: 3px solid #2c5530;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 18px;
+            color: #4a7c59;
+            margin: 30px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #4a7c59;
+        }
+        h3 {
+            font-size: 16px;
+            color: #666;
+            margin: 20px 0 10px;
+        }
+
+        /* Instagram投稿スタイル */
+        .instagram-post {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .instagram-post .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .instagram-post .account-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d);
+            border-radius: 50%;
+            margin-right: 12px;
+        }
+        .instagram-post .account-name {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .instagram-post .image-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 200px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .instagram-post .caption {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        .instagram-post .hashtags {
+            color: #0095f6;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .instagram-post .post-number {
+            background: #e1306c;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        /* note記事スタイル */
+        .note-article {
+            background: white;
+            border: 2px solid #41c9b4;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+        .note-article .article-header {
+            border-bottom: 2px solid #41c9b4;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .note-article .article-number {
+            background: #41c9b4;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .note-article .article-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .note-article .article-subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        .note-article .article-body {
+            font-size: 15px;
+            line-height: 2;
+        }
+        .note-article .article-body p {
+            margin-bottom: 15px;
+        }
+        .note-article .highlight-box {
+            background: #f0fdf9;
+            border-left: 4px solid #41c9b4;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note-article .data-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .note-article .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .note-article .data-item:last-child {
+            border-bottom: none;
+        }
+        .note-article .cta {
+            background: linear-gradient(135deg, #41c9b4 0%, #2ecc71 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .source-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .usage-note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ページ1: Instagram投稿サンプル -->
+<div class="page">
+    <h1>Instagram投稿サンプル（3点）</h1>
+    <p style="color: #666; margin-bottom: 20px;">出典: 2011-2012年 サウンドヒーリング協会誌</p>
+
+    <div class="usage-note">
+        <strong>使用方法:</strong> 以下のキャプション文をコピーし、対応する抽出画像と組み合わせて投稿してください。<br>
+        画像フォルダ: <code>抽出画像/2011/</code> <code>抽出画像/2012/</code>
+    </div>
+
+    <!-- Instagram 1 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #1</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2011_p8-p9_img01.jpeg<br>
+            （Resonanceワークショップ風景）
+        </div>
+        <div class="caption">
+            <strong>自分の声が、最も身近なヒーリング音</strong><br><br>
+            純度99.9%のクリスタルボウルの響きと<br>
+            自分自身の呼吸、そして声。<br><br>
+            特別な道具がなくても<br>
+            いつでもどこでも始められる<br>
+            セルフヒーリングの方法があります。<br><br>
+            心と体の調和を、<br>
+            毎日の呼吸から始めてみませんか？
+        </div>
+        <div class="hashtags">
+            #サウンドヒーリング #クリスタルボウル #呼吸法 #セルフケア #マインドフルネス #ヒーリング #自然療法 #心身調和 #ウェルビーイング #声のワーク
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P8-P9「Resonance レゾナンスワークショップ」</div>
+    </div>
+
+    <!-- Instagram 2 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #2</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2011_p12-p13_img01.jpeg<br>
+            （スターライトシネマ2010）
+        </div>
+        <div class="caption">
+            <strong>都市の夜空に、森の音が溶けていく</strong><br><br>
+            2010年8月、恵比寿ガーデンプレイス。<br>
+            都市空間 × 自然音 × 映像の融合。<br><br>
+            「サウンドブリーズ」体験では<br>
+            ビルに囲まれた空間でも<br>
+            森林浴のような心地よさを感じられました。<br><br>
+            自然と離れた都市生活でも<br>
+            音を通じて自然とつながれる。<br>
+            それがサウンドヒーリングの可能性です。
+        </div>
+        <div class="hashtags">
+            #スターライトシネマ #恵比寿 #自然音 #都市×自然 #サウンドブリーズ #音の癒し #夏の夜 #イベント #サウンドヒーリング協会
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P12-P13「スターライトシネマ2010」</div>
+    </div>
+</div>
+
+<!-- ページ2: Instagram投稿サンプル続き -->
+<div class="page">
+    <!-- Instagram 3 -->
+    <div class="instagram-post">
+        <span class="post-number">Instagram #3</span>
+        <div class="post-header">
+            <div class="account-icon"></div>
+            <div class="account-name">@soundhealing_japan</div>
+        </div>
+        <div class="image-placeholder">
+            使用画像: 2012_p8-p9_img03.png<br>
+            （学会発表データ）
+        </div>
+        <div class="caption">
+            <strong>体感音響の効果、数字で見えました</strong><br><br>
+            第76回 日本温泉気候物理医学会で発表された<br>
+            体感音響セッション前後の変化：<br><br>
+            肌の水分量 32.7% → 40.4%<br>
+            手の温度 29.67℃ → 31.42℃<br>
+            不安指数 39.52 → 28.28<br><br>
+            「なんとなく気持ちいい」を<br>
+            科学的に検証し続けています。<br><br>
+            感覚だけでなく、データでも証明される<br>
+            音の力を、ぜひ体験してください。
+        </div>
+        <div class="hashtags">
+            #体感音響 #サウンドヒーリング #科学的検証 #学会発表 #リラクゼーション #自律神経 #温活 #ストレスケア #エビデンス #ウェルネス
+        </div>
+        <div class="source-info">出典: 2012年協会誌 P8-P9「第76回日本温泉気候物理医学会発表」</div>
+    </div>
+
+    <h2>Instagram投稿のポイント</h2>
+    <ul style="margin-left: 20px; margin-top: 15px;">
+        <li>1行を短く、改行を多めに</li>
+        <li>最初の1行で興味を引く</li>
+        <li>具体的な数字やエピソードを入れる</li>
+        <li>ハッシュタグは10-15個程度</li>
+        <li>画像は正方形（1:1）または縦長（4:5）推奨</li>
+    </ul>
+</div>
+
+<!-- ページ3: note記事サンプル1 -->
+<div class="page">
+    <h1>note無料記事サンプル（3点）</h1>
+    <p style="color: #666; margin-bottom: 20px;">出典: 2011-2012年 サウンドヒーリング協会誌</p>
+
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #1</span>
+            <div class="article-title">北海道から届いた「音の癒し」実践レポート</div>
+            <div class="article-subtitle">エステ×サウンドヒーリングで見えてきた「思考が現実を創る」という真実</div>
+        </div>
+        <div class="article-body">
+            <p>北海道でエステサロン「サロン・ド・ボーテ・エクラ」を営む新谷香代さん。サウンドヒーリング協会のセラピスト10期生として資格を取得後、エステの施術にサウンドヒーリングを取り入れ始めました。</p>
+
+            <div class="highlight-box">
+                <strong>新谷さんが実感した変化</strong><br>
+                「お客様の心身の変化を間近で見ているうちに、自分自身も変わっていきました。『思考・感情が現実を創る』という言葉を、身をもって体験したのです。」
+            </div>
+
+            <p>エステで体を整え、サウンドヒーリングで心を整える。この組み合わせが、クライアントの自己変容を促すことを、新谷さんは日々の施術の中で確認しています。</p>
+
+            <p>サウンドヒーリングは、特別な場所でなくても実践できます。日本最北のサロンから届いたこのレポートは、「どこでも、誰でも、音の力を活用できる」という希望のメッセージでもあります。</p>
+
+            <div class="cta">
+                続きは協会の研修会で学べます
+            </div>
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P4-P5「セラピスト活動報告」</div>
+    </div>
+</div>
+
+<!-- ページ4: note記事サンプル2 -->
+<div class="page">
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #2</span>
+            <div class="article-title">学習塾に「音の癒し」を導入してみた結果</div>
+            <div class="article-subtitle">子どもたちのストレスケアに、サウンドヒーリングができること</div>
+        </div>
+        <div class="article-body">
+            <p>学習塾「れもんの木」を運営する藤部久子さん（セラピスト11期生）は、子どもたちの学習環境にサウンドヒーリングを取り入れる試みを始めました。</p>
+
+            <p>受験勉強、習い事、友人関係...。現代の子どもたちは、大人が想像する以上のストレスを抱えています。藤部さんは、そんな子どもたちに「音による安らぎ」を提供したいと考えました。</p>
+
+            <div class="highlight-box">
+                <strong>教育現場での気づき</strong><br>
+                「勉強の前に数分間、自然音を聴くだけで、子どもたちの集中力が変わりました。音は、学びの土台となる『心の安定』を作るツールになり得るのです。」
+            </div>
+
+            <p>学校でも塾でも、「成績」という結果が求められる場所。でも本当に大切なのは、子どもたちが安心して学べる環境ではないでしょうか。</p>
+
+            <p>サウンドヒーリングは、教育現場に新しい可能性を開きます。「学ぶ」と「癒される」が共存する空間づくり。それは、これからの教育に必要な視点かもしれません。</p>
+
+            <div class="cta">
+                教育関係者向けワークショップも開催中
+            </div>
+        </div>
+        <div class="source-info">出典: 2011年協会誌 P6-P7「私の活動・ストレスケア in 学習塾」</div>
+    </div>
+</div>
+
+<!-- ページ5: note記事サンプル3 -->
+<div class="page">
+    <div class="note-article">
+        <div class="article-header">
+            <span class="article-number">note #3</span>
+            <div class="article-title">「体感音響」の効果を学会で発表しました</div>
+            <div class="article-subtitle">第76回日本温泉気候物理医学会での研究報告</div>
+        </div>
+        <div class="article-body">
+            <p>「サウンドヒーリングって、本当に効果があるの？」</p>
+
+            <p>この疑問に科学的に答えるため、サウンドヒーリング協会では継続的な効果測定を行っています。2012年、その成果を日本温泉気候物理医学会で発表しました。</p>
+
+            <div class="data-box">
+                <strong>体感音響セッション前後の変化</strong>
+                <div class="data-item">
+                    <span>顔面水分量</span>
+                    <span>32.7% → <strong>40.4%</strong></span>
+                </div>
+                <div class="data-item">
+                    <span>手掌温度</span>
+                    <span>29.67℃ → <strong>31.42℃</strong></span>
+                </div>
+                <div class="data-item">
+                    <span>足部温度</span>
+                    <span>21.8℃ → <strong>24.3℃</strong></span>
+                </div>
+                <div class="data-item">
+                    <span>状態不安指数</span>
+                    <span>39.52 → <strong>28.28</strong></span>
+                </div>
+            </div>
+
+            <p>肌の水分量が上がり、末端の冷えが改善され、不安感が軽減される。これらの変化は、体感音響が自律神経のバランスを整え、リラックス状態を促進していることを示唆しています。</p>
+
+            <div class="highlight-box">
+                <strong>研究の意義</strong><br>
+                「なんとなく気持ちいい」という感覚を、客観的なデータで裏付けること。それが、サウンドヒーリングをより多くの人に届けるための第一歩だと考えています。
+            </div>
+
+            <p>私たちは、「感覚」と「科学」の両方を大切にしながら、音の可能性を探求し続けます。</p>
+
+            <div class="cta">
+                体感音響を体験できるイベント情報はこちら
+            </div>
+        </div>
+        <div class="source-info">出典: 2012年協会誌「第76回日本温泉気候物理医学会発表」喜田圭一郎</div>
+    </div>
+
+    <h2 style="margin-top: 40px;">note記事作成のポイント</h2>
+    <ul style="margin-left: 20px; margin-top: 15px;">
+        <li>タイトルで「誰の」「何の」話かを明確に</li>
+        <li>冒頭で読者の疑問や興味を引く</li>
+        <li>具体的なエピソードや数字を入れる</li>
+        <li>引用ボックスでキーメッセージを強調</li>
+        <li>最後にCTA（行動喚起）を入れる</li>
+        <li>無料記事は1,000〜2,000字程度が読みやすい</li>
+    </ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNSサンプルコンテンツ集</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #fff;
+        }
+        .page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+            page-break-after: always;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        h1 {
+            font-size: 28px;
+            color: #2c5530;
+            border-bottom: 3px solid #2c5530;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 22px;
+            color: #4a7c59;
+            margin: 30px 0 15px;
+            padding-left: 15px;
+            border-left: 4px solid #4a7c59;
+        }
+        h3 {
+            font-size: 18px;
+            color: #666;
+            margin: 20px 0 10px;
+        }
+        .cover {
+            text-align: center;
+            padding: 100px 40px;
+        }
+        .cover h1 {
+            font-size: 36px;
+            border: none;
+            margin-bottom: 20px;
+        }
+        .cover .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 60px;
+        }
+        .cover .info {
+            font-size: 14px;
+            color: #999;
+        }
+        .instagram-post {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .instagram-post .title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #e1306c;
+            margin-bottom: 15px;
+        }
+        .instagram-post .content {
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .instagram-post .hashtags {
+            font-size: 12px;
+            color: #0066cc;
+            margin-top: 15px;
+        }
+        .note-article {
+            background: #fff;
+            border: 2px solid #41c9b4;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        .note-article .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #41c9b4;
+            margin-bottom: 20px;
+        }
+        .note-article .section {
+            margin: 15px 0;
+        }
+        .note-article .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .note-article .quote {
+            background: #f8f9fa;
+            border-left: 4px solid #41c9b4;
+            padding: 15px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        .note-article .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .paid-label {
+            display: inline-block;
+            background: #ffd700;
+            color: #333;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .free-label {
+            display: inline-block;
+            background: #41c9b4;
+            color: #fff;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .toc {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .toc-item {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ddd;
+        }
+        .toc-item:last-child {
+            border-bottom: none;
+        }
+        .meta {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        @media print {
+            .page {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 表紙 -->
+<div class="page cover">
+    <h1>SNSサンプルコンテンツ集</h1>
+    <p class="subtitle">サウンドヒーリング協会 × ジョイファンデーション</p>
+    <p class="subtitle">Instagram・note 投稿サンプル</p>
+    <br><br><br>
+    <p class="info">
+        Instagram投稿 × 3件<br>
+        無料note記事 × 3件<br>
+        有料note記事 × 3件<br>
+        <br><br>
+        作成日: 2026年2月17日
+    </p>
+</div>
+
+<!-- 目次 -->
+<div class="page">
+    <h1>目次</h1>
+    <div class="toc">
+        <h3>Instagram投稿（3件）</h3>
+        <div class="toc-item">1. 【保存推奨】自律神経が整う「音の力」とは？</div>
+        <div class="toc-item">2. 【研究データ公開】自然音で幸せホルモン増加！</div>
+        <div class="toc-item">3. 【体験談】たった30分で肩こりが楽に...</div>
+
+        <h3 style="margin-top:20px;">無料note記事（3件）</h3>
+        <div class="toc-item">1. サウンドヒーリング入門｜音で心と体を整える新習慣</div>
+        <div class="toc-item">2. 自然音の科学｜なぜ人は川のせせらぎに癒されるのか</div>
+        <div class="toc-item">3. 自律神経を整える5つの音の習慣</div>
+
+        <h3 style="margin-top:20px;">有料note記事（3件）</h3>
+        <div class="toc-item">1. 【完全版】学会発表データで読み解くサウンドヒーリングの効果</div>
+        <div class="toc-item">2. セラピスト向け｜サウンドヒーリング実践ガイド</div>
+        <div class="toc-item">3. 自然音活用マニュアル｜睡眠・集中・リラックス</div>
+    </div>
+</div>
+
+<!-- Instagram 1 -->
+<div class="page">
+    <h1>Instagram投稿</h1>
+    <h2>投稿1: 自律神経データ型</h2>
+
+    <div class="instagram-post">
+        <div class="title">📱 投稿テキスト（395文字）</div>
+        <div class="content">
+【保存推奨】自律神経が整う「音の力」とは？
+
+「なんとなくだるい」
+「寝ても疲れが取れない」
+
+それ、自律神経の乱れかもしれません。
+
+━━━━━━━━━━━━━━
+実は、音で自律神経は整います
+━━━━━━━━━━━━━━
+
+日本温泉気候医学会の研究で
+驚きの結果が出ました。
+
+▶ 被験者10名全員に自律神経反応を確認
+▶ 9名で副交感神経が優位に
+▶ わずか30分の体感音響で変化
+
+つまり...
+音の振動を体で感じるだけで
+リラックスモードに切り替わるんです。
+
+━━━━━━━━━━━━━━
+なぜ音で整うの？
+━━━━━━━━━━━━━━
+
+人体の約70%は水分。
+音は水中を空気の4倍速く伝わります。
+
+だから、音の振動が
+体の深部まで届くんです。
+
+━━━━━━━━━━━━━━
+
+📩 自律神経を整える自然音（無料）は
+プロフィールのLINEから🎁
+
+#自律神経 #自律神経を整える #サウンドヒーリング
+#自然音 #リラックス #睡眠改善 #体感音響
+#ストレス解消 #心と体 #癒し #ヒーリング
+#健康習慣 #セルフケア #音楽療法
+        </div>
+    </div>
+
+    <h3>投稿のポイント</h3>
+    <ul>
+        <li>問いかけで共感を誘う導入</li>
+        <li>学会発表の数値データで信頼性UP</li>
+        <li>「なぜ」の解説で納得感</li>
+        <li>LINE登録への誘導CTA</li>
+    </ul>
+</div>
+
+<!-- Instagram 2 -->
+<div class="page">
+    <h2>投稿2: オキシトシン研究型</h2>
+
+    <div class="instagram-post">
+        <div class="title">📱 投稿テキスト（412文字）</div>
+        <div class="content">
+【研究データ公開】自然音で幸せホルモン増加！
+
+「幸せホルモン」オキシトシン。
+
+実は、自然音を聴くだけで
+このホルモンが増えることが
+研究で明らかになりました。
+
+━━━━━━━━━━━━━━
+温泉気候物理医学会の研究結果
+━━━━━━━━━━━━━━
+
+自然音を15分聴いた結果...
+
+✅ オキシトシン濃度：有意に増加（p=0.01）
+✅ コルチゾール濃度：有意に減少（p=0.043）
+✅ 心拍数：低下（リラックス状態へ）
+
+コルチゾールは「ストレスホルモン」。
+つまり...
+
+🌿 幸せホルモン ↑
+😰 ストレスホルモン ↓
+
+この両方が同時に起きたんです。
+
+━━━━━━━━━━━━━━
+たった15分で変わる
+━━━━━━━━━━━━━━
+
+研究では週2回、15分の自然音。
+これだけでストレス値が有意に低下。
+
+忙しい毎日でも
+15分なら取り入れられますよね。
+
+━━━━━━━━━━━━━━
+
+🎧 研究で使用した自然音を
+無料でプレゼント中！
+▷ プロフィールのLINKから
+
+#オキシトシン #幸せホルモン #自然音 #ストレス解消
+#リラックス #科学的根拠 #エビデンス #睡眠
+#セルフケア #心理学 #癒しの時間 #自律神経
+        </div>
+    </div>
+
+    <h3>投稿のポイント</h3>
+    <ul>
+        <li>「研究データ公開」で専門性アピール</li>
+        <li>p値など統計データで信頼性</li>
+        <li>「15分」という具体的なハードル提示</li>
+        <li>無料プレゼントでLINE誘導</li>
+    </ul>
+</div>
+
+<!-- Instagram 3 -->
+<div class="page">
+    <h2>投稿3: 体験談ストーリー型</h2>
+
+    <div class="instagram-post">
+        <div class="title">📱 投稿テキスト（378文字）</div>
+        <div class="content">
+【体験談】たった30分で肩こりが楽に...
+
+「音で体が楽になるなんて
+信じられませんでした」
+
+ストレスケア病棟で行われた
+サウンドヒーリング体験の声です。
+
+━━━━━━━━━━━━━━
+62名が体験した結果
+━━━━━━━━━━━━━━
+
+1日30分 × 4日間。
+たったこれだけで...
+
+📊 統計的に有意な変化（p≦0.01）
+
+特に大きかった変化は：
+• 気分の改善
+• 肩と背中のコリ緩和
+• 便通の改善
+
+━━━━━━━━━━━━━━
+なぜ音で体が楽になるの？
+━━━━━━━━━━━━━━
+
+音の振動 → 副交感神経が優位に
+　↓
+筋肉の緊張がゆるむ
+　↓
+血流改善・腸の動きも安定
+
+これが「体で聴く」効果なんです。
+
+━━━━━━━━━━━━━━
+
+💬 体験者の声をもっと読みたい方は
+noteで詳しく紹介しています！
+▷ プロフィールLINKから
+
+#体験談 #サウンドヒーリング #肩こり解消
+#ストレスケア #リラクゼーション #副交感神経
+#体の声 #セルフケア #癒し #音の力
+        </div>
+    </div>
+
+    <h3>投稿のポイント</h3>
+    <ul>
+        <li>体験談で親近感・共感</li>
+        <li>62名のデータで信頼性担保</li>
+        <li>「なぜ」の解説で理解促進</li>
+        <li>noteへの誘導CTA</li>
+    </ul>
+</div>
+
+<!-- 無料note 1 -->
+<div class="page">
+    <h1>無料note記事</h1>
+    <h2>記事1: サウンドヒーリング入門 <span class="free-label">無料</span></h2>
+
+    <div class="note-article">
+        <div class="title">サウンドヒーリング入門｜音で心と体を整える新習慣</div>
+        <p class="meta">読了時間：約5分 ｜ 文字数：約1,800文字</p>
+
+        <div class="section">
+            <div class="section-title">はじめに</div>
+            <p>「音楽を聴くとリラックスする」</p>
+            <p>多くの人が経験したことがあるこの感覚。実は、これには科学的な理由があります。</p>
+            <p>この記事では、20年以上の研究と実践に基づいた「サウンドヒーリング」の基礎をお伝えします。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">サウンドヒーリングとは？</div>
+            <p>サウンドヒーリングとは、音の振動を活用して心身のバランスを整える健康法です。</p>
+            <p>特徴は「体で聴く」こと。耳だけでなく、全身で音の振動を感じることで、より深いリラクゼーション効果が得られます。</p>
+        </div>
+
+        <div class="quote">
+            「人体の約70%は水分。音は水中を空気の4倍速く伝わります。だから、音の振動が体の深部まで届くのです」<br>
+            ― サウンドヒーリング協会
+        </div>
+
+        <div class="section">
+            <div class="section-title">3つの柱</div>
+            <p><strong>1. 自然音</strong>：川のせせらぎ、鳥の声、波の音など</p>
+            <p><strong>2. 体感音響</strong>：低周波の振動を体で感じる</p>
+            <p><strong>3. 呼吸と声</strong>：自分の声を使ったセルフケア</p>
+        </div>
+
+        <div class="highlight">
+            <strong>📌 ポイント</strong><br>
+            サウンドヒーリングは「聴く」だけでなく「感じる」ことが大切。イヤホンよりもスピーカーで、できれば体感音響機器を使うと効果的です。
+        </div>
+
+        <div class="cta">
+            🎁 自然音サンプル無料プレゼント中！<br>
+            LINE登録で今すぐ受け取る →
+        </div>
+    </div>
+</div>
+
+<!-- 無料note 2 -->
+<div class="page">
+    <h2>記事2: 自然音の科学 <span class="free-label">無料</span></h2>
+
+    <div class="note-article">
+        <div class="title">自然音の科学｜なぜ人は川のせせらぎに癒されるのか</div>
+        <p class="meta">読了時間：約6分 ｜ 文字数：約2,200文字</p>
+
+        <div class="section">
+            <div class="section-title">なぜ自然音は心地よいのか</div>
+            <p>都会の騒音にはイライラするのに、川のせせらぎや波の音には癒される。この違いは何でしょうか？</p>
+            <p>答えは「1/fゆらぎ」にあります。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">1/fゆらぎとは</div>
+            <p>自然界の音には、規則性と不規則性が絶妙にミックスされた「ゆらぎ」があります。</p>
+            <p>この「予測できそうでできない」パターンが、人間の脳をリラックス状態へと導きます。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">研究で証明された効果</div>
+            <p>温泉気候物理医学会の研究では、自然音を聴いた被験者に以下の変化が確認されました：</p>
+            <ul>
+                <li>オキシトシン（幸せホルモン）の増加</li>
+                <li>コルチゾール（ストレスホルモン）の減少</li>
+                <li>心拍数の低下</li>
+            </ul>
+        </div>
+
+        <div class="quote">
+            「自然音を聴くことで心身のリラクゼーションが促進される可能性がある」<br>
+            ― 第83回温泉気候物理医学会 研究発表より
+        </div>
+
+        <div class="highlight">
+            <strong>📌 実践のコツ</strong><br>
+            ・1日15分から始める<br>
+            ・朝起きたとき、夜寝る前がおすすめ<br>
+            ・イヤホンよりスピーカーで空間に流す
+        </div>
+
+        <div class="cta">
+            📖 さらに詳しく学びたい方へ<br>
+            有料マガジン「自然音活用マニュアル」公開中 →
+        </div>
+    </div>
+</div>
+
+<!-- 無料note 3 -->
+<div class="page">
+    <h2>記事3: 自律神経を整える習慣 <span class="free-label">無料</span></h2>
+
+    <div class="note-article">
+        <div class="title">自律神経を整える5つの音の習慣</div>
+        <p class="meta">読了時間：約5分 ｜ 文字数：約1,600文字</p>
+
+        <div class="section">
+            <div class="section-title">自律神経の乱れチェック</div>
+            <p>□ 朝起きても疲れが取れない</p>
+            <p>□ 寝つきが悪い、夜中に目が覚める</p>
+            <p>□ 肩や首のコリがひどい</p>
+            <p>□ 便秘や下痢を繰り返す</p>
+            <p>2つ以上当てはまる方は、自律神経が乱れているサインかもしれません。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">音で整える5つの習慣</div>
+            <p><strong>習慣1：朝の自然音（5分）</strong></p>
+            <p>起床後、鳥の声や森の音を流しながら深呼吸。交感神経をゆるやかに起動。</p>
+
+            <p><strong>習慣2：通勤中のノイズキャンセリング</strong></p>
+            <p>電車の騒音をカット。可能なら自然音に置き換え。</p>
+
+            <p><strong>習慣3：昼休みの3分リセット</strong></p>
+            <p>波の音や川のせせらぎで脳をリフレッシュ。</p>
+
+            <p><strong>習慣4：夕方の低周波音</strong></p>
+            <p>仕事終わりに低い周波数の音で体をゆるめる。</p>
+
+            <p><strong>習慣5：就寝前の静寂と自然音</strong></p>
+            <p>スマホを置き、自然音を小さく流しながら入眠。</p>
+        </div>
+
+        <div class="highlight">
+            <strong>📌 研究データ</strong><br>
+            週2回、15分の自然音でストレス値が有意に低下（東京大学大学院 研究より）
+        </div>
+
+        <div class="cta">
+            🎧 習慣に使える自然音を無料配布中<br>
+            LINE登録はプロフィールから →
+        </div>
+    </div>
+</div>
+
+<!-- 有料note 1 -->
+<div class="page">
+    <h1>有料note記事</h1>
+    <h2>記事1: 学会データ完全版 <span class="paid-label">有料 ¥980</span></h2>
+
+    <div class="note-article">
+        <div class="title">【完全版】学会発表データで読み解くサウンドヒーリングの効果</div>
+        <p class="meta">読了時間：約15分 ｜ 文字数：約5,500文字</p>
+
+        <div class="section">
+            <div class="section-title">この記事で得られること</div>
+            <ul>
+                <li>過去20年間の主要学会発表データを網羅</li>
+                <li>自律神経、オキシトシン、睡眠への効果を数値で理解</li>
+                <li>エビデンスに基づいた説明ができるようになる</li>
+                <li>クライアントや患者への説明資料として活用可能</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">目次（有料部分）</div>
+            <p>1. サウンドヒーリング研究の歴史</p>
+            <p>2. 自律神経への効果（温泉気候医学会データ）</p>
+            <p>3. オキシトシン・コルチゾールへの影響</p>
+            <p>4. 睡眠改善効果（東大大学院データ）</p>
+            <p>5. 気分障害患者への効果（催眠学会データ）</p>
+            <p>6. 被験者数・p値一覧表</p>
+            <p>7. 論文引用フォーマット</p>
+        </div>
+
+        <div class="quote">
+            「刺激中に10例全例に自律神経反応を確認した。この反応はソフトに自律神経機能の変動しやすさを高め、健康状態の改善に貢献できる可能性を示唆している」<br>
+            ― 第78回日本温泉気候医学会
+        </div>
+
+        <div class="highlight">
+            <strong>📊 収録データ例</strong><br>
+            ・被験者総数：200名以上<br>
+            ・学会発表：10件以上<br>
+            ・p値付きの統計データ：15項目
+        </div>
+    </div>
+</div>
+
+<!-- 有料note 2 -->
+<div class="page">
+    <h2>記事2: セラピスト実践ガイド <span class="paid-label">有料 ¥1,480</span></h2>
+
+    <div class="note-article">
+        <div class="title">セラピスト向け｜サウンドヒーリング実践ガイド</div>
+        <p class="meta">読了時間：約20分 ｜ 文字数：約7,000文字</p>
+
+        <div class="section">
+            <div class="section-title">こんな方におすすめ</div>
+            <ul>
+                <li>整体・マッサージに音を取り入れたいセラピスト</li>
+                <li>カウンセリングにリラクゼーションを加えたい方</li>
+                <li>医療・福祉現場で活用したい専門職の方</li>
+                <li>サロン開業を考えている方</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">目次（有料部分）</div>
+            <p>1. セッション環境の整え方</p>
+            <p>2. 音源の選び方と推奨機材</p>
+            <p>3. 30分セッションの基本プログラム</p>
+            <p>4. クライアント別アプローチ法</p>
+            <p>5. 禁忌と注意事項</p>
+            <p>6. 効果測定の方法</p>
+            <p>7. 料金設定とメニュー構成例</p>
+            <p>8. 実践者インタビュー（3名）</p>
+        </div>
+
+        <div class="quote">
+            「自然音CDを導入してから、クライアントの満足度が明らかに上がりました。以前は有線ラジオでしたが、切り替えてから『落ち着く』という声が増えています」<br>
+            ― セラピスト 中嶋さんの声
+        </div>
+
+        <div class="highlight">
+            <strong>📋 付録</strong><br>
+            ・セッション記録シート（PDF）<br>
+            ・クライアント説明用資料<br>
+            ・推奨機材リスト
+        </div>
+    </div>
+</div>
+
+<!-- 有料note 3 -->
+<div class="page">
+    <h2>記事3: 自然音活用マニュアル <span class="paid-label">有料 ¥780</span></h2>
+
+    <div class="note-article">
+        <div class="title">自然音活用マニュアル｜睡眠・集中・リラックス</div>
+        <p class="meta">読了時間：約12分 ｜ 文字数：約4,500文字</p>
+
+        <div class="section">
+            <div class="section-title">こんな悩みを解決</div>
+            <ul>
+                <li>自然音を使いたいけど、どれを選べばいいかわからない</li>
+                <li>場面に合った音の使い分けを知りたい</li>
+                <li>効果を最大化する聴き方を知りたい</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">目次（有料部分）</div>
+            <p>1. 自然音の種類と特徴一覧</p>
+            <p>2. 睡眠改善に効く自然音ベスト5</p>
+            <p>3. 集中力アップに効く自然音ベスト5</p>
+            <p>4. リラックスに効く自然音ベスト5</p>
+            <p>5. 時間帯別・おすすめ自然音</p>
+            <p>6. 再生機器の選び方</p>
+            <p>7. 音量設定の目安</p>
+            <p>8. 1週間プログラム例</p>
+        </div>
+
+        <div class="highlight">
+            <strong>🎁 購入者特典</strong><br>
+            ・おすすめ自然音リスト（Spotify/YouTube）<br>
+            ・1週間チェックシート（PDF）<br>
+            ・LINE相談1回無料
+        </div>
+
+        <div class="section">
+            <div class="section-title">研究に基づいた選定基準</div>
+            <p>本マニュアルで紹介する自然音は、すべて学会発表や研究で効果が確認されたものを基準に選定しています。</p>
+        </div>
+    </div>
+</div>
+
+<!-- 最終ページ -->
+<div class="page">
+    <h1>活用ガイド</h1>
+
+    <h2>投稿スケジュール例</h2>
+    <div class="toc">
+        <p><strong>月曜日</strong>：Instagram（データ型）</p>
+        <p><strong>水曜日</strong>：Instagram（体験談型）</p>
+        <p><strong>金曜日</strong>：Instagram（ノウハウ型）</p>
+        <p><strong>土曜日</strong>：note記事公開</p>
+    </div>
+
+    <h2>誘導フロー</h2>
+    <div class="toc">
+        <p><strong>Instagram</strong></p>
+        <p>↓ プロフィールリンク</p>
+        <p><strong>LINE登録</strong>（無料特典配布）</p>
+        <p>↓ ステップ配信</p>
+        <p><strong>無料note</strong>で価値提供</p>
+        <p>↓ 記事内CTA</p>
+        <p><strong>有料note</strong>購入</p>
+    </div>
+
+    <h2>注意事項</h2>
+    <ul>
+        <li>学会データを引用する際は「〇〇学会発表より」と出典を明記</li>
+        <li>医療効果を断言する表現は避ける（「可能性がある」「期待される」など）</li>
+        <li>体験談は実際の声を編集して使用</li>
+        <li>ハッシュタグは投稿内容に合わせて調整</li>
+    </ul>
+
+    <br><br>
+    <p style="text-align:center; color:#999;">
+        ― END ―<br><br>
+        サウンドヒーリング協会 × ジョイファンデーション<br>
+        SNSサンプルコンテンツ集
+    </p>
+</div>
+
+</body>
+</html>

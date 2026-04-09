@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X投稿 文字数超過一覧</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  line-height: 1.6;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  font-size: 22px;
+  margin: 30px 0 10px;
+  color: #1a1a1a;
+}
+.summary {
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 30px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+.summary .highlight {
+  color: #e53935;
+  font-weight: bold;
+  font-size: 16px;
+}
+.post-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.post-number {
+  background: #1da1f2;
+  color: #fff;
+  font-weight: bold;
+  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.post-title {
+  font-weight: bold;
+  font-size: 16px;
+}
+.char-info {
+  background: #fff3f3;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+.over {
+  color: #e53935;
+}
+.char-over {
+  margin-left: 12px;
+}
+.post-text {
+  font-family: 'Hiragino Sans', 'Yu Gothic', monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.text-within {
+  background: #f9f9f9;
+  padding: 12px;
+  border-radius: 8px 8px 0 0;
+  border: 1px solid #e0e0e0;
+  border-bottom: none;
+}
+.cutline {
+  text-align: center;
+  padding: 8px 0;
+  background: linear-gradient(90deg, #e53935, #ff7043, #e53935);
+  color: #fff;
+  font-weight: bold;
+  font-size: 13px;
+}
+.cutline-label {
+  display: inline-block;
+}
+.text-over {
+  background: #fff0f0;
+  padding: 12px;
+  border-radius: 0 0 8px 8px;
+  border: 2px solid #e53935;
+  border-top: none;
+}
+
+@media (max-width: 600px) {
+  .container { padding: 12px; }
+  h1 { font-size: 18px; }
+  .post-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .char-info { font-size: 13px; }
+  .post-text { font-size: 13px; }
+  .char-over { display: block; margin-left: 0; margin-top: 4px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>X投稿 文字数超過一覧（280文字超え）</h1>
+<div class="summary">
+  対象ファイル: 投稿プラン_3月19日-31日.html<br>
+  X投稿 全14件中、280文字超えは <span class="highlight">1件</span>
+</div>
+
+
+    <div class="post-card">
+      <div class="post-header">
+        <div class="post-number">#1</div>
+        <div class="post-title">X 自己紹介投稿 固定推奨</div>
+      </div>
+      <div class="char-info">
+        <span class="char-total">文字数: <strong class="over">299文字</strong></span>
+        <span class="char-over">（<strong class="over">+19文字</strong> 超過）</span>
+      </div>
+      <div class="post-text">
+        <div class="text-within">はじめまして。
+サウンドヒーリング協会です。
+
+2001年設立、今年で25年目。
+「音の力」を研究・実践している団体です。
+
+やっていること：
+・プラネタリウムでの音の体験イベント
+・整形外科との連携による無料体験会
+・米国Well-Beingクルーズでの講演＋体験ワークショップ
+・企業向け自然音プログラムの制作・提供
+・資格認定実技研修会の開催
+
+累計50,000名以上の方に
+イベント・体験会にご参加いただいています。
+
+「なんとなく疲れが取れない」
+「心がざわざわして落ち着かない」
+
+そんな日常に、
+自然の音という選択肢を。
+
+#KITAサウンドヒー</div>
+        <div class="cutline">
+          <span class="cutline-label">--- ここまで280文字 / ここから超過 (19文字) ---</span>
+        </div>
+        <div class="text-over">リング #自己紹介 #ここちよい音の日</div>
+      </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNSコンテンツサンプル - 追加資料5件</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .page {
+            background: white;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 40px;
+            page-break-after: always;
+        }
+
+        .page:last-child {
+            page-break-after: avoid;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #2d5a27;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #2d5a27;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .content-section {
+            margin-bottom: 50px;
+        }
+
+        .content-title {
+            background: linear-gradient(135deg, #2d5a27, #4a7c43);
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .content-number {
+            background: white;
+            color: #2d5a27;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .source-info {
+            background: #e8f5e9;
+            padding: 10px 20px;
+            font-size: 12px;
+            color: #555;
+            border-left: 4px solid #2d5a27;
+        }
+
+        /* Instagram Section */
+        .instagram-section {
+            background: #fafafa;
+            border: 1px solid #dbdbdb;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .instagram-header {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid #efefef;
+        }
+
+        .instagram-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .instagram-username {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .instagram-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .instagram-actions {
+            padding: 12px 16px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .instagram-action {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .instagram-caption {
+            padding: 0 16px 16px;
+            font-size: 14px;
+            white-space: pre-line;
+        }
+
+        .instagram-caption .username {
+            font-weight: 600;
+        }
+
+        .hashtags {
+            color: #00376b;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* Note Section */
+        .note-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .note-header {
+            background: #41c9b4;
+            color: white;
+            padding: 12px 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .note-content {
+            padding: 25px;
+        }
+
+        .note-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .note-body {
+            font-size: 15px;
+            line-height: 2;
+        }
+
+        .note-body h3 {
+            color: #2d5a27;
+            font-size: 16px;
+            margin: 25px 0 15px;
+            padding-left: 12px;
+            border-left: 4px solid #41c9b4;
+        }
+
+        .note-body p {
+            margin-bottom: 15px;
+        }
+
+        .note-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        /* Image placeholder styles */
+        .image-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .image-container.nature {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .image-container.stars {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+        }
+
+        .image-container.healing {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .image-container.meditation {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .image-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .image-text {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .image-subtext {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            margin-top: 30px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .page {
+                box-shadow: none;
+                margin: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- 表紙 -->
+<div class="page">
+    <div class="header">
+        <h1>SNSコンテンツサンプル集</h1>
+        <p>追加資料5件より作成 | 2026年2月</p>
+    </div>
+
+    <div style="text-align: center; padding: 40px 0;">
+        <div style="font-size: 80px; margin-bottom: 20px;">🌿</div>
+        <h2 style="color: #2d5a27; font-size: 24px; margin-bottom: 30px;">サウンドヒーリング協会<br>& ジョイファンデーション</h2>
+
+        <div style="background: #f5f5f5; padding: 30px; border-radius: 12px; text-align: left; margin: 30px 0;">
+            <h3 style="color: #2d5a27; margin-bottom: 20px; font-size: 16px;">収録コンテンツ</h3>
+            <ol style="padding-left: 20px; line-height: 2.2;">
+                <li>自然音のすばらしさ（2007年サーパス記事）</li>
+                <li>未来への道、体の叡智、和する心（2019年）</li>
+                <li>幸せの星アークトゥルス（2019年秋季刊誌）</li>
+                <li>動く瞑想法（2020年・中村先生）</li>
+                <li>思いは必ず実現する（2020年・中村先生）</li>
+            </ol>
+        </div>
+
+        <p style="color: #666; font-size: 14px; margin-top: 40px;">
+            各コンテンツにつき<br>
+            <strong>Instagram投稿</strong> + <strong>note記事</strong> のサンプルを収録
+        </p>
+    </div>
+</div>
+
+<!-- コンテンツ1: 自然音のすばらしさ -->
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">1</span>
+            自然音のすばらしさ
+        </div>
+        <div class="source-info">
+            出典: 2007 自然音のすばらしさサーパス記事原稿 ｜ 分類: 自然音 体感音響 解説
+        </div>
+
+        <div class="instagram-section">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+
+            <div class="image-container nature">
+                <div class="image-icon">🌊</div>
+                <div class="image-text">川のせせらぎ・森の風景</div>
+                <div class="image-subtext">自然音が流れる空間のイメージ</div>
+            </div>
+
+            <div class="instagram-actions">
+                <span class="instagram-action">♡</span>
+                <span class="instagram-action">💬</span>
+                <span class="instagram-action">📤</span>
+            </div>
+
+            <div class="instagram-caption">
+                <span class="username">soundhealing_japan</span>
+
+🌊 自然音は「流しっぱなし」が効果的
+
+音楽を聴くのとは違い、
+自然音は一日中流し続けることで
+本当の力を発揮します。
+
+CDをリピート再生して
+部屋を自然の音で満たすだけ。
+
+テレビを見ていても、
+他の音楽を聴いていても、
+自然音は邪魔をしません。
+
+お花の持ちが良くなった、
+ペットが穏やかになった、
+そんな声も届いています🌿
+
+<div class="hashtags">#自然音 #サウンドヒーリング #癒しの音 #リラクゼーション #環境音楽 #1fゆらぎ #ストレス解消 #心地よい暮らし</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">1</span>
+            自然音のすばらしさ【note記事】
+        </div>
+
+        <div class="note-section">
+            <div class="note-header">
+                📝 note
+            </div>
+            <div class="note-content">
+                <div class="note-title">自然音の正しい聴き方｜音楽とは違う「流しっぱなし」の効果</div>
+
+                <div class="image-container nature" style="height: 180px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="image-icon" style="font-size: 40px;">🍃</div>
+                    <div class="image-text" style="font-size: 16px;">森林と小川のイメージ画像</div>
+                </div>
+
+                <div class="note-body">
+                    <p>自然音と音楽、聴き方は全く違います。</p>
+                    <p>音楽は集中して聴くもの。<br>でも自然音は「流しっぱなし」が正解なんです。</p>
+
+                    <h3>なぜ人は自然音に癒されるのか</h3>
+                    <p>水のせせらぎ、波の音、小鳥の声——これらには「1/fゆらぎ」と呼ばれる心地よいリズムがあります。</p>
+                    <p>私たち人間も自然から生まれた存在。体内にも同じゆらぎが流れています。だから自然音を聴くと、無条件に心地よさを感じるのです。</p>
+
+                    <h3>音楽を聴きながらでもOK</h3>
+                    <p>自然音の面白いところは、他の音と一緒に流しても違和感がないこと。テレビを見ながら、好きな音楽を聴きながら、バックグラウンドで自然音を流す。これで空間全体が心地よい環境に変わります。</p>
+
+                    <h3>実際に報告されている効果</h3>
+                    <p>・病室で流したら入院期間が短くなった<br>・部屋の花の持ちが良くなった<br>・ペットが穏やかになった</p>
+                    <p>意識して聴かなくても、体は音を吸収しています。だからこそ「流しっぱなし」が効くのです。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- コンテンツ2: 未来への道、体の叡智 -->
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">2</span>
+            未来への道、体の叡智、和する心
+        </div>
+        <div class="source-info">
+            出典: 2019.11.15 未来への道、体の叡智、和する心 ｜ 分類: 自然音 体感音響 解説
+        </div>
+
+        <div class="instagram-section">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+
+            <div class="image-container healing">
+                <div class="image-icon">💫</div>
+                <div class="image-text">光と回復のイメージ</div>
+                <div class="image-subtext">体の治る力を信じる</div>
+            </div>
+
+            <div class="instagram-actions">
+                <span class="instagram-action">♡</span>
+                <span class="instagram-action">💬</span>
+                <span class="instagram-action">📤</span>
+            </div>
+
+            <div class="instagram-caption">
+                <span class="username">soundhealing_japan</span>
+
+💫 病気は「消えていくプロセス」
+
+体が熱を出すとき、
+それは「治ろうとしている」サイン。
+
+病気と闘うのではなく、
+治る力を信じて、体に任せる。
+
+30年以上前、
+過労で倒れた私に
+先生はこう言いました。
+
+「大丈夫。
+ あなたの体には
+ 十分治る力がある」
+
+心の向きを変えると、
+体の治る力が高まる。
+
+これは科学でも
+証明され始めています✨
+
+<div class="hashtags">#自然治癒力 #セルフヒーリング #心と体 #ホリスティック #統合医療 #サウンドヒーリング協会</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">2</span>
+            未来への道、体の叡智、和する心【note記事】
+        </div>
+
+        <div class="note-section">
+            <div class="note-header">
+                📝 note
+            </div>
+            <div class="note-content">
+                <div class="note-title">病気と闘わない生き方｜体の「治る力」を信じた30年前の体験</div>
+
+                <div class="image-container healing" style="height: 180px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="image-icon" style="font-size: 40px;">🌅</div>
+                    <div class="image-text" style="font-size: 16px;">朝日と希望のイメージ画像</div>
+                </div>
+
+                <div class="note-body">
+                    <p>「大丈夫。あなたの体には十分治る力があるから」</p>
+                    <p>30年前、過労で倒れた私に先生はそれだけを伝えました。</p>
+
+                    <h3>病名を告げない理由</h3>
+                    <p>当時、黄疸の症状が出ていた私は「何の病気ですか？」と尋ねました。でも先生は答えてくれません。</p>
+                    <p>「病名を言葉にすると、心がその病気に捉われ、治りにくくなる」</p>
+
+                    <h3>心の向きを変える</h3>
+                    <p>「病気と向き合う」のではなく、「健康になる力と向き合う」</p>
+                    <p>この発想の転換が、体の回復力を高めるというのです。好きな音楽を聴き、体に感謝の気持ちを送り、約1ヶ月で元気になりました。</p>
+
+                    <h3>科学が追いついてきた</h3>
+                    <p>1970年代から、精神と神経と免疫のつながりが研究され始めました。心の状態が、体の免疫力に影響を与える——これは今や科学的事実です。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- コンテンツ3: 幸せの星アークトゥルス -->
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">3</span>
+            幸せの星アークトゥルス
+        </div>
+        <div class="source-info">
+            出典: 2019.8 季刊誌星アークトゥルス 2019 秋 ｜ 分類: 協会誌 2016-2020
+        </div>
+
+        <div class="instagram-section">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+
+            <div class="image-container stars">
+                <div class="image-icon">⭐</div>
+                <div class="image-text">満天の星空</div>
+                <div class="image-subtext">ハワイの夜空・ホクレア</div>
+            </div>
+
+            <div class="instagram-actions">
+                <span class="instagram-action">♡</span>
+                <span class="instagram-action">💬</span>
+                <span class="instagram-action">📤</span>
+            </div>
+
+            <div class="instagram-caption">
+                <span class="username">soundhealing_japan</span>
+
+⭐️ 幸せの星「ホクレア」
+
+ハワイ語で「ホクレア」は
+「幸せの星」という意味。
+
+1000年以上前、
+ポリネシアの人々は
+星と月と風だけを頼りに
+太平洋を航海しました。
+
+羅針盤も地図もなく、
+自然のサインだけで
+何千キロもの海を渡った。
+
+「自分のいる場所を知るために
+ 必要なことは、
+ 全て自分の中にある」
+
+古代の航海士の言葉です🌙
+
+<div class="hashtags">#星空 #ホクレア #ハワイ #スターライトヒーリング #プラネタリウム #古代の知恵 #自然とつながる</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">3</span>
+            幸せの星アークトゥルス【note記事】
+        </div>
+
+        <div class="note-section">
+            <div class="note-header">
+                📝 note
+            </div>
+            <div class="note-content">
+                <div class="note-title">星を道しるべに生きた人々｜古代ポリネシアン航海術が教えてくれること</div>
+
+                <div class="image-container stars" style="height: 180px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="image-icon" style="font-size: 40px;">🌌</div>
+                    <div class="image-text" style="font-size: 16px;">星空と海のイメージ画像</div>
+                </div>
+
+                <div class="note-body">
+                    <p>「自分のいる場所がどこかを知るために最も必要なことは、全て自分の中にある」</p>
+                    <p>古代の航海士Kalaさんの言葉です。</p>
+
+                    <h3>羅針盤なしで太平洋を渡った人々</h3>
+                    <p>コロンブスより何世紀も前、ポリネシアの人々は小さな木のカヌーで太平洋を航海していました。星、月、太陽、風、海のうねり——自然のサインだけを頼りに。</p>
+
+                    <h3>幸せの星「ホクレア」</h3>
+                    <p>地球から37光年先に輝くうしかい座の一等星アークトゥルス。ハワイ語では「ホクレア」——幸せの星という意味です。この星を目印に、人々はハワイにたどり着きました。</p>
+
+                    <h3>現代人が忘れたもの</h3>
+                    <p>自然との深いつながりを絶ってしまったら、自分自身の大事な一部をなくしてしまう。先が読めない時代だからこそ、たまには夜空を見上げてみませんか。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- コンテンツ4: 動く瞑想法 -->
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">4</span>
+            動く瞑想法
+        </div>
+        <div class="source-info">
+            出典: 2020.10 中村先生季刊誌 自分に潜在する力とつながるメディテーション ｜ 分類: 協会誌 2016-2020
+        </div>
+
+        <div class="instagram-section">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+
+            <div class="image-container meditation">
+                <div class="image-icon">🧘</div>
+                <div class="image-text">瞑想と自然</div>
+                <div class="image-subtext">体の中の自然を大切にする</div>
+            </div>
+
+            <div class="instagram-actions">
+                <span class="instagram-action">♡</span>
+                <span class="instagram-action">💬</span>
+                <span class="instagram-action">📤</span>
+            </div>
+
+            <div class="instagram-caption">
+                <span class="username">soundhealing_japan</span>
+
+🧘 腸内細菌も「自然の一部」
+
+私たちの体には
+100兆個以上の微生物が
+一緒に住んでいます。
+
+口、腸、皮膚——
+約1000種類もの菌が
+健康を守ってくれている。
+
+「細菌＝悪」ではないんです。
+
+抗生物質で菌を殺しすぎると
+新しい病気が生まれる。
+これは21世紀になって
+科学者が気づいた事実。
+
+外からの薬に頼るだけでなく、
+体の中の「自然」を
+大切にする時代へ🌱
+
+<div class="hashtags">#腸内環境 #免疫力 #微生物 #セルフケア #自然治癒力 #マイクロバイオーム #健康</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">4</span>
+            動く瞑想法【note記事】
+        </div>
+
+        <div class="note-section">
+            <div class="note-header">
+                📝 note
+            </div>
+            <div class="note-content">
+                <div class="note-title">体の中の「自然」を大切にする｜微生物と共に生きる私たち</div>
+
+                <div class="image-container meditation" style="height: 180px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="image-icon" style="font-size: 40px;">🦠</div>
+                    <div class="image-text" style="font-size: 16px;">微生物と共生のイメージ画像</div>
+                </div>
+
+                <div class="note-body">
+                    <p>2020年、世界はウイルスと向き合いました。でも、微生物は「敵」だけではありません。</p>
+
+                    <h3>100兆個の仲間たち</h3>
+                    <p>私たちの体には約1000種類、100兆個以上の微生物が住んでいます。口、腸、皮膚——彼らは私たちの健康を守ってくれる「仲間」なのです。</p>
+
+                    <h3>抗生物質の功罪</h3>
+                    <p>1928年のペニシリン発見以来、人類は微生物を「敵」として攻撃してきました。でも21世紀になって、科学者たちは気づきました。抗生物質で腸内細菌を減らすことが、アレルギーや自己免疫疾患など新しい現代病を生んでいたことを。</p>
+
+                    <h3>内側から変わる時代へ</h3>
+                    <p>ワクチンや薬も大切。でも、体に本来備わった免疫力を高めることも同じくらい大切。人間の内側から変革する——そんな時代が始まっています。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- コンテンツ5: 思いは必ず実現する -->
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">5</span>
+            思いは必ず実現する
+        </div>
+        <div class="source-info">
+            出典: 中村先生季刊誌「思いは必ず実現する」2020.5.10 ｜ 分類: 協会誌 2016-2020
+        </div>
+
+        <div class="instagram-section">
+            <div class="instagram-header">
+                <div class="instagram-avatar">SH</div>
+                <span class="instagram-username">soundhealing_japan</span>
+            </div>
+
+            <div class="image-container" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);">
+                <div class="image-icon">✨</div>
+                <div class="image-text">光と希望のイメージ</div>
+                <div class="image-subtext">言葉の力・潜在意識</div>
+            </div>
+
+            <div class="instagram-actions">
+                <span class="instagram-action">♡</span>
+                <span class="instagram-action">💬</span>
+                <span class="instagram-action">📤</span>
+            </div>
+
+            <div class="instagram-caption">
+                <span class="username">soundhealing_japan</span>
+
+✨ 「思い」は体に届いている
+
+「健康になりたい」
+と思うだけでは変わらない。
+
+でも、
+安心した状態で
+繰り返し言い聞かせると、
+無意識の心が反応を始める。
+
+統合医療の第一人者
+ワイル博士はこう言います。
+
+「無意識の心は
+ 繰り返すものに反応する」
+
+毎日1分でいい。
+「健康と喜びと感謝」を
+自分に伝え続ける。
+
+気がついたら
+良くなっていた——
+それが本物の変化です💫
+
+<div class="hashtags">#アファメーション #潜在意識 #セルフヒーリング #統合医療 #心と体 #言葉の力 #習慣化</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="page">
+    <div class="content-section">
+        <div class="content-title">
+            <span class="content-number">5</span>
+            思いは必ず実現する【note記事】
+        </div>
+
+        <div class="note-section">
+            <div class="note-header">
+                📝 note
+            </div>
+            <div class="note-content">
+                <div class="note-title">思いは体に届く｜無意識の心を動かす「繰り返し」の力</div>
+
+                <div class="image-container" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); height: 180px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="image-icon" style="font-size: 40px;">🙏</div>
+                    <div class="image-text" style="font-size: 16px;">瞑想と光のイメージ画像</div>
+                </div>
+
+                <div class="note-body">
+                    <p>「健康になりたい」そう思うだけで体は変わるのか？</p>
+                    <p>答えはYesでもあり、Noでもあります。</p>
+
+                    <h3>表面の意識では届かない</h3>
+                    <p>統合医療の第一人者アンドルー・ワイル博士によると、体の免疫系や内分泌系は「意識の深いレベル」でつながっているそうです。つまり、ただ思うだけでは体には届かない。</p>
+
+                    <h3>無意識への扉を開く方法</h3>
+                    <p>ワイル博士が勧めるのは「安心した環境」で「言葉とイメージ」を使うこと。そして何より大切なのが「繰り返し」です。無意識の心は、繰り返されるものに反応する。</p>
+
+                    <h3>毎日1分の習慣</h3>
+                    <p>「健康と喜びと感謝」この言葉を、毎日1分でいいから自分に言い聞かせる。短時間でも、規則的に続けることで無意識の心が吸収し、全身の組織に伝えてくれる。</p>
+                    <p>「気がついたら良くなっていた」——それが本物の変化の証拠です。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>サウンドヒーリング協会 & 株式会社ジョイファンデーション</p>
+        <p>https://www.sound-healing.jp | https://www.h-garden.com</p>
+    </div>
+</div>
+
+</body>
+</html>

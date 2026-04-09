@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X投稿スケジュール管理 - @SFH_Science</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif; background:#f0f2f5; color:#1a1a1a; }
+.container { max-width:900px; margin:0 auto; padding:20px; }
+h1 { text-align:center; font-size:22px; margin:20px 0 8px; }
+.subtitle { text-align:center; color:#536471; font-size:14px; margin-bottom:20px; }
+.summary { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:24px; padding:16px; background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.card { background:#fff; border-radius:12px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,0.08); overflow:hidden; }
+.card-header { display:flex; align-items:flex-start; padding:16px; gap:12px; cursor:pointer; }
+.card-header:hover { background:#f8f9fa; }
+.card-id { width:36px; height:36px; border-radius:50%; background:#1da1f2; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px; flex-shrink:0; }
+.card-meta { flex:1; }
+.card-title { font-weight:bold; font-size:15px; margin-bottom:6px; }
+.card-stats { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.card-stats span { font-size:13px; color:#536471; }
+.badge { padding:2px 10px; border-radius:12px; font-size:12px !important; font-weight:bold; }
+.card-body { display:none; padding:0 16px 16px 64px; }
+.card-body.open { display:block; }
+.card-body pre { white-space:pre-wrap; word-wrap:break-word; font-family:inherit; font-size:15px; line-height:1.7; background:#f8f9fa; padding:16px; border-radius:8px; border:1px solid #e8e8e8; }
+.filter-bar { display:flex; gap:8px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+.filter-btn { padding:6px 16px; border-radius:20px; border:1px solid #ddd; background:#fff; cursor:pointer; font-size:13px; }
+.filter-btn:hover { background:#f0f0f0; }
+.filter-btn.active { background:#1da1f2; color:#fff; border-color:#1da1f2; }
+.cmd { background:#1a1a2e; color:#e0e0e0; padding:16px; border-radius:8px; font-family:monospace; font-size:13px; line-height:1.8; margin-top:24px; white-space:pre-wrap; }
+.cmd strong { color:#4fc3f7; }
+.cmd .comment { color:#6a9955; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>X投稿スケジュール管理</h1>
+<p class="subtitle">@SFH_Science ・ 全25本</p>
+
+<div class="summary"><span style="background:#f5f5f5;color:#666;padding:4px 12px;border-radius:16px;font-size:14px;font-weight:bold">📝 下書き 25本</span></div>
+
+<div class="filter-bar">
+  <button class="filter-btn active" onclick="filterPosts('all')">すべて</button>
+  <button class="filter-btn" onclick="filterPosts('draft')">📝 下書き</button>
+  <button class="filter-btn" onclick="filterPosts('scheduled')">🕐 予約済</button>
+  <button class="filter-btn" onclick="filterPosts('posted')">✅ 投稿済</button>
+</div>
+
+
+    <div class="card" id="post-1">
+      <div class="card-header">
+        <div class="card-id">1</div>
+        <div class="card-meta">
+          <div class="card-title">X 自己紹介投稿 固定推奨</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>280文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>はじめまして
+サウンドヒーリング協会です
+
+2001年設立、今年で25年目
+「音の力」を研究・実践している団体です
+
+やっていること：
+・プラネタリウムでの音の体験イベント
+・整形外科との連携による無料体験会
+・米国Well-Beingクルーズでの講演＋体験ワークショップ
+・企業向け自然音プログラムの制作・提供
+・資格認定実技研修会の開催
+
+累計50,000名以上の方に
+イベント・体験会にご参加いただいています
+
+「なんとなく疲れが取れない」
+「心がざわざわして落ち着かない」
+
+そんな日常に
+自然の音という選択肢を
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> ...</pre></div>
+    </div>
+    <div class="card" id="post-2">
+      <div class="card-header">
+        <div class="card-id">2</div>
+        <div class="card-meta">
+          <div class="card-title">3/19（水）名言・理念 名言</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>102文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「音は心の糧である」
+
+── 喜田圭一郎
+（サウンドヒーリング協会理事長）
+
+食べ物が体の糧なら
+音は心の糧
+
+毎日、どんな音を
+「食べて」いますか？
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#音は心の糧</span> <span style="color:#1da1f2">#名言</span></pre></div>
+    </div>
+    <div class="card" id="post-3">
+      <div class="card-header">
+        <div class="card-id">3</div>
+        <div class="card-meta">
+          <div class="card-title">3/20（木）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>197文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【食＋音のウェルネス体験】
+
+太陽食品 × サウンドヒーリング協会
+コラボイベント開催！
+
+📅 4/2(木)〜4(土) 3日間
+📍 太陽食品世田谷店（尾山台駅徒歩３分）
+💰 500円で体感音響ケア体験
+🍵 オーガニック飲料の試飲付き
+
+オーガニック食品とここちよい音
+体の外と内、両方からのケアを
+気軽に体験できます
+
+<span style="color:#1da1f2">#音のある暮らし</span> <span style="color:#1da1f2">#太陽食品</span> <span style="color:#1da1f2">#オーガニック</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-4">
+      <div class="card-header">
+        <div class="card-id">4</div>
+        <div class="card-meta">
+          <div class="card-title">3/21（金）科学データ・Tips Tips</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>130文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>自然音を聴くおすすめタイミング：
+
+・朝起きた時（5分）
+・仕事の休憩時（10分）
+・寝る前（15分）
+
+特別な準備は不要
+スマホのスピーカーでOKです
+
+まずは今夜、寝る前に
+試してみませんか？
+
+<span style="color:#1da1f2">#自然音</span> <span style="color:#1da1f2">#睡眠</span> <span style="color:#1da1f2">#セルフケア</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-5">
+      <div class="card-header">
+        <div class="card-id">5</div>
+        <div class="card-meta">
+          <div class="card-title">3/22（土）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>256文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【追加公演決定🌟】
+スターライトヒーリング マラマハワイ
+
+プラネタリウムで体感する
+ハワイの星空×立体的な自然音
+
+📅 4/12(日) 13:30〜
+📍 さいたま市宇宙劇場
+⏱ 投映時間 約50分
+
+累計21,000名以上にご参加いただいた
+人気プログラムです
+
+▼ 詳細・お申込み
+https://www.sound-healing.jp/starlight-healing_malama_hawaii_2025-2026.html
+
+<span style="color:#1da1f2">#スターライトヒーリング</span> <span style="color:#1da1f2">#プラネタリウム</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-6">
+      <div class="card-header">
+        <div class="card-id">6</div>
+        <div class="card-meta">
+          <div class="card-title">3/23（日）名言・理念 名言</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>120文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「病気になってから治すのではなく
+病気にならない体をつくる」
+
+東洋医学の「未病」の考え方
+
+西洋医学と東洋の知恵
+両方を取り入れる時代です
+
+自然音のある暮らしも
+その一つかもしれません
+
+<span style="color:#1da1f2">#未病</span> <span style="color:#1da1f2">#予防医学</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-7">
+      <div class="card-header">
+        <div class="card-id">7</div>
+        <div class="card-meta">
+          <div class="card-title">3/24（月）イベント告知 → 5月開催に変更 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>211文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【オンラインで気軽に体験】
+音のウェルビーイング体験講座
+
+ハワイや屋久島で収録した
+世界の自然音と呼吸で整える
+セルフケア講座です
+
+📅 5/19(火) 10:30〜12:30
+📅 5/21(木) 10:30〜12:30
+💻 Zoom（ご自宅から参加OK）
+💰 3,000円
+
+▼ お申込み
+https://www.sound-healing.jp/
+
+<span style="color:#1da1f2">#オンライン講座</span> <span style="color:#1da1f2">#ウェルビーイング</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-8">
+      <div class="card-header">
+        <div class="card-id">8</div>
+        <div class="card-meta">
+          <div class="card-title">3/25（火）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>235文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【3つの音を体験できるWS】
+
+自由が丘labにて開催
+「3つのここちよい音」体験ワークショップ
+
+自然音・体感音響・呼吸と声を
+2時間でじっくり体験できます
+
+📅 4/16(木) 満席　5/14(木) 受付中
+⏰ 午前の会 10:30-12:30
+⏰ 午後の会 13:30-15:30
+📍 自由が丘lab
+
+▼ 詳細
+https://www.sound-healing.jp/workshop.html
+
+<span style="color:#1da1f2">#体験ワークショップ</span> <span style="color:#1da1f2">#自由が丘</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-9">
+      <div class="card-header">
+        <div class="card-id">9</div>
+        <div class="card-meta">
+          <div class="card-title">3/26（水）科学データ・Tips Tips</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>147文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>自然音の選び方ガイド：
+
+・川のせせらぎ → 集中したい時
+・波の音 → リラックスしたい時
+・鳥のさえずり → 朝の目覚め
+・雨音 → 眠りたい時
+
+「どれが正解」ではなく
+あなたが心地いいと感じるものを
+選んでみてください
+
+<span style="color:#1da1f2">#自然音</span> <span style="color:#1da1f2">#使い分け</span> <span style="color:#1da1f2">#リラックス</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-10">
+      <div class="card-header">
+        <div class="card-id">10</div>
+        <div class="card-meta">
+          <div class="card-title">3/27（木）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>177文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【資格取得を目指す方へ】
+サウンドヒーリングファシリテーター
+認定研修会 第88期
+
+音の理論、ケアの実技
+自分軸を整える内容を
+3日間で学びます
+
+📅 4/10(金)〜12(日)
+
+25年の実績ある認定プログラムです
+
+▼ 詳細
+https://www.sound-healing.jp/
+
+<span style="color:#1da1f2">#資格取得</span> <span style="color:#1da1f2">#ファシリテーター</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-11">
+      <div class="card-header">
+        <div class="card-id">11</div>
+        <div class="card-meta">
+          <div class="card-title">3/28（金）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>231文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【仙台でも開催中🌟】
+スターライトヒーリング マラマハワイ
+仙台市天文台 特別公演
+
+📅 3月: 14(土), 21(土), 28(土) 20:25〜
+📅 4月: 11(土), 18(土), 25(土) 19:40〜
+📍 仙台市天文台
+⏱ 投映時間 約50分
+
+東北の皆さま、ぜひお越しください
+
+▼ 詳細
+https://www.sendai-astro.jp/planetarium/
+
+<span style="color:#1da1f2">#スターライトヒーリング</span> <span style="color:#1da1f2">#仙台市天文台</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-12">
+      <div class="card-header">
+        <div class="card-id">12</div>
+        <div class="card-meta">
+          <div class="card-title">3/29（土）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>241文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【毎月開催・無料体験会】
+ここちよい音の日
+
+4月は18日（土）開催！
+
+📅 4/18(土)
+📍 田園調布・長田整形外科
+⏰ 11:30〜14:00 自然音・体感音響の体験
+⏰ 14:00〜 長田院長 &amp; 喜田理事長のお話
+
+初めての方も大歓迎
+お気軽にお越しください
+
+▼ 詳細
+https://www.sound-healing.jp/harmonic-day_special_20250612.html
+
+<span style="color:#1da1f2">#音のある暮らし</span> <span style="color:#1da1f2">#無料体験</span> <span style="color:#1da1f2">#田園調布</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-13">
+      <div class="card-header">
+        <div class="card-id">13</div>
+        <div class="card-meta">
+          <div class="card-title">3/30（日）科学データ・Tips Tips</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>122文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>都会に住んでいても
+自然音は取り入れられます
+
+・朝：窓を開けて鳥の声を聴く
+・昼：公園で5分過ごす
+・夜：自然音BGMで眠る
+
+小さな工夫で
+毎日がちょっと心地よくなります
+
+<span style="color:#1da1f2">#都会暮らし</span> <span style="color:#1da1f2">#自然音</span> <span style="color:#1da1f2">#セルフケア</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-14">
+      <div class="card-header">
+        <div class="card-id">14</div>
+        <div class="card-meta">
+          <div class="card-title">3/31（月）イベント告知 イベント</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>240文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>【4月のイベント一覧🗓】
+
+4/2-4 食＋音「ここちよい音の日」太陽食品世田谷
+4/10-12 ファシリテーター認定研修 第88期
+4/12 スターライトヒーリング さいたま
+4/11,18,25 スターライトヒーリング仙台
+4/16 体験WS 自由が丘lab
+4/18 ここちよい音の日 田園調布　無料体験
+
+初めての方には無料体験会がおすすめです
+
+▼ イベント一覧
+https://www.sound-healing.jp/
+
+<span style="color:#1da1f2">#4月イベント</span> <span style="color:#1da1f2">#KITAサウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-15">
+      <div class="card-header">
+        <div class="card-id">15</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 1-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>175文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「サウンドヒーリングって怪しくない？」
+
+そう思う方、正直だと思います
+
+でも、川の音を聴いてホッとしたり
+雨音で眠くなったり──
+それも立派なサウンドヒーリングです
+
+私たちは25年間
+学会で研究発表を重ねながら
+音の可能性を探求してきました
+
+「怪しい」が「気になる」に変わったら
+嬉しいです
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#サウンドヒーリング</span></pre></div>
+    </div>
+    <div class="card" id="post-16">
+      <div class="card-header">
+        <div class="card-id">16</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 1-B（別バージョン） 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>172文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>サウンドヒーリングとは
+「音」を使って心と体のバランスを整えること
+
+特別なことではありません
+
+・日本温泉気候物理医学会
+・日本抗加齢医学会
+・国際生命情報科学会
+
+など複数の学会で研究発表を行っています
+
+2001年設立、25年目
+気持ちいいを科学の言葉でも説明できる──
+それが私たちの強みです
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#学会発表</span></pre></div>
+    </div>
+    <div class="card" id="post-17">
+      <div class="card-header">
+        <div class="card-id">17</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 2-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>172文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「自然音ならYouTubeにもあるよね？」
+
+はい、あります
+でも、違いは「録り方」にあります
+
+代表の喜田圭一郎は30年以上
+ハワイ、屋久島、沖縄、白神山地で
+自然音を収録してきました
+
+ただマイクを置くのではなく
+その場所の空気感ごとまるごと録る
+
+収録する時の「心」も大切にしています
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#自然音</span> <span style="color:#1da1f2">#こだわり</span></pre></div>
+    </div>
+    <div class="card" id="post-18">
+      <div class="card-header">
+        <div class="card-id">18</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 2-B（別バージョン） 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>144文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>自然音の聴き方、3つだけ
+
+🔊 スピーカーでここちよい音量で
+🔄 BGMとして流しっぱなしに
+🎧 イヤホンよりスピーカーがおすすめ
+
+「効く・効かない」ではなく
+「心地いいかどうか」が大切です
+
+まずは今夜、寝る前に
+試してみませんか？
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#自然音</span> <span style="color:#1da1f2">#聴き方</span></pre></div>
+    </div>
+    <div class="card" id="post-19">
+      <div class="card-header">
+        <div class="card-id">19</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 3-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>194文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「体感音響」って聞いたことありますか？
+
+人の体の約70%は水分
+音の振動は水中を空気の約4倍の速さで伝わります
+
+つまり、体全体が「耳」
+
+体感音響（Kita Biosonic Peace Machine）は
+専用クッションを体にあてて
+全身で音を浴びる体験です
+
+百聞は一「体感」にしかず
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#体感音響</span> <span style="color:#1da1f2">#KitaBiosonicPeaceMachine</span></pre></div>
+    </div>
+    <div class="card" id="post-20">
+      <div class="card-header">
+        <div class="card-id">20</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 3-B（別バージョン） 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>141文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>体感音響を体験された方の声：
+
+「言葉では説明しにくいけど
+体験するとわかる心地よさ」
+
+「気づいたら眠っていた」
+
+「体の奥がじんわりほぐれる感じ」
+
+音を「耳」ではなく「体」で聴く
+毎月の無料体験会で
+試していただけます
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#体感音響</span> <span style="color:#1da1f2">#体験者の声</span></pre></div>
+    </div>
+    <div class="card" id="post-21">
+      <div class="card-header">
+        <div class="card-id">21</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 4-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>171文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>毎月、整形外科で
+音の無料体験会を開催しています
+
+「えっ、整形外科で？」
+
+田園調布の長田整形外科は
+「総合予防医療クリニック」を掲げ
+病気にならない体づくりに
+取り組んでいます
+
+その一つの方法として音に注目
+予約不要・参加無料
+
+「ここちよい音の日」
+毎月第3土曜日に開催中
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#音のある暮らし</span> <span style="color:#1da1f2">#予防医療</span></pre></div>
+    </div>
+    <div class="card" id="post-22">
+      <div class="card-header">
+        <div class="card-id">22</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 4-B（別バージョン） 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>169文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「病気になってから治す」のではなく
+「病気にならない体をつくる」
+
+東洋医学の「未病」の考え方です
+
+長田整形外科の長田夏哉院長と
+サウンドヒーリング協会は
+この考えに基づいて連携しています
+
+毎月の無料体験会
+「ここちよい音の日」では
+自然音・体感音響の体験＋
+お二人のトークも
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#未病</span> <span style="color:#1da1f2">#音のある暮らし</span></pre></div>
+    </div>
+    <div class="card" id="post-23">
+      <div class="card-header">
+        <div class="card-id">23</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 5-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>178文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>「1/fゆらぎ」ってご存知ですか？
+
+🌊 波の音
+🔥 ろうそくの炎
+💓 心臓の鼓動
+
+自然界のここちよいものには
+「規則的」と「不規則」の
+ちょうど間にあるリズムが
+含まれていると言われています
+
+完璧に規則的だと退屈で
+完全にランダムだと不安になる
+
+その「ちょうどいい」が
+1/fゆらぎです
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#1fゆらぎ</span> <span style="color:#1da1f2">#自然のリズム</span></pre></div>
+    </div>
+    <div class="card" id="post-24">
+      <div class="card-header">
+        <div class="card-id">24</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 5-B（別バージョン） 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>166文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>音が心と体に与える影響──
+
+私たちはこれを「なんとなく」ではなく
+科学的に探求しています
+
+📚 国立大学 筑波技術大学との共同研究
+📚 複数の学会での研究発表
+
+でも、一番大切なのは
+データや論文よりも
+あなたの体の感覚
+
+「心地いい」と感じたら
+それがあなたにとっての答えです
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#研究</span> <span style="color:#1da1f2">#心地よさ</span></pre></div>
+    </div>
+    <div class="card" id="post-25">
+      <div class="card-header">
+        <div class="card-id">25</div>
+        <div class="card-meta">
+          <div class="card-title">X投稿 6-A 基礎知識</div>
+          <div class="card-stats">
+            <span class="badge" style="background:#f5f5f5;color:#666">📝 下書き</span>
+            <span>182文字</span>
+            
+          </div>
+        </div>
+      </div>
+      <div class="card-body"><pre>サウンドヒーリング協会の
+3つの柱をご紹介します
+
+🌿 自然音
+世界各地で収録した自然の音
+BGMとして日常に取り入れられます
+
+🔊 体感音響
+音の振動を全身で感じる体験
+専用クッションで体ごと音を浴びます
+
+🧘 呼吸と声
+自分の呼吸と声を使った
+セルフケアの方法
+
+この3つで
+心と体のバランスを整えます
+
+<span style="color:#1da1f2">#KITAサウンドヒーリング</span> <span style="color:#1da1f2">#3つの柱</span> <span style="color:#1da1f2">#セルフケア</span></pre></div>
+    </div>
+
+<div class="cmd">
+<strong>コマンドリファレンス</strong>
+<span class="comment"># 一覧表示</span>
+python3 x_scheduler.py list
+
+<span class="comment"># 投稿の詳細確認</span>
+python3 x_scheduler.py show 5
+
+<span class="comment"># 個別に予約</span>
+python3 x_scheduler.py schedule 5 "2026-03-25 09:00"
+
+<span class="comment"># 一括予約（開始日から1日2本ずつ）</span>
+python3 x_scheduler.py bulk "2026-03-25"
+
+<span class="comment"># 予約時刻の投稿を実行</span>
+python3 x_scheduler.py run
+
+<span class="comment"># 即時投稿（確認プロンプトあり）</span>
+python3 x_scheduler.py post 5
+
+<span class="comment"># テキスト編集</span>
+python3 x_scheduler.py edit 5
+
+<span class="comment"># このHTMLを再生成</span>
+python3 x_schedule_viewer.py
+</div>
+
+</div>
+
+<script>
+document.querySelectorAll('.card-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  });
+});
+
+function filterPosts(status) {
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.card').forEach(card => {
+    if (status === 'all') {
+      card.style.display = '';
+    } else {
+      const badge = card.querySelector('.badge');
+      const map = {'draft':'下書き','scheduled':'予約済','posted':'投稿済','skipped':'スキップ'};
+      card.style.display = badge.textContent.includes(map[status]) ? '' : 'none';
+    }
+  });
+}
+</script>
+</body>
+</html>

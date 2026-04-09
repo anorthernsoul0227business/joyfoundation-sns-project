@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>イベント情報照合レポート 2026-04-08</title>
+<style>
+  @page { size: A4 landscape; margin: 15mm; }
+  body { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; font-size: 11px; color: #222; line-height: 1.5; }
+  h1 { font-size: 18px; border-bottom: 3px solid #1a3a6b; padding-bottom: 6px; margin-bottom: 4px; }
+  .subtitle { font-size: 12px; color: #666; margin-bottom: 16px; }
+  h2 { font-size: 14px; background: #1a3a6b; color: #fff; padding: 6px 12px; margin: 18px 0 8px 0; border-radius: 3px; }
+  h2.new { background: #c05020; }
+  h2.missing { background: #888; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10.5px; }
+  th { background: #f0f2f5; color: #1a3a6b; font-weight: bold; text-align: left; padding: 6px 8px; border: 1px solid #ccc; }
+  td { padding: 5px 8px; border: 1px solid #ccc; vertical-align: top; }
+  tr:nth-child(even) { background: #fafbfc; }
+  .highlight { background: #fff3e0; }
+  .tag { display: inline-block; font-size: 9px; padding: 1px 6px; border-radius: 3px; font-weight: bold; margin-right: 4px; }
+  .tag-diff { background: #fff3e0; color: #e65100; border: 1px solid #ffb74d; }
+  .tag-new { background: #e8f5e9; color: #2e7d32; border: 1px solid #81c784; }
+  .tag-missing { background: #fce4ec; color: #c62828; border: 1px solid #ef9a9a; }
+  .tag-ok { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
+  .source { font-size: 9.5px; color: #555; }
+  .src-label { font-weight: bold; color: #1a3a6b; }
+  .note { font-size: 10px; color: #444; margin: 8px 0 16px 0; padding: 8px 12px; background: #f5f5f5; border-left: 3px solid #1a3a6b; }
+  .footer { margin-top: 20px; font-size: 9px; color: #999; text-align: right; border-top: 1px solid #ddd; padding-top: 6px; }
+  .legend { font-size: 10px; margin-bottom: 12px; }
+  .legend span { margin-right: 14px; }
+</style>
+</head>
+<body>
+
+<h1>イベント情報 照合レポート</h1>
+<p class="subtitle">Googleカレンダー (keiichiro.kita@gmail.com) vs 公式情報源 &mdash; 作成日: 2026-04-08</p>
+
+<div class="legend">
+  <span class="tag tag-diff">食い違い</span> カレンダーと公式情報で内容が異なる
+  <span class="tag tag-new">新規</span> カレンダーにあるが公式情報で未確認のイベント
+  <span class="tag tag-missing">未登録</span> 公式情報にあるがカレンダーに未登録
+  <span class="tag tag-ok">確認済</span> カレンダーと公式情報が一致
+</div>
+
+<!-- ================================ -->
+<h2>1. カレンダーと公式情報の食い違い</h2>
+<!-- ================================ -->
+
+<table>
+<thead>
+<tr>
+  <th style="width:85px;">日付</th>
+  <th style="width:185px;">イベント名（カレンダー）</th>
+  <th style="width:185px;">公式情報</th>
+  <th style="width:160px;">ソース</th>
+  <th>食い違いの内容</th>
+</tr>
+</thead>
+<tbody>
+
+<tr class="highlight">
+  <td>4/10-12</td>
+  <td>第<strong>88回</strong>サウンドヒーリング協会<strong>初級</strong>ファシリテーター研修会</td>
+  <td>第<strong>90期</strong> ファシリテーター資格認定研修会</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp<br>/qualification-workshop-facilitator.html<br><br>明記: 第88期(2月)、第89期(3月)、<strong>第90期(4/10-12)</strong>、第91期(6/12-14)</td>
+  <td><span class="tag tag-diff">食い違い</span>カレンダーの「第88回」は誤り。<br>公式サイトでは明確に<strong>「第90期」</strong>と記載。<br>日程(4/10-12)は一致。<br>カレンダー上の期数を修正する必要あり</td>
+</tr>
+
+<tr class="highlight">
+  <td>6/12</td>
+  <td>第<strong>42期</strong>サウンドヒーリング協会初級ファシリテーター資格認定研修</td>
+  <td>第<strong>91期</strong> ファシリテーター資格認定研修会</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp<br>/qualification-workshop-facilitator.html<br><br>明記: <strong>第91期(6/12-14)</strong></td>
+  <td><span class="tag tag-diff">食い違い</span>カレンダーの「第42期」は誤り。<br>公式サイトでは<strong>「第91期」</strong>。<br>「第42期」はセラピスト研修(10-11月)の期数と混同の可能性。<br>カレンダー修正必要</td>
+</tr>
+
+<tr class="highlight">
+  <td>4/11</td>
+  <td>スターライトヒーリング仙台<br>19:30～20:30</td>
+  <td>スターライトヒーリング マラマハワイ 仙台天文台<br>4月: <strong>19:40～20:30</strong></td>
+  <td class="source"><span class="src-label">公式チラシ:</span><br>イベント資料/スターライトヒーリング_20260412/<br>★P29仙台star_light_healing_2026_sen_A4_v2.pdf<br><br>明記: 4月 19:40〜20:30</td>
+  <td><span class="tag tag-diff">食い違い</span>開始時間の差異:<br>カレンダー「19:30」→ チラシ「<strong>19:40</strong>」<br>10分のずれ。チラシが正</td>
+</tr>
+
+<tr>
+  <td>4/18</td>
+  <td>ここちよい音の日 田園調布長田整形外科<br>11:30～<strong>15:00</strong></td>
+  <td>ここちよい音の日<br>体験: 11:30～<strong>14:00</strong><br>お話&amp;質問: 14:00～(約45分)</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp<br>/harmonic-day_special_20250612.html<br><br>明記: 体験11:30〜14:00、トーク14:00〜</td>
+  <td><span class="tag tag-ok">概ね一致</span>公式は体験〜14:00 + トーク約45分。<br>カレンダーの「〜15:00」はトーク込みの全体終了時間と整合。<br>SNS告知では「11:30〜14:00体験 / 14:00〜トーク」と分けて記載が正確</td>
+</tr>
+
+<tr>
+  <td>4/28-5/2</td>
+  <td>カンガルーカップ国際女子オープンテニス</td>
+  <td>（公式サイトに記載なし）</td>
+  <td class="source"><span class="src-label">カレンダーのみ</span><br>keiichiro.kita@gmail.com<br><br>MEMORY.mdには「5月岐阜」と記載あり</td>
+  <td><span class="tag tag-diff">食い違い</span>MEMORY.mdの「5月岐阜」→ カレンダー「4/28-5/2」<br>正式名称「カンガルーカップ国際女子オープンテニス」も判明。<br>協会公式サイトには未掲載（協賛イベントのため）</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ================================ -->
+<h2>確認済み: カレンダーと公式情報が一致したイベント</h2>
+<!-- ================================ -->
+
+<table>
+<thead>
+<tr>
+  <th style="width:85px;">日付</th>
+  <th style="width:250px;">イベント名</th>
+  <th style="width:160px;">確認ソース</th>
+  <th>補足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>4/2-4</td>
+  <td><span class="tag tag-ok">確認済</span>太陽食品コラボ「ここちよい音の日」13:00-16:00</td>
+  <td class="source"><span class="src-label">公式サイト + チラシ:</span><br>太陽食品チラシ表.jpg<br>sound-healing.jp/harmonic-day_special_202604.html</td>
+  <td>500円/体験、オーガニック試飲付き。場所: 太陽食品世田谷店（尾山台駅3分）</td>
+</tr>
+<tr>
+  <td>4/11, 18, 25</td>
+  <td><span class="tag tag-ok">確認済</span>スターライトヒーリング マラマハワイ 仙台天文台 19:40～20:30</td>
+  <td class="source"><span class="src-label">公式チラシ:</span><br>★P29仙台star_light_healing_2026_sen_A4_v2.pdf<br><br>明記: 4/11, 18, 25 各土曜</td>
+  <td>料金: 中学生以上1,000円、小学生500円。<br>※以前の把握情報「4/14,21,28」は誤り。チラシ・カレンダー共に4/11,18,25で確定</td>
+</tr>
+<tr>
+  <td>4/12</td>
+  <td><span class="tag tag-ok">確認済</span>スターライトヒーリング マラマハワイ 追加公演 さいたま 13:30～</td>
+  <td class="source"><span class="src-label">公式サイト + イベント資料:</span><br>sound-healing.jp/starlight-healing_malama_hawaii_2025-2026.html<br>イベント資料/スターライトヒーリング_20260412/イベント情報.md</td>
+  <td>料金: 大人620円、小人310円。会場: さいたま市宇宙劇場</td>
+</tr>
+<tr>
+  <td>4/16</td>
+  <td><span class="tag tag-ok">確認済</span>3つのここちよい音 体験WS（4月 満員）</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/workshop.html</td>
+  <td>午前10:30/午後13:30、一般2,500円、会員2,000円、定員各4名。自由が丘Lab</td>
+</tr>
+<tr>
+  <td>4/18</td>
+  <td><span class="tag tag-ok">確認済</span>ここちよい音の日 田園調布長田整形外科</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/harmonic-day_special_20250612.html</td>
+  <td>無料・予約不要。体験11:30〜14:00 / トーク14:00〜（約45分）</td>
+</tr>
+<tr>
+  <td>4/24-26</td>
+  <td><span class="tag tag-ok">確認済</span>第41期 セラピスト資格認定研修会（後半）</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/qualification-workshop-therapist.html<br><br>明記: 第41期 後半4/24-26</td>
+  <td>前半: 3/19-22。受講費270,000円。ファシリテーター資格取得者が対象</td>
+</tr>
+<tr>
+  <td>5/14, 6/18, 7/16</td>
+  <td><span class="tag tag-ok">確認済</span>3つのここちよい音 体験WS（5-7月）</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/workshop.html</td>
+  <td>毎月木曜開催。8月休み</td>
+</tr>
+<tr>
+  <td>4/7, 5/12, 6/9</td>
+  <td><span class="tag tag-ok">確認済</span>Online Harmonic Day 会員限定</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp トップページ<br>+ harmonic-day_online_20250429.html</td>
+  <td>正会員限定。毎月火曜開催。7/7もカレンダーにあり</td>
+</tr>
+<tr>
+  <td>5/3, 5/10, 6/14, 7/12</td>
+  <td><span class="tag tag-ok">確認済</span>スターライトヒーリング 沖縄・屋久島 さいたま</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/starlight-healing_malama_hawaii_2025-2026.html</td>
+  <td>さいたま市宇宙劇場 13:30〜。※以前の把握「7/18」はカレンダー「7/12」が正しい</td>
+</tr>
+<tr>
+  <td>毎月(4/18, 5/16, 6/20, 7/18)</td>
+  <td><span class="tag tag-ok">確認済</span>ここちよい音の日 田園調布長田整形外科</td>
+  <td class="source"><span class="src-label">公式サイト:</span><br>sound-healing.jp/harmonic-day_special_20250612.html</td>
+  <td>毎月土曜、無料</td>
+</tr>
+</tbody>
+</table>
+
+<!-- ================================ -->
+<h2 class="new">2. カレンダーにあるが公式サイトで未確認のイベント</h2>
+<!-- ================================ -->
+
+<table>
+<thead>
+<tr>
+  <th style="width:85px;">日付</th>
+  <th style="width:250px;">イベント名（カレンダー）</th>
+  <th style="width:80px;">頻度</th>
+  <th style="width:160px;">関連ソース</th>
+  <th>備考・確認事項</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td>5/19, 5/21,<br>6/23, 6/25,<br>7/21, 7/23</td>
+  <td><span class="tag tag-new">新規</span>音のウエルビーイング Online体験ワークショップ</td>
+  <td>毎月2回</td>
+  <td class="source"><span class="src-label">イベント資料:</span><br>イベント資料/オンライン講座_202604.md<br><br>圭一郎さんメール(3/10)で「音のウェルビーイング」講座名を決定</td>
+  <td>イベント資料に4月分(4/14, 4/23)の情報あり（Zoom/¥4,000）。5月以降はカレンダーに登録済みだが公式サイトには未掲載。<br>圭一郎さんに公式サイト掲載の要否を確認</td>
+</tr>
+
+<tr>
+  <td>5/23-24 (対面)<br>5/25 (Online)</td>
+  <td><span class="tag tag-new">新規</span>Well-Being アドバンス スキルアップ研修会</td>
+  <td>単発</td>
+  <td class="source"><span class="src-label">カレンダーのみ</span><br>公式サイト・イベント資料に記載なし</td>
+  <td>対面2日間 + オンライン1日。詳細不明。SNS告知対象か確認必要</td>
+</tr>
+
+<tr>
+  <td>5/27</td>
+  <td><span class="tag tag-new">新規</span>フットコース スキルアップ研修会</td>
+  <td>単発</td>
+  <td class="source"><span class="src-label">カレンダーのみ</span><br>公式サイト・イベント資料に記載なし</td>
+  <td>技術向上研修。詳細不明。SNS告知対象か確認必要</td>
+</tr>
+
+<tr>
+  <td>6/5</td>
+  <td><span class="tag tag-new">新規</span>太陽食品世田谷店 ここちよい音の日</td>
+  <td>単発？</td>
+  <td class="source"><span class="src-label">関連チラシ:</span><br>太陽食品チラシ表.jpg（4月分）<br>sound-healing.jp/harmonic-day_special_202604.html（4月分のみ掲載）</td>
+  <td>4月(4/2-4)に続く太陽食品コラボ第2回の可能性。公式サイトには4月分のみ掲載。<br>6月開催の詳細（時間・内容）を確認必要</td>
+</tr>
+
+<tr>
+  <td>6/26</td>
+  <td><span class="tag tag-new">新規</span>抗加齢医学学会</td>
+  <td>単発</td>
+  <td class="source"><span class="src-label">カレンダーのみ</span><br>公式サイト・イベント資料に記載なし</td>
+  <td>学会出展・発表？ SNS投稿ネタとして活用可能性あり。詳細を確認必要</td>
+</tr>
+
+<tr>
+  <td>4/30</td>
+  <td><span class="tag tag-new">新規</span>沖縄ちゅら島財団</td>
+  <td>単発</td>
+  <td class="source"><span class="src-label">カレンダーのみ</span><br>公式サイト・イベント資料に記載なし</td>
+  <td>詳細不明。協賛・連携関連か？確認必要</td>
+</tr>
+
+</tbody>
+</table>
+
+<!-- ================================ -->
+<h2 class="missing">3. 公式情報にあるがカレンダーに未登録</h2>
+<!-- ================================ -->
+
+<table>
+<thead>
+<tr>
+  <th style="width:85px;">日付</th>
+  <th style="width:250px;">イベント名</th>
+  <th style="width:160px;">ソース</th>
+  <th>備考</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+  <td>4/14(火),<br>4/23(木)</td>
+  <td><span class="tag tag-missing">未登録</span>音のウェルビーイング オンライン体験講座 (Zoom / ¥4,000)</td>
+  <td class="source"><span class="src-label">イベント資料:</span><br>イベント資料/オンライン講座_202604.md<br><br>圭一郎さんメール(3/10): 講座名「音のウェルビーイング」決定</td>
+  <td>5月以降は「音のウエルビーイングOnline体験WS」としてカレンダー登録済み。<br>4月分のみ未登録。カレンダーへの追加が必要</td>
+</tr>
+
+<tr>
+  <td>5/11, 5/18, 5/25</td>
+  <td><span class="tag tag-missing">未登録</span>スターライトヒーリング マラマハワイ 仙台天文台 (5月分)</td>
+  <td class="source"><span class="src-label">公式チラシ:</span><br>★P29仙台star_light_healing_2026_sen_A4_v2.pdf<br><br>※チラシには3月・4月の日程のみ記載。5月分はチラシ範囲外</td>
+  <td>4月分(4/11,18,25)はチラシ・カレンダー共に確認済み。<br>5月分は公式チラシの範囲外でカレンダーにも未登録。<br>開催有無を仙台市天文台 or 圭一郎さんに確認必要</td>
+</tr>
+
+</tbody>
+</table>
+
+<div class="note">
+  <strong>圭一郎さんへの確認事項:</strong><br>
+  1. <strong>カレンダーの期数修正</strong> &mdash; ファシリテーター研修: 「第88回」→「第90期」(4月)、「第42期」→「第91期」(6月) に修正を<br>
+  2. <strong>スターライト仙台 開始時間</strong> &mdash; カレンダー「19:30」→ チラシ「19:40」。チラシが正で良いか？<br>
+  3. <strong>オンライン講座4月分</strong> &mdash; 4/14, 4/23をカレンダーに追加してください<br>
+  4. <strong>スターライト仙台5月分</strong> &mdash; 5月の開催はあるか？（チラシは4月まで、カレンダーにも未登録）<br>
+  5. <strong>新規イベントの詳細</strong> &mdash; Well-Beingアドバンス研修(5/23-25)、フットコース研修(5/27)、抗加齢医学学会(6/26)、沖縄ちゅら島財団(4/30) のSNS告知対象可否<br>
+  6. <strong>太陽食品6月</strong> &mdash; 6/5のコラボ開催の時間・内容は4月と同じか？
+</div>
+
+<div class="footer">
+  作成: Claude Code / 照合元: Googleカレンダー (keiichiro.kita@gmail.com)、sound-healing.jp（公式サイト）、イベントチラシ（仙台・太陽食品）、イベント資料（メール共有分）
+</div>
+
+</body>
+</html>
