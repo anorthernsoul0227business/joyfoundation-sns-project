@@ -25,6 +25,8 @@ import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from PIL import Image, ImageOps
 
+from notifier import build_default_notifier
+
 # ログ設定
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -433,6 +435,25 @@ def get_scheduled_posts(ws):
     return posts
 
 
+def _build_ig_post_url(post_id):
+    """IG投稿IDから閲覧用URLを推定。APIで取得できない場合はログインユーザー名を使って投稿一覧URLを返す"""
+    if not post_id:
+        return None
+    # media permalink を取得
+    try:
+        token = os.getenv('IG_ACCESS_TOKEN')
+        resp = requests.get(
+            f"{GRAPH_API_BASE}/{post_id}",
+            params={"fields": "permalink", "access_token": token},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return resp.json().get('permalink')
+    except Exception as e:
+        logger.debug(f"permalink取得失敗: {e}")
+    return None
+
+
 def run_scheduled(dry_run=False):
     """予約投稿を実行"""
     logger.info("=" * 50)
@@ -444,6 +465,7 @@ def run_scheduled(dry_run=False):
 
     ws = get_sheet()
     posts = get_scheduled_posts(ws)
+    notifier = build_default_notifier()
 
     if not posts:
         logger.info("投稿すべき予約はありません")
@@ -462,6 +484,7 @@ def run_scheduled(dry_run=False):
             logger.warning(f"  画像なし - スキップ")
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_FAILED)
             ws.update_cell(post['row'], COL_MEMO + 1, "エラー: 画像URLなし")
+            notifier.notify_failure(platform='Instagram', caption=post['text'], error='画像URLなし')
             continue
 
         # 画像数に応じて単画像 or カルーセル
@@ -475,10 +498,25 @@ def run_scheduled(dry_run=False):
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
             ws.update_cell(post['row'], COL_MEMO + 1, f"投稿済 {timestamp} ID:{post_id}")
             logger.info(f"  ステータス更新完了")
+
+            # 通知
+            post_url = _build_ig_post_url(post_id)
+            notifier.notify_success(
+                platform='Instagram',
+                caption=post['text'],
+                post_url=post_url,
+                image_url=post['image_urls'][0],
+                post_id=post_id,
+            )
         else:
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_FAILED)
             ws.update_cell(post['row'], COL_MEMO + 1, f"投稿失敗 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
             logger.error(f"  投稿失敗")
+            notifier.notify_failure(
+                platform='Instagram',
+                caption=post['text'],
+                error='投稿API呼び出しが失敗しました（詳細はログを参照）',
+            )
 
         time.sleep(5)
 
@@ -548,8 +586,24 @@ def post_single_row(row_num):
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
         ws.update_cell(row_num, COL_MEMO + 1, f"投稿済 {timestamp} ID:{post_id}")
         print(f"\n✅ 投稿成功! ID: {post_id}")
+
+        notifier = build_default_notifier()
+        post_url = _build_ig_post_url(post_id)
+        notifier.notify_success(
+            platform='Instagram',
+            caption=text,
+            post_url=post_url,
+            image_url=image_urls[0] if image_urls else None,
+            post_id=post_id,
+        )
     else:
         print("\n❌ 投稿失敗")
+        notifier = build_default_notifier()
+        notifier.notify_failure(
+            platform='Instagram',
+            caption=text,
+            error='投稿API呼び出しが失敗しました',
+        )
 
 
 if __name__ == '__main__':

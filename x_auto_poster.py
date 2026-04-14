@@ -23,6 +23,8 @@ import gspread
 import requests
 from requests_oauthlib import OAuth1
 
+from notifier import build_default_notifier
+
 # ログ設定
 LOG_DIR = os.path.join(os.path.dirname(__file__), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -266,6 +268,14 @@ def get_scheduled_posts(ws):
     return posts
 
 
+def _build_x_post_url(tweet_id: str) -> Optional[str]:
+    """Tweet IDから閲覧用URLを組み立てる。ユーザー名は環境変数から"""
+    if not tweet_id:
+        return None
+    username = os.getenv('X_USERNAME', 'SFH_Science')
+    return f"https://x.com/{username}/status/{tweet_id}"
+
+
 def run_scheduled(dry_run=False):
     """予約投稿を実行"""
     logger.info("=" * 50)
@@ -273,6 +283,7 @@ def run_scheduled(dry_run=False):
 
     ws = get_sheet()
     posts = get_scheduled_posts(ws)
+    notifier = build_default_notifier()
 
     if not posts:
         logger.info("投稿すべき予約はありません")
@@ -296,6 +307,7 @@ def run_scheduled(dry_run=False):
 
             # リプライ送信
             reply_text = post.get('reply_text', '')
+            reply_id = None
             if reply_text:
                 time.sleep(5)  # 親ツイート反映を待つ
                 reply_id = post_tweet(reply_text, auth=auth, reply_to=tweet_id)
@@ -310,9 +322,24 @@ def run_scheduled(dry_run=False):
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_POSTED)
             ws.update_cell(post['row'], COL_MEMO + 1, memo)
             logger.info(f"  ステータス更新完了")
+
+            # 通知
+            post_url = _build_x_post_url(tweet_id)
+            notifier.notify_success(
+                platform='X (Twitter)',
+                caption=post['text'],
+                post_url=post_url,
+                image_url=post['image_urls'][0] if post['image_urls'] else None,
+                post_id=tweet_id,
+            )
         else:
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_FAILED)
             logger.error(f"  投稿失敗 - ステータスを「投稿失敗」に更新")
+            notifier.notify_failure(
+                platform='X (Twitter)',
+                caption=post['text'],
+                error='投稿API呼び出しが失敗しました（詳細はログを参照）',
+            )
 
         # レート制限対策
         time.sleep(3)
@@ -374,9 +401,25 @@ def post_single(row_num):
         ws.update_cell(row_num, COL_STATUS + 1, STATUS_POSTED)
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
         ws.update_cell(row_num, COL_MEMO + 1, f"投稿済 {timestamp} ID:{tweet_id}")
-        print(f"\n✅ 投稿成功! https://x.com/SFH_Science/status/{tweet_id}")
+        post_url = _build_x_post_url(tweet_id)
+        print(f"\n✅ 投稿成功! {post_url}")
+
+        notifier = build_default_notifier()
+        notifier.notify_success(
+            platform='X (Twitter)',
+            caption=text,
+            post_url=post_url,
+            image_url=image_urls[0] if image_urls else None,
+            post_id=tweet_id,
+        )
     else:
         print("\n❌ 投稿失敗")
+        notifier = build_default_notifier()
+        notifier.notify_failure(
+            platform='X (Twitter)',
+            caption=text,
+            error='投稿API呼び出しが失敗しました',
+        )
 
 
 if __name__ == '__main__':
