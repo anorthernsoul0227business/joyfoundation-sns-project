@@ -1,5 +1,31 @@
 # 開発ログ (DEVLOG)
 
+## 2026-04-16（午後）
+
+### 実施内容
+- Codex壁打ち R5: Phase 1 実装計画（実装寄り3テーマ）
+- 実装計画書作成（`design/design/IMPLEMENTATION_PLAN.md`）:
+  - Turborepo + pnpmモノレポ構成（確定版ディレクトリ構造）
+  - OpenAPI自動生成パイプライン（FastAPI Pydantic → TypeScript型）
+  - インフラ/DevOps設計（Vercel + Railway + Supabase + R2）
+  - FullCalendar + dnd-kit統合設計（Phase 1はFC公式Draggableのみに決定）
+  - 30 Issue / 4 Sprint / 7-8週間のIssue分割
+  - コスト試算（MVP: ~$5-15/月、PMF後: ~$60-80/月）
+- Postiz（OSS SNSスケジューラ）のアーキテクチャを参考調査
+- APP_DESIGN_SPEC.md に決定事項#20-25を追記
+- UIモックアップに下書き一覧ページを追加（全5画面に）
+
+### 成果
+- 設計フェーズ完了 → 実装着手可能な状態に
+- 設計ドキュメント合計8ファイル完成
+
+### 課題・備考
+- 未読メール（4/15 定期スケジュール）の対応が必要
+- WS参加費変更（¥2,500→¥3,000）のシート反映が必要
+- 音のウエルビーイングOnline 5/19開始が確定
+
+---
+
 ## 2026-04-16
 
 ### 実施内容

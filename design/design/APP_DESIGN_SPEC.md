@@ -777,6 +777,17 @@ User → Frontend → Backend API → DB
 | 18 | note.com連携 | **下書き補助+手動投稿（Phase 1）** | 公式API非公開（405ブロック）。非公式API/Selenium完全禁止。RSS連携で投稿済み自動検知 |
 | 19 | note社事前確認 | **問い合わせ実施推奨** | 下書き補助モデルの合法性確認 + API公開予定の確認 |
 
+### 追加決定事項（Codex壁打ち R5 2026-04-16 実装計画）
+
+| # | 項目 | 決定 | 要点 |
+|---|---|---|---|
+| 20 | モノレポツール | **Turborepo + pnpm** | Vercel親和性、キャッシュ性能、2言語対応 |
+| 21 | 型安全パイプライン | **OpenAPI自動生成 (@hey-api/openapi-ts)** | Pydantic→TS型自動同期。pre-commitフックで整合性保証 |
+| 22 | ローカル開発 | **docker-compose (Redis+Celery) + Supabase CLI** | 本番環境をローカル再現 |
+| 23 | カレンダーD&D | **Phase 1: FC公式Draggableのみ** | dnd-kitは必要に応じてPhase 1.5で追加 |
+| 24 | Issue管理 | **30 Issue / 4 Sprint / 7-8週間** | クリティカルパス明確化。→ `IMPLEMENTATION_PLAN.md` |
+| 25 | MVPコスト | **~$5-15/月** | Railway従量課金のみ。PMF後は~$60-80/月 |
+
 ### 未決定（今後検討）
 - **音声文字起こし**: Whisper API vs Google Speech-to-Text（Phase 1.5で決定）
 - **オフライン対応**: PWA Service Worker の範囲（Phase 3で決定）
