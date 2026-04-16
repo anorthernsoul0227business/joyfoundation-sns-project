@@ -1,5 +1,56 @@
 # 開発ログ (DEVLOG)
 
+## 2026-04-16
+
+### 実施内容
+- Codex壁打ち R3: RLS設計レビュー + LLM品質評価基盤
+- RLS設計書作成（`design/design/RLS_DESIGN.md`）:
+  - 全テーブルのRLSポリシー設計（SQL付き）
+  - org_id方式のマルチテナント設計（Phase 2チーム機能への拡張準備）
+  - トークン保護設計（sns_accounts_safeビュー）
+  - service_role vs ユーザーロールの使い分けマトリクス
+  - インデックス戦略（カレンダー表示パフォーマンス99%+改善見込み）
+  - pgTapテスト例
+- LLM品質評価基盤設計書作成（`design/design/LLM_EVAL_DESIGN.md`）:
+  - 6軸品質メトリクス設計（トーン/正確性/エンゲージメント/文字数/NG/自然さ）
+  - 3層ハイブリッドNGチェック（ルールベース→辞書→LLM）
+  - LLM-as-Judge評価プロンプト設計（バイアス対策込み）
+  - 薬機法NGワード辞書設計
+  - プロンプトバージョニング + eval_logsテーブル設計
+  - ABテスト基盤設計（オフライン/オンライン）
+  - コスト試算: 1投稿あたり~$0.032、月60件で~$5.52
+- APP_DESIGN_SPEC.md に決定事項#11-17を追記
+- Codexブリーフィング作成（`docs/codex_rls_llm_briefing.md`）
+- Codex壁打ち R4: note.com連携の法務/規約確認
+- note.com規約調査（第22版 2026/1/15制定）:
+  - 公式投稿APIは存在しない（公開予定も未定）
+  - 非公式APIエンドポイントは405 Not Allowedでブロック済み
+  - 利用規約でスパム的活動・技術的措置の回避を禁止
+  - 競合ツール（Buffer/Hootsuite/Later）もnote未対応
+- note連携設計書作成（`design/design/NOTE_INTEGRATION_DESIGN.md`）:
+  - Phase 1: 下書き補助+手動投稿（リスクゼロ）
+  - RSS連携で投稿済み自動検知（公式サポート）
+  - oEmbed活用の記事プレビュー
+  - publisher抽象化でAPI公開時に即応可能な設計
+  - note社への事前問い合わせテンプレート作成
+- APP_DESIGN_SPEC.md に決定事項#18-19を追記
+
+### 成果
+- **優先アクション5件中5件すべて完了**
+- 設計ドキュメント合計7ファイル:
+  - APP_DESIGN_SPEC.md（更新）
+  - CODEX_REVIEW_20260416.md
+  - PLATFORM_MATRIX.md
+  - RELIABILITY_DESIGN.md
+  - RLS_DESIGN.md（新規）
+  - LLM_EVAL_DESIGN.md（新規）
+  - NOTE_INTEGRATION_DESIGN.md（新規）
+
+### 課題・備考
+- 評価データセット構築には既存承認済み投稿50件の収集が必要（圭一郎さんとの作業）
+- note社への問い合わせを実施推奨（テンプレート準備済み）
+- 未決定事項: 評価モデル選定、自動再生成閾値はデータセット構築後に決定
+
 ## 2026-04-09
 
 ### 実施内容

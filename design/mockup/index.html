@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SNS Calendar App - UI Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#f0f9f4', 100: '#d9f0e3', 200: '#b5e0ca', 300: '#84c9a8', 400: '#51ab82', 500: '#319068', 600: '#227453', 700: '#1c5d44', 800: '#194a38', 900: '#153d2f' },
+            x: '#1DA1F2',
+            ig: '#E1306C',
+            yt: '#FF0000',
+            note: '#41C9B4',
+            line: '#06C755',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+    * { font-family: 'Noto Sans JP', sans-serif; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .nav-item.active { color: #319068; border-bottom: 2px solid #319068; }
+    .calendar-cell { min-height: 110px; }
+    .post-card { cursor: grab; transition: all 0.2s; }
+    .post-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .platform-badge { font-size: 10px; padding: 2px 6px; border-radius: 9999px; }
+    .fade-in { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    .tab-btn.active { background: #319068; color: white; }
+    .tab-btn { transition: all 0.15s; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- ===== Top Navigation ===== -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-calendar-check text-white text-sm"></i>
+        </div>
+        <span class="font-bold text-lg text-gray-900">SNS Calendar</span>
+        <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium">Beta</span>
+      </div>
+
+      <nav class="flex gap-1">
+        <button onclick="switchPage('home')" id="nav-home" class="nav-item px-4 py-4 text-sm font-medium text-gray-500 hover:text-brand-600 transition">
+          <i class="fas fa-home mr-1"></i> ホーム
+        </button>
+        <button onclick="switchPage('calendar')" id="nav-calendar" class="nav-item px-4 py-4 text-sm font-medium text-gray-500 hover:text-brand-600 transition active">
+          <i class="fas fa-calendar mr-1"></i> カレンダー
+        </button>
+        <button onclick="switchPage('drafts')" id="nav-drafts" class="nav-item px-4 py-4 text-sm font-medium text-gray-500 hover:text-brand-600 transition">
+          <i class="fas fa-file-lines mr-1"></i> 下書き
+        </button>
+        <button onclick="switchPage('create')" id="nav-create" class="nav-item px-4 py-4 text-sm font-medium text-gray-500 hover:text-brand-600 transition">
+          <i class="fas fa-pen mr-1"></i> 投稿作成
+        </button>
+        <button onclick="switchPage('ai')" id="nav-ai" class="nav-item px-4 py-4 text-sm font-medium text-gray-500 hover:text-brand-600 transition">
+          <i class="fas fa-wand-magic-sparkles mr-1"></i> AI生成
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <button class="relative p-2 text-gray-400 hover:text-gray-600 transition">
+          <i class="fas fa-bell"></i>
+          <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </button>
+        <div class="w-8 h-8 bg-brand-200 rounded-full flex items-center justify-center text-brand-700 text-sm font-bold">K</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== PAGE 1: Calendar (Pro Mode) ===== -->
+  <div id="page-calendar" class="page active fade-in">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <!-- Calendar Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <button class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="fas fa-chevron-left text-gray-400"></i></button>
+          <h2 class="text-xl font-bold">2026年4月</h2>
+          <button class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="fas fa-chevron-right text-gray-400"></i></button>
+          <button class="ml-2 text-sm text-brand-600 hover:text-brand-700 font-medium">今日</button>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- View Toggle -->
+          <div class="flex bg-gray-100 rounded-lg p-0.5">
+            <button class="px-3 py-1.5 text-xs font-medium bg-white rounded-md shadow-sm text-gray-700">月</button>
+            <button class="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">週</button>
+            <button class="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">日</button>
+          </div>
+          <!-- Platform Filter -->
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+              <input type="checkbox" checked class="accent-x rounded"> <span class="text-x font-medium">X</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+              <input type="checkbox" checked class="accent-ig rounded"> <span class="text-ig font-medium">IG</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+              <input type="checkbox" class="accent-yt rounded"> <span class="text-yt font-medium">YT</span>
+            </label>
+            <label class="flex items-center gap-1 text-xs cursor-pointer">
+              <input type="checkbox" class="accent-note rounded"> <span class="text-note font-medium">note</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <!-- Calendar Grid -->
+        <div class="flex-1">
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            <!-- Day Headers -->
+            <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
+              <div class="py-2 text-center text-xs font-medium text-red-400">日</div>
+              <div class="py-2 text-center text-xs font-medium text-gray-500">月</div>
+              <div class="py-2 text-center text-xs font-medium text-gray-500">火</div>
+              <div class="py-2 text-center text-xs font-medium text-gray-500">水</div>
+              <div class="py-2 text-center text-xs font-medium text-gray-500">木</div>
+              <div class="py-2 text-center text-xs font-medium text-gray-500">金</div>
+              <div class="py-2 text-center text-xs font-medium text-blue-400">土</div>
+            </div>
+            <!-- Week 3: Apr 12-18 -->
+            <div class="grid grid-cols-7 border-b border-gray-100">
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-red-400">12</span>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-400">13</span>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-400">14</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 18:00 企業研修
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-400">15</span>
+                <div class="mt-1 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 12:00 自然音
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-blue-50/30 ring-2 ring-brand-500 ring-inset rounded-sm">
+                <span class="text-xs font-bold text-brand-600 bg-brand-500 text-white w-5 h-5 rounded-full inline-flex items-center justify-center">16</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 18:00 科学データ
+                </div>
+                <div class="mt-0.5 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 12:00 周波数帯
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50/50">
+                <span class="text-xs text-gray-400">17</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 08:00 豆知識
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 bg-gray-50/50">
+                <span class="text-xs text-blue-400">18</span>
+                <div class="mt-1 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 12:00 セルフケア
+                </div>
+              </div>
+            </div>
+            <!-- Week 4: Apr 19-25 -->
+            <div class="grid grid-cols-7 border-b border-gray-100">
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-red-400">19</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 20:00 呼吸法
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">20</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 18:00 体感音響
+                </div>
+                <div class="mt-0.5 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 12:00 音の高さ
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">21</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 18:00 理念
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">22</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 20:00 名言
+                </div>
+                <div class="mt-0.5 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 18:00 名言集
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">23</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 12:00 科学
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">24</span>
+                <div class="mt-1 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 18:00 体験談
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5">
+                <span class="text-xs text-blue-400">25</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 08:00 40代向け
+                </div>
+                <div class="mt-0.5 text-[10px] bg-ig/10 text-ig rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-instagram mr-0.5"></i> 10:00 40代向け
+                </div>
+              </div>
+            </div>
+            <!-- Week 5: Apr 26-30 -->
+            <div class="grid grid-cols-7">
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-red-400">26</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 12:00 WHO
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">27</span>
+                <div class="mt-1 text-[10px] bg-x/10 text-x rounded px-1.5 py-0.5 truncate">
+                  <i class="fab fa-x-twitter mr-0.5"></i> 20:00 Tips
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">28</span>
+                <div class="mt-1 text-[10px] bg-green-100 text-green-700 rounded px-1.5 py-0.5 truncate">
+                  <i class="fas fa-check mr-0.5"></i> 投稿済 2件
+                </div>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">29</span>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100">
+                <span class="text-xs text-gray-500">30</span>
+              </div>
+              <div class="calendar-cell p-1.5 border-r border-gray-100 bg-gray-50">
+                <span class="text-xs text-gray-300">1</span>
+              </div>
+              <div class="calendar-cell p-1.5 bg-gray-50">
+                <span class="text-xs text-gray-300">2</span>
+              </div>
+            </div>
+          </div>
+          <!-- Legend -->
+          <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
+            <span><span class="inline-block w-2 h-2 bg-x rounded-full mr-1"></span>X</span>
+            <span><span class="inline-block w-2 h-2 bg-ig rounded-full mr-1"></span>Instagram</span>
+            <span><span class="inline-block w-2 h-2 bg-yt rounded-full mr-1"></span>YouTube</span>
+            <span><span class="inline-block w-2 h-2 bg-note rounded-full mr-1"></span>note</span>
+            <span class="ml-auto">ドラッグ&ドロップで投稿をスケジュール</span>
+          </div>
+        </div>
+
+        <!-- Drafts Sidebar -->
+        <div class="w-72 flex-shrink-0">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <h3 class="font-semibold text-sm"><i class="fas fa-file-lines mr-1.5 text-gray-400"></i>下書き <span class="text-gray-400 font-normal">(5件)</span></h3>
+              <button onclick="switchPage('create')" class="text-xs text-brand-600 hover:text-brand-700 font-medium">+ 新規</button>
+            </div>
+            <div class="p-3 space-y-2 max-h-[500px] overflow-y-auto">
+              <!-- Draft Card 1 -->
+              <div class="post-card bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-300">
+                <div class="flex items-start justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-700 line-clamp-1">体感音響の科学</span>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i></span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i></span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mb-2">体に音を「触れさせる」体感音響技術。低周波振動が筋肉の緊張を和らげ...</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-gray-300">4/15 作成</span>
+                  <span class="text-[10px] text-gray-300"><i class="fas fa-grip-vertical mr-0.5"></i>ドラッグ</span>
+                </div>
+              </div>
+              <!-- Draft Card 2 -->
+              <div class="post-card bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-300">
+                <div class="flex items-start justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-700 line-clamp-1">自然音の選び方ガイド</span>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i></span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mb-2">「川のせせらぎ」「波の音」「鳥のさえずり」... 目的別に最適な音を選ぶ方法</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-gray-300">4/14 作成</span>
+                  <span class="text-[10px] text-gray-300"><i class="fas fa-grip-vertical mr-0.5"></i>ドラッグ</span>
+                </div>
+              </div>
+              <!-- Draft Card 3 -->
+              <div class="post-card bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-300">
+                <div class="flex items-start justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-700 line-clamp-1">パナソニック研修レポート</span>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i></span>
+                    <span class="platform-badge bg-note/10 text-note"><i class="fas fa-pen-nib"></i></span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mb-2">大手企業での導入事例。社員のストレス軽減と集中力向上のデータ</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-gray-300">4/13 作成</span>
+                  <span class="text-[10px] text-gray-300"><i class="fas fa-grip-vertical mr-0.5"></i>ドラッグ</span>
+                </div>
+              </div>
+              <!-- Draft Card 4 -->
+              <div class="post-card bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-300">
+                <div class="flex items-start justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-700 line-clamp-1">カンガルーカップ2026告知</span>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i></span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i></span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mb-2">岐阜メモリアルセンターで開催。選手へのサウンドヒーリングサポート</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-gray-300">4/12 作成</span>
+                  <span class="text-[10px] text-gray-300"><i class="fas fa-grip-vertical mr-0.5"></i>ドラッグ</span>
+                </div>
+              </div>
+              <!-- Draft Card 5 -->
+              <div class="post-card bg-white border border-gray-200 rounded-lg p-3 hover:border-brand-300 border-dashed border-amber-300 bg-amber-50/30">
+                <div class="flex items-start justify-between mb-1.5">
+                  <span class="text-xs font-medium text-gray-700 line-clamp-1">睡眠と自然音の関係</span>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-amber-100 text-amber-600"><i class="fas fa-exclamation-triangle"></i> 要確認</span>
+                  </span>
+                </div>
+                <p class="text-[11px] text-gray-400 line-clamp-2 mb-2">AI評価: 68点 - NGルール「効果断言」の修正が必要</p>
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] text-amber-500">要修正</span>
+                  <span class="text-[10px] text-gray-300"><i class="fas fa-grip-vertical mr-0.5"></i>ドラッグ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stats Mini -->
+          <div class="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <h3 class="font-semibold text-sm mb-3"><i class="fas fa-chart-bar mr-1.5 text-gray-400"></i>今月のステータス</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-brand-600">23</div>
+                <div class="text-[10px] text-gray-400">投稿済み</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-amber-500">8</div>
+                <div class="text-[10px] text-gray-400">予約中</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-400">5</div>
+                <div class="text-[10px] text-gray-400">下書き</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-red-400">1</div>
+                <div class="text-[10px] text-gray-400">失敗</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE: Drafts List ===== -->
+  <div id="page-drafts" class="page fade-in">
+    <div class="max-w-6xl mx-auto px-4 py-4">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-bold"><i class="fas fa-file-lines mr-2 text-gray-400"></i>下書き一覧</h2>
+          <p class="text-xs text-gray-400 mt-0.5">12件の下書き（3件 要確認）</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="px-3 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+            <i class="fas fa-calendar-plus mr-1"></i>選択をカレンダーに配置
+          </button>
+          <button onclick="switchPage('create')" class="px-3 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium shadow-sm">
+            <i class="fas fa-plus mr-1"></i>新規作成
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters & Sort -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-3 mb-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <!-- Status Filter -->
+          <div class="flex bg-gray-100 rounded-lg p-0.5">
+            <button class="px-3 py-1.5 text-xs font-medium bg-white rounded-md shadow-sm text-gray-700" onclick="filterDrafts(this,'all')">すべて <span class="text-gray-400">12</span></button>
+            <button class="px-3 py-1.5 text-xs font-medium text-gray-500" onclick="filterDrafts(this,'ready')">配置可能 <span class="text-gray-400">7</span></button>
+            <button class="px-3 py-1.5 text-xs font-medium text-gray-500" onclick="filterDrafts(this,'review')">要確認 <span class="text-amber-500">3</span></button>
+            <button class="px-3 py-1.5 text-xs font-medium text-gray-500" onclick="filterDrafts(this,'scheduled')">予約済み <span class="text-brand-500">2</span></button>
+          </div>
+          <!-- Platform Filter -->
+          <div class="flex items-center gap-2 ml-2 border-l border-gray-200 pl-3">
+            <button class="px-2 py-1 text-xs rounded-md bg-x/10 text-x font-medium border border-x/20">X</button>
+            <button class="px-2 py-1 text-xs rounded-md bg-ig/10 text-ig font-medium border border-ig/20">IG</button>
+            <button class="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-400">note</button>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Search -->
+          <div class="relative">
+            <i class="fas fa-search absolute left-2.5 top-2 text-gray-300 text-xs"></i>
+            <input type="text" placeholder="キーワード検索..." class="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-48 focus:outline-none focus:border-brand-400">
+          </div>
+          <!-- Sort -->
+          <select class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-600">
+            <option>作成日（新しい順）</option>
+            <option>作成日（古い順）</option>
+            <option>スコア（高い順）</option>
+            <option>スコア（低い順）</option>
+            <option>文字数（多い順）</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Drafts Grid -->
+      <div class="grid grid-cols-1 gap-3">
+
+        <!-- Draft Item 1: Ready -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-brand-300 transition group">
+          <div class="flex">
+            <!-- Checkbox + Drag Handle -->
+            <div class="flex flex-col items-center justify-center px-3 border-r border-gray-100">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <!-- Main Content -->
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm">体感音響の科学 ─ 音を「触れる」体験</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> X</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> IG</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">スコア 84</span>
+                  <span class="text-[10px] text-green-500 bg-green-50 px-2 py-0.5 rounded-full"><i class="fas fa-check mr-0.5"></i>NG OK</span>
+                </div>
+              </div>
+              <div class="flex gap-4">
+                <!-- X Version -->
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-x-twitter text-x text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">X版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">192 / 280文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">体に音を「触れさせる」体感音響技術。低周波振動が筋肉の緊張を和らげるという報告があります。イヤホンでは得られない「全身で音を浴びる」体験、試してみませんか？ #サウンドヒーリング #体感音響</p>
+                </div>
+                <!-- IG Version -->
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-instagram text-ig text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">IG版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">385 / 2,200文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">【保存推奨】音は「聴く」だけじゃない━━━━━━━━━━<br>体感音響という言葉をご存知ですか？低周波の振動を全身で感じることで、筋肉の緊張が和らぎ、深いリラクゼーション状態に...</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/15 作成</span>
+                  <span><i class="fas fa-wand-magic-sparkles mr-1"></i>AI生成 (v1.2)</span>
+                  <span><i class="fas fa-image mr-1"></i>画像 1枚</span>
+                </div>
+                <div class="flex gap-1">
+                  <button onclick="switchPage('create')" class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-pen mr-1"></i>編集</button>
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-calendar-plus mr-1"></i>カレンダーに配置</button>
+                  <button class="text-xs text-gray-400 hover:text-red-500 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"><i class="fas fa-trash mr-1"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draft Item 2: Ready -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-brand-300 transition group">
+          <div class="flex">
+            <div class="flex flex-col items-center justify-center px-3 border-r border-gray-100">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm">自然音の選び方ガイド ─ 目的別おすすめ</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> X</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">スコア 79</span>
+                  <span class="text-[10px] text-green-500 bg-green-50 px-2 py-0.5 rounded-full"><i class="fas fa-check mr-0.5"></i>NG OK</span>
+                </div>
+              </div>
+              <div class="flex gap-4">
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-x-twitter text-x text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">X版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">201 / 280文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">「川のせせらぎ」「波の音」「鳥のさえずり」...自然音にもいろいろありますが、目的によって最適な音が違うんです。集中したいとき→川の音。リラックス→波の音。朝の目覚め→小鳥のさえずり #自然音 #KITAサウンドヒーリング</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/14 作成</span>
+                  <span><i class="fas fa-pen-fancy mr-1"></i>手動作成</span>
+                </div>
+                <div class="flex gap-1">
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-pen mr-1"></i>編集</button>
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-calendar-plus mr-1"></i>カレンダーに配置</button>
+                  <button class="text-xs text-gray-400 hover:text-red-500 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"><i class="fas fa-trash mr-1"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draft Item 3: Needs Review (NG) -->
+        <div class="bg-white rounded-xl border-2 border-amber-300 shadow-sm hover:border-amber-400 transition group bg-amber-50/20">
+          <div class="flex">
+            <div class="flex flex-col items-center justify-center px-3 border-r border-amber-200">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 bg-amber-400 text-white rounded-full text-[10px] flex items-center justify-center"><i class="fas fa-exclamation"></i></span>
+                  <h3 class="font-semibold text-sm">睡眠と自然音の関係 ─ 科学的エビデンス</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> X</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> IG</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">スコア 62</span>
+                  <span class="text-[10px] text-red-500 bg-red-50 px-2 py-0.5 rounded-full"><i class="fas fa-exclamation-triangle mr-0.5"></i>NG 1件</span>
+                </div>
+              </div>
+              <!-- NG Alert -->
+              <div class="bg-amber-100 border border-amber-300 rounded-lg p-2.5 mb-3 flex items-start gap-2">
+                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
+                <div>
+                  <p class="text-xs font-medium text-amber-800">NGルール違反: 薬機法（効果断言）</p>
+                  <p class="text-[11px] text-amber-700 mt-0.5">「自然音には<span class="bg-red-200 px-0.5 rounded">睡眠の質を改善する効果があります</span>」→ 「睡眠の質が変わったと感じる方もいます」に修正推奨</p>
+                </div>
+                <button class="text-xs text-amber-700 hover:text-amber-900 whitespace-nowrap bg-amber-200 px-2 py-1 rounded-lg font-medium ml-auto"><i class="fas fa-wand-magic-sparkles mr-1"></i>自動修正</button>
+              </div>
+              <div class="flex gap-4">
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-x-twitter text-x text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">X版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">215 / 280文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">自然音には<span class="bg-red-200 rounded px-0.5">睡眠の質を改善する効果があります</span>。研究では、就寝前に30分間自然音を聴いた群は入眠時間が平均15分短縮。寝室のBGMを変えるだけで睡眠が変わるかも #睡眠改善</p>
+                </div>
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-instagram text-ig text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">IG版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">412 / 2,200文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">【保存推奨】眠れない夜に試してほしい「自然音」━━━━━━<br>日本人の平均睡眠時間は6時間22分。OECD加盟国の中で最短のデータがあります。そんな中、自然音には...</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-amber-200">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/15 作成</span>
+                  <span><i class="fas fa-wand-magic-sparkles mr-1"></i>AI生成 (v1.2)</span>
+                  <span><i class="fas fa-image mr-1"></i>画像 2枚</span>
+                </div>
+                <div class="flex gap-1">
+                  <button class="text-xs text-amber-600 hover:text-amber-700 px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 transition font-medium"><i class="fas fa-pen mr-1"></i>修正する</button>
+                  <button class="text-xs text-gray-400 hover:text-red-500 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"><i class="fas fa-trash mr-1"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draft Item 4: Scheduled -->
+        <div class="bg-white rounded-xl border border-brand-200 shadow-sm hover:border-brand-300 transition group bg-brand-50/20">
+          <div class="flex">
+            <div class="flex flex-col items-center justify-center px-3 border-r border-brand-100">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm">低音と高音 ─ 体への異なる響き方</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> X</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> IG</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">スコア 88</span>
+                  <span class="text-[10px] text-brand-500 bg-brand-50 px-2 py-0.5 rounded-full"><i class="fas fa-calendar-check mr-0.5"></i>4/20 18:00</span>
+                </div>
+              </div>
+              <div class="flex gap-4">
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-x-twitter text-x text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">X版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">178 / 280文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">低い音 → 体に共鳴し、筋肉がゆるむ。高い音 → 意識がクリアになる。音の高さによって、体への響き方がまったく違うんです。自分の今の状態に合った音を選んでみませんか？ #サウンドヒーリング</p>
+                </div>
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-instagram text-ig text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">IG版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">285 / 2,200文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">【保存推奨】音の高さと体の反応━━━━━━━━━━<br>低い音（20-200Hz）は体に共鳴し、筋肉がゆるむ。高い音（2000Hz以上）は意識をクリアに...</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-brand-100">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/14 作成</span>
+                  <span><i class="fas fa-wand-magic-sparkles mr-1"></i>AI生成 (v1.2)</span>
+                  <span><i class="fas fa-image mr-1"></i>画像 1枚</span>
+                  <span class="text-brand-500 font-medium"><i class="fas fa-calendar-check mr-1"></i>4/20 18:00 に予約済み</span>
+                </div>
+                <div class="flex gap-1">
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-pen mr-1"></i>編集</button>
+                  <button class="text-xs text-gray-400 hover:text-amber-600 px-2.5 py-1 rounded-lg hover:bg-amber-50 transition"><i class="fas fa-calendar-xmark mr-1"></i>予約解除</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draft Item 5: Ready with note -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-brand-300 transition group">
+          <div class="flex">
+            <div class="flex flex-col items-center justify-center px-3 border-r border-gray-100">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm">パナソニック企業研修レポート</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> IG</span>
+                    <span class="platform-badge bg-note/10 text-note"><i class="fas fa-pen-nib"></i> note</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">スコア 91</span>
+                  <span class="text-[10px] text-green-500 bg-green-50 px-2 py-0.5 rounded-full"><i class="fas fa-check mr-0.5"></i>NG OK</span>
+                </div>
+              </div>
+              <div class="flex gap-4">
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-instagram text-ig text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">IG版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">420 / 2,200文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">【企業の新しい福利厚生】サウンドヒーリング━━━━━━<br>大手電機メーカーの研修プログラムに、サウンドヒーリングが採用されたことをご存知ですか？社員のストレス軽減と集中力向上の...</p>
+                </div>
+                <div class="flex-1 bg-gray-50 rounded-lg p-3 border border-note/20">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fas fa-pen-nib text-note text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">note版（長文記事）</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">1,820文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">大手企業が注目する「音のウェルビーイング」─ サウンドヒーリングが変える働き方<br><br>## はじめに<br>「社員の集中力が続かない」「メンタルヘルスの不調が増えている」...</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/13 作成</span>
+                  <span><i class="fas fa-pen-fancy mr-1"></i>手動作成</span>
+                  <span><i class="fas fa-image mr-1"></i>画像 3枚</span>
+                </div>
+                <div class="flex gap-1">
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-pen mr-1"></i>編集</button>
+                  <button class="text-xs text-gray-400 hover:text-brand-600 px-2.5 py-1 rounded-lg hover:bg-brand-50 transition"><i class="fas fa-calendar-plus mr-1"></i>カレンダーに配置</button>
+                  <button class="text-xs text-gray-400 hover:text-note px-2.5 py-1 rounded-lg hover:bg-note/10 transition"><i class="fas fa-clipboard mr-1"></i>noteにコピー</button>
+                  <button class="text-xs text-gray-400 hover:text-red-500 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"><i class="fas fa-trash mr-1"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Draft Item 6: Needs Review (Low Score) -->
+        <div class="bg-white rounded-xl border-2 border-amber-300 shadow-sm hover:border-amber-400 transition group bg-amber-50/20">
+          <div class="flex">
+            <div class="flex flex-col items-center justify-center px-3 border-r border-amber-200">
+              <input type="checkbox" class="accent-brand-500 rounded w-4 h-4 mb-2">
+              <i class="fas fa-grip-vertical text-gray-300 group-hover:text-gray-400 cursor-grab"></i>
+            </div>
+            <div class="flex-1 p-4">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 bg-amber-400 text-white rounded-full text-[10px] flex items-center justify-center"><i class="fas fa-exclamation"></i></span>
+                  <h3 class="font-semibold text-sm">WHO調査：ストレスと音環境の相関</h3>
+                  <span class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> X</span>
+                  </span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">スコア 58</span>
+                  <span class="text-[10px] text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full"><i class="fas fa-exclamation-triangle mr-0.5"></i>トーン不適合</span>
+                </div>
+              </div>
+              <div class="bg-amber-100 border border-amber-300 rounded-lg p-2.5 mb-3 flex items-start gap-2">
+                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
+                <div>
+                  <p class="text-xs font-medium text-amber-800">品質スコア低下: トーン不適合（2/5）</p>
+                  <p class="text-[11px] text-amber-700 mt-0.5">全体的にビジネス寄りのトーンになっています。「やわらかい」トーンに合わせるため、専門用語の言い換えとカジュアルな問いかけの追加を推奨</p>
+                </div>
+                <button class="text-xs text-amber-700 hover:text-amber-900 whitespace-nowrap bg-amber-200 px-2 py-1 rounded-lg font-medium ml-auto"><i class="fas fa-wand-magic-sparkles mr-1"></i>AIで改善</button>
+              </div>
+              <div class="flex gap-4">
+                <div class="flex-1 bg-gray-50 rounded-lg p-3">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <i class="fab fa-x-twitter text-x text-[10px]"></i>
+                    <span class="text-[10px] font-medium text-gray-500">X版</span>
+                    <span class="text-[10px] text-gray-400 ml-auto">245 / 280文字</span>
+                  </div>
+                  <p class="text-xs text-gray-600 leading-relaxed line-clamp-3">WHOの調査によると、世界人口の約87%がストレス起因の健康問題を抱えている。音環境の改善は非薬物療法として注目されており、エビデンスレベルの高い研究が蓄積されつつある #WHO #音環境</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between mt-3 pt-2 border-t border-amber-200">
+                <div class="flex items-center gap-3 text-[11px] text-gray-400">
+                  <span><i class="fas fa-clock mr-1"></i>4/16 作成</span>
+                  <span><i class="fas fa-wand-magic-sparkles mr-1"></i>AI生成 (v1.2)</span>
+                </div>
+                <div class="flex gap-1">
+                  <button class="text-xs text-amber-600 hover:text-amber-700 px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 transition font-medium"><i class="fas fa-pen mr-1"></i>修正する</button>
+                  <button class="text-xs text-gray-400 hover:text-red-500 px-2.5 py-1 rounded-lg hover:bg-red-50 transition"><i class="fas fa-trash mr-1"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex items-center justify-between mt-4">
+        <span class="text-xs text-gray-400">6件表示 / 全12件</span>
+        <div class="flex gap-1">
+          <button class="w-8 h-8 bg-brand-500 text-white rounded-lg text-xs font-medium">1</button>
+          <button class="w-8 h-8 bg-white border border-gray-200 text-gray-500 rounded-lg text-xs hover:bg-gray-50">2</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 2: Home (Simple Mode) ===== -->
+  <div id="page-home" class="page fade-in">
+    <div class="max-w-lg mx-auto px-4 py-6">
+      <!-- Greeting -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">こんにちは、圭一郎さん</h1>
+        <p class="text-sm text-gray-400 mt-1">2026年4月16日（木）</p>
+      </div>
+
+      <!-- Today's Posts -->
+      <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 bg-brand-500 rounded-full"></span> 今日の投稿
+        </h2>
+
+        <!-- Post Card: X -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 bg-x/10 rounded-lg flex items-center justify-center"><i class="fab fa-x-twitter text-x text-sm"></i></span>
+              <div>
+                <span class="text-sm font-semibold">X</span>
+                <span class="text-xs text-gray-400 ml-2">18:00</span>
+              </div>
+            </div>
+            <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium">予約済み</span>
+          </div>
+          <p class="text-sm text-gray-700 leading-relaxed mb-3">自然音の中でも「低音」が体をゆるめる鍵。<br><br>小川のせせらぎの中には、20-200Hzの低周波成分が含まれています。この帯域が副交感神経に働きかけるという研究報告があります。<br><br>寝る前の15分、試してみませんか？<br><br>#サウンドヒーリング #自然音 #KITAサウンドヒーリング</p>
+          <div class="flex items-center justify-between">
+            <div class="flex gap-2">
+              <button class="text-xs text-brand-600 hover:text-brand-700 font-medium"><i class="fas fa-eye mr-1"></i>プレビュー</button>
+              <button class="text-xs text-gray-400 hover:text-gray-600"><i class="fas fa-pen mr-1"></i>編集</button>
+            </div>
+            <div class="flex items-center gap-1">
+              <div class="h-1.5 w-32 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full w-3/4 bg-brand-400 rounded-full"></div>
+              </div>
+              <span class="text-[10px] text-gray-400">あと3時間</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Post Card: IG -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 mb-3">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 bg-ig/10 rounded-lg flex items-center justify-center"><i class="fab fa-instagram text-ig text-sm"></i></span>
+              <div>
+                <span class="text-sm font-semibold">Instagram</span>
+                <span class="text-xs text-gray-400 ml-2">12:00</span>
+              </div>
+            </div>
+            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium"><i class="fas fa-check mr-0.5"></i>投稿済み</span>
+          </div>
+          <div class="flex gap-3 mb-3">
+            <div class="w-20 h-20 bg-gradient-to-br from-brand-200 to-brand-400 rounded-lg flex items-center justify-center text-white">
+              <i class="fas fa-image text-2xl opacity-50"></i>
+            </div>
+            <p class="text-sm text-gray-700 leading-relaxed flex-1 line-clamp-3">【保存推奨】音の高さと体の反応━━━━━━━━<br>低い音（20-200Hz）は体に共鳴し、筋肉がゆるむ。高い音（2000Hz以上）は意識をクリアにする...</p>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-gray-400"><i class="fas fa-heart mr-1 text-red-400"></i>24 <i class="fas fa-bookmark ml-2 mr-1"></i>12</span>
+            <button class="text-xs text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-up-right-from-square mr-1"></i>noteで見る</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tomorrow -->
+      <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 bg-gray-300 rounded-full"></span> 明日の投稿 (2件)
+        </h2>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm divide-y divide-gray-100">
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 bg-x/10 rounded flex items-center justify-center"><i class="fab fa-x-twitter text-x text-[10px]"></i></span>
+              <span class="text-sm text-gray-700">08:00 豆知識シリーズ</span>
+            </div>
+            <span class="text-xs text-brand-600">予約済み</span>
+          </div>
+          <div class="p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 bg-ig/10 rounded flex items-center justify-center"><i class="fab fa-instagram text-ig text-[10px]"></i></span>
+              <span class="text-sm text-gray-700">18:00 セルフケア方法</span>
+            </div>
+            <span class="text-xs text-brand-600">予約済み</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Button -->
+      <button onclick="switchPage('create')" class="w-full py-4 bg-brand-500 hover:bg-brand-600 text-white rounded-xl font-semibold shadow-lg shadow-brand-200 transition">
+        <i class="fas fa-plus mr-2"></i>新しい投稿を作る
+      </button>
+
+      <!-- Bottom Nav (Mobile Style) -->
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 max-w-lg mx-auto">
+        <div class="flex justify-around py-2">
+          <button onclick="switchPage('home')" class="flex flex-col items-center gap-0.5 text-brand-600">
+            <i class="fas fa-home text-lg"></i><span class="text-[10px]">ホーム</span>
+          </button>
+          <button onclick="switchPage('create')" class="flex flex-col items-center gap-0.5 text-gray-400">
+            <i class="fas fa-pen text-lg"></i><span class="text-[10px]">作成</span>
+          </button>
+          <button onclick="switchPage('calendar')" class="flex flex-col items-center gap-0.5 text-gray-400">
+            <i class="fas fa-calendar text-lg"></i><span class="text-[10px]">カレンダー</span>
+          </button>
+          <button class="flex flex-col items-center gap-0.5 text-gray-400">
+            <i class="fas fa-cog text-lg"></i><span class="text-[10px]">設定</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 3: Post Create ===== -->
+  <div id="page-create" class="page fade-in">
+    <div class="max-w-4xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-bold"><i class="fas fa-pen mr-2 text-brand-500"></i>投稿を作成</h2>
+        <div class="flex gap-2">
+          <button class="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg transition">下書き保存</button>
+          <button class="px-4 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium shadow-sm">
+            <i class="fas fa-calendar-check mr-1"></i>予約する
+          </button>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <!-- Editor -->
+        <div class="flex-1 space-y-4">
+          <!-- Platform Select -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <label class="text-xs font-medium text-gray-500 mb-2 block">投稿先</label>
+            <div class="flex gap-2">
+              <label class="flex items-center gap-2 px-3 py-2 bg-x/5 border-2 border-x/30 rounded-lg cursor-pointer">
+                <input type="checkbox" checked class="accent-x rounded"> <i class="fab fa-x-twitter text-x"></i> <span class="text-sm">X</span>
+              </label>
+              <label class="flex items-center gap-2 px-3 py-2 bg-ig/5 border-2 border-ig/30 rounded-lg cursor-pointer">
+                <input type="checkbox" checked class="accent-ig rounded"> <i class="fab fa-instagram text-ig"></i> <span class="text-sm">Instagram</span>
+              </label>
+              <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg cursor-pointer opacity-50">
+                <input type="checkbox" disabled class="rounded"> <i class="fab fa-youtube text-gray-400"></i> <span class="text-sm text-gray-400">YouTube</span>
+              </label>
+              <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg cursor-pointer">
+                <input type="checkbox" class="accent-note rounded"> <i class="fas fa-pen-nib text-note"></i> <span class="text-sm">note</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Text Editor -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <label class="text-xs font-medium text-gray-500 mb-2 block">テキスト</label>
+            <textarea class="w-full h-40 resize-none border-0 focus:ring-0 text-sm leading-relaxed placeholder:text-gray-300" placeholder="投稿テキストを入力...">自然音の中でも「低音」が体をゆるめる鍵。
+
+小川のせせらぎの中には、20-200Hzの低周波成分が含まれています。この帯域が副交感神経に働きかけるという研究報告があります。
+
+寝る前の15分、試してみませんか？
+
+#サウンドヒーリング #自然音 #KITAサウンドヒーリング</textarea>
+            <div class="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+              <div class="flex gap-3 text-xs">
+                <span class="text-x"><i class="fab fa-x-twitter mr-1"></i>178 / 280</span>
+                <span class="text-ig"><i class="fab fa-instagram mr-1"></i>178 / 2,200</span>
+              </div>
+              <div class="flex gap-2">
+                <button class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-50"><i class="fas fa-wand-magic-sparkles mr-1"></i>AIで改善</button>
+                <button class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-50"><i class="fas fa-shield-check mr-1"></i>NGチェック</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <label class="text-xs font-medium text-gray-500 mb-2 block">画像</label>
+            <div class="flex gap-3">
+              <div class="w-24 h-24 bg-gradient-to-br from-brand-100 to-brand-200 rounded-lg flex items-center justify-center relative group">
+                <i class="fas fa-image text-brand-400 text-2xl"></i>
+                <button class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times"></i></button>
+              </div>
+              <button class="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:border-brand-400 hover:text-brand-400 transition">
+                <i class="fas fa-plus text-lg mb-1"></i>
+                <span class="text-[10px]">追加</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Schedule -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <label class="text-xs font-medium text-gray-500 mb-3 block">スケジュール</label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="radio" name="schedule" class="accent-brand-500"> <span class="text-sm">今すぐ投稿</span>
+              </label>
+              <label class="flex items-center gap-3 p-2 rounded-lg bg-brand-50 border border-brand-200 cursor-pointer">
+                <input type="radio" name="schedule" checked class="accent-brand-500">
+                <span class="text-sm">日時を指定</span>
+                <div class="flex gap-2 ml-auto">
+                  <input type="date" value="2026-04-20" class="text-sm border border-gray-200 rounded-lg px-2 py-1">
+                  <input type="time" value="18:00" class="text-sm border border-gray-200 rounded-lg px-2 py-1">
+                </div>
+              </label>
+              <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="radio" name="schedule" class="accent-brand-500"> <span class="text-sm">下書きに保存</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="w-80 flex-shrink-0">
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm sticky top-20">
+            <div class="border-b border-gray-100">
+              <div class="flex">
+                <button class="tab-btn active flex-1 py-2.5 text-xs font-medium rounded-tl-xl" onclick="switchTab(this, 'x')"><i class="fab fa-x-twitter mr-1"></i>X</button>
+                <button class="tab-btn flex-1 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700" onclick="switchTab(this, 'ig')"><i class="fab fa-instagram mr-1"></i>IG</button>
+              </div>
+            </div>
+            <div class="p-4">
+              <!-- X Preview -->
+              <div id="preview-x">
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 bg-brand-200 rounded-full flex items-center justify-center text-brand-700 text-sm font-bold flex-shrink-0">SH</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1">
+                      <span class="text-sm font-bold">サウンドヒーリング協会</span>
+                      <i class="fas fa-circle-check text-x text-[10px]"></i>
+                    </div>
+                    <span class="text-xs text-gray-400">@SFH_Science</span>
+                    <p class="text-sm mt-2 leading-relaxed">自然音の中でも「低音」が体をゆるめる鍵。<br><br>小川のせせらぎの中には、20-200Hzの低周波成分が含まれています。この帯域が副交感神経に働きかけるという研究報告があります。<br><br>寝る前の15分、試してみませんか？</p>
+                    <div class="mt-2 flex gap-1 flex-wrap">
+                      <span class="text-xs text-x">#サウンドヒーリング</span>
+                      <span class="text-xs text-x">#自然音</span>
+                      <span class="text-xs text-x">#KITAサウンドヒーリング</span>
+                    </div>
+                    <div class="w-full h-40 bg-gradient-to-br from-brand-100 to-brand-200 rounded-xl mt-3 flex items-center justify-center">
+                      <i class="fas fa-image text-brand-300 text-3xl"></i>
+                    </div>
+                    <div class="flex justify-between mt-3 text-gray-400 text-xs">
+                      <span><i class="far fa-comment"></i></span>
+                      <span><i class="fas fa-retweet"></i></span>
+                      <span><i class="far fa-heart"></i></span>
+                      <span><i class="far fa-bookmark"></i></span>
+                      <span><i class="fas fa-arrow-up-from-bracket"></i></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- IG Preview (hidden by default) -->
+              <div id="preview-ig" class="hidden">
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="w-8 h-8 bg-brand-200 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold">SH</div>
+                  <span class="text-sm font-semibold">harmonicscience_jp</span>
+                </div>
+                <div class="w-full aspect-[4/5] bg-gradient-to-br from-brand-200 to-brand-400 rounded-lg flex items-center justify-center mb-3">
+                  <i class="fas fa-image text-white text-4xl opacity-50"></i>
+                </div>
+                <div class="flex justify-between text-gray-500 mb-2">
+                  <div class="flex gap-3">
+                    <i class="far fa-heart text-lg"></i>
+                    <i class="far fa-comment text-lg"></i>
+                    <i class="far fa-paper-plane text-lg"></i>
+                  </div>
+                  <i class="far fa-bookmark text-lg"></i>
+                </div>
+                <p class="text-xs leading-relaxed"><span class="font-bold">harmonicscience_jp</span> 自然音の中でも「低音」が体をゆるめる鍵。小川のせせらぎの中には...</p>
+              </div>
+            </div>
+            <!-- Quality Score -->
+            <div class="border-t border-gray-100 p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-medium text-gray-500">AI品質スコア</span>
+                <span class="text-lg font-bold text-brand-600">82<span class="text-xs text-gray-400 font-normal">/100</span></span>
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-gray-400 w-16">トーン</span>
+                  <div class="flex-1 h-1.5 bg-gray-100 rounded-full"><div class="h-full w-4/5 bg-brand-400 rounded-full"></div></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-gray-400 w-16">正確性</span>
+                  <div class="flex-1 h-1.5 bg-gray-100 rounded-full"><div class="h-full w-[90%] bg-brand-500 rounded-full"></div></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-gray-400 w-16">エンゲージ</span>
+                  <div class="flex-1 h-1.5 bg-gray-100 rounded-full"><div class="h-full w-3/4 bg-brand-400 rounded-full"></div></div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-gray-400 w-16">NGルール</span>
+                  <div class="flex-1 h-1.5 bg-gray-100 rounded-full"><div class="h-full w-full bg-green-400 rounded-full"></div></div>
+                  <span class="text-[10px] text-green-500"><i class="fas fa-check"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PAGE 4: AI Generation ===== -->
+  <div id="page-ai" class="page fade-in">
+    <div class="max-w-4xl mx-auto px-4 py-4">
+      <h2 class="text-lg font-bold mb-4"><i class="fas fa-wand-magic-sparkles mr-2 text-purple-500"></i>AI記事生成</h2>
+
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Left: Settings -->
+        <div class="space-y-4">
+          <!-- Step 1: Upload -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 bg-purple-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold">1</span>
+              資料をアップロード
+            </h3>
+            <div class="flex gap-2 mb-3">
+              <button class="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-purple-400 hover:bg-purple-50 transition">
+                <i class="fas fa-file-pdf text-red-400 text-lg block mb-1"></i>
+                <span class="text-[10px] text-gray-500">PDF</span>
+              </button>
+              <button class="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-purple-400 hover:bg-purple-50 transition">
+                <i class="fas fa-image text-blue-400 text-lg block mb-1"></i>
+                <span class="text-[10px] text-gray-500">画像</span>
+              </button>
+              <button class="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-purple-400 hover:bg-purple-50 transition">
+                <i class="fas fa-file-lines text-green-400 text-lg block mb-1"></i>
+                <span class="text-[10px] text-gray-500">テキスト</span>
+              </button>
+              <button class="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-purple-400 hover:bg-purple-50 transition">
+                <i class="fas fa-link text-purple-400 text-lg block mb-1"></i>
+                <span class="text-[10px] text-gray-500">URL</span>
+              </button>
+              <button class="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-purple-400 hover:bg-purple-50 transition">
+                <i class="fas fa-microphone text-orange-400 text-lg block mb-1"></i>
+                <span class="text-[10px] text-gray-500">音声</span>
+              </button>
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-file-pdf text-red-400"></i>
+                  <span class="text-xs">カンガルーカップ2026_開催要項.pdf</span>
+                </div>
+                <button class="text-gray-400 hover:text-red-400 transition"><i class="fas fa-times"></i></button>
+              </div>
+              <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-microphone text-orange-400"></i>
+                  <span class="text-xs">圭一郎さん音声メモ_0402.m4a</span>
+                </div>
+                <button class="text-gray-400 hover:text-red-400 transition"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Settings -->
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+              <span class="w-5 h-5 bg-purple-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold">2</span>
+              生成設定
+            </h3>
+            <div class="space-y-3">
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">投稿先</label>
+                <div class="flex gap-2">
+                  <label class="flex items-center gap-1.5 px-2.5 py-1.5 bg-x/5 border border-x/20 rounded-lg text-xs cursor-pointer">
+                    <input type="checkbox" checked class="accent-x rounded w-3 h-3"> <i class="fab fa-x-twitter text-x"></i> X
+                  </label>
+                  <label class="flex items-center gap-1.5 px-2.5 py-1.5 bg-ig/5 border border-ig/20 rounded-lg text-xs cursor-pointer">
+                    <input type="checkbox" checked class="accent-ig rounded w-3 h-3"> <i class="fab fa-instagram text-ig"></i> IG
+                  </label>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">生成日数</label>
+                  <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+                    <option>7日分</option>
+                    <option selected>14日分</option>
+                    <option>30日分</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 mb-1 block">開始日</label>
+                  <input type="date" value="2026-04-20" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2">
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">投稿時間帯</label>
+                <select class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white">
+                  <option selected>朝 8-10時 / 夕 18-20時</option>
+                  <option>朝 7-9時 / 昼 12-13時</option>
+                  <option>カスタム</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">トーン</label>
+                <div class="flex gap-2">
+                  <button class="flex-1 py-2 text-xs border-2 border-purple-300 bg-purple-50 text-purple-700 rounded-lg font-medium">やわらかい</button>
+                  <button class="flex-1 py-2 text-xs border border-gray-200 text-gray-500 rounded-lg hover:border-gray-300">ビジネス</button>
+                  <button class="flex-1 py-2 text-xs border border-gray-200 text-gray-500 rounded-lg hover:border-gray-300">カジュアル</button>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">NGルール</label>
+                <div class="space-y-1">
+                  <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" checked class="accent-purple-500 rounded w-3 h-3"> 効果断言禁止（薬機法対応）</label>
+                  <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" checked class="accent-purple-500 rounded w-3 h-3"> 改行前句読点なし</label>
+                  <label class="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" checked class="accent-purple-500 rounded w-3 h-3"> #KITAサウンドヒーリング 固定</label>
+                </div>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 mb-1 block">追加指示（任意）</label>
+                <textarea class="w-full h-16 text-xs border border-gray-200 rounded-lg px-3 py-2 resize-none placeholder:text-gray-300" placeholder="例: イベント告知は含めず知識系のみ"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <button onclick="showResults()" class="w-full py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-semibold shadow-lg shadow-purple-200 transition">
+            <i class="fas fa-wand-magic-sparkles mr-2"></i>下書きを生成する
+          </button>
+        </div>
+
+        <!-- Right: Results -->
+        <div>
+          <div id="ai-placeholder" class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
+            <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <i class="fas fa-wand-magic-sparkles text-purple-400 text-2xl"></i>
+            </div>
+            <h3 class="font-semibold text-gray-700 mb-2">AIが投稿を生成します</h3>
+            <p class="text-sm text-gray-400">資料をアップロードして設定を選択したら<br>「下書きを生成する」を押してください</p>
+          </div>
+
+          <div id="ai-results" class="hidden space-y-3">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold flex items-center gap-2">
+                  <span class="w-5 h-5 bg-green-500 text-white rounded-full text-[10px] flex items-center justify-center"><i class="fas fa-check"></i></span>
+                  生成完了
+                </h3>
+                <span class="text-xs text-gray-400">14日分 x 2 = 28件</span>
+              </div>
+              <div class="bg-green-50 rounded-lg p-3 text-xs text-green-700 mb-3">
+                <i class="fas fa-circle-check mr-1"></i> NGルール違反: 0件 / 平均品質スコア: 81.3
+              </div>
+            </div>
+
+            <!-- Result List -->
+            <div class="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+              <!-- Result Item -->
+              <div class="bg-white rounded-lg border border-gray-200 p-3 hover:border-purple-300 cursor-pointer transition">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium">4/20（日）</span>
+                  <div class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> 178字</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> 285字</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-500 line-clamp-2">低い音 → 体に共鳴しゆるむ / 高い音 → 意識がクリアに...</p>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span class="text-[10px] text-brand-500 font-medium">スコア: 84</span>
+                  <div class="flex gap-1">
+                    <button class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-pen"></i></button>
+                    <button class="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg border border-gray-200 p-3 hover:border-purple-300 cursor-pointer transition">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium">4/21（月）</span>
+                  <div class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> 195字</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> 310字</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-500 line-clamp-2">呼吸法 × 音 = 最強のリラクゼーション。4-7-8呼吸法に自然音を...</p>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span class="text-[10px] text-brand-500 font-medium">スコア: 79</span>
+                  <div class="flex gap-1">
+                    <button class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-pen"></i></button>
+                    <button class="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg border border-gray-200 p-3 hover:border-purple-300 cursor-pointer transition">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium">4/22（火）</span>
+                  <div class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> 190字</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> 292字</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-500 line-clamp-2">虫の声が心地よいのは日本人だけ？ 左脳で処理する日本語話者の感性と...</p>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span class="text-[10px] text-brand-500 font-medium">スコア: 86</span>
+                  <div class="flex gap-1">
+                    <button class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-pen"></i></button>
+                    <button class="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg border border-amber-300 p-3 hover:border-amber-400 cursor-pointer transition bg-amber-50/30">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium">4/23（水）</span>
+                  <div class="flex gap-1">
+                    <span class="platform-badge bg-amber-100 text-amber-600"><i class="fas fa-exclamation-triangle"></i> 要確認</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> 340字</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-500 line-clamp-2">科学が証明する音の癒し効果。WHO調査でストレス起因の疾患が...</p>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span class="text-[10px] text-amber-600 font-medium"><i class="fas fa-exclamation-triangle mr-0.5"></i>スコア: 62 - NG表現あり</span>
+                  <div class="flex gap-1">
+                    <button class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-pen"></i></button>
+                    <button class="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg border border-gray-200 p-3 hover:border-purple-300 cursor-pointer transition">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-medium">4/24（木）</span>
+                  <div class="flex gap-1">
+                    <span class="platform-badge bg-x/10 text-x"><i class="fab fa-x-twitter"></i> 201字</span>
+                    <span class="platform-badge bg-ig/10 text-ig"><i class="fab fa-instagram"></i> 315字</span>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-500 line-clamp-2">「音楽を聴く」と「音を浴びる」は違う。体感音響は全身で振動を感じ...</p>
+                <div class="flex items-center justify-between mt-1.5">
+                  <span class="text-[10px] text-brand-500 font-medium">スコア: 88</span>
+                  <div class="flex gap-1">
+                    <button class="text-[10px] text-gray-400 hover:text-gray-600 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-pen"></i></button>
+                    <button class="text-[10px] text-gray-400 hover:text-red-400 px-1.5 py-0.5 rounded hover:bg-gray-50"><i class="fas fa-trash"></i></button>
+                  </div>
+                </div>
+              </div>
+              <div class="text-center py-2">
+                <span class="text-xs text-gray-400">... 他 23件</span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+              <button class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-medium transition">
+                <i class="fas fa-file-lines mr-1.5"></i>全て下書きに保存
+              </button>
+              <button class="flex-1 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-purple-200 transition">
+                <i class="fas fa-calendar-check mr-1.5"></i>カレンダーに一括配置
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + page).classList.add('active');
+      document.getElementById('nav-' + page).classList.add('active');
+      document.getElementById('page-' + page).classList.remove('fade-in');
+      void document.getElementById('page-' + page).offsetWidth;
+      document.getElementById('page-' + page).classList.add('fade-in');
+    }
+
+    function switchTab(btn, platform) {
+      btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('preview-x').classList.toggle('hidden', platform !== 'x');
+      document.getElementById('preview-ig').classList.toggle('hidden', platform !== 'ig');
+    }
+
+    function filterDrafts(btn, type) {
+      btn.parentElement.querySelectorAll('button').forEach(b => {
+        b.classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+        b.classList.add('text-gray-500');
+      });
+      btn.classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+      btn.classList.remove('text-gray-500');
+    }
+
+    function showResults() {
+      document.getElementById('ai-placeholder').classList.add('hidden');
+      document.getElementById('ai-results').classList.remove('hidden');
+      document.getElementById('ai-results').classList.add('fade-in');
+    }
+  </script>
+
+</body>
+</html>
