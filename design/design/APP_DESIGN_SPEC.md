@@ -788,6 +788,13 @@ User → Frontend → Backend API → DB
 | 24 | Issue管理 | **30 Issue / 4 Sprint / 7-8週間** | クリティカルパス明確化。→ `IMPLEMENTATION_PLAN.md` |
 | 25 | MVPコスト | **~$5-15/月** | Railway従量課金のみ。PMF後は~$60-80/月 |
 
+### 追加決定事項（UX: シニア配慮 2026-04-17）
+
+| # | 項目 | 決定 | 要点 |
+|---|---|---|---|
+| 26 | ミニヘルプシステム | **全UI要素に`?`アイコン + Popover（吹き出し）ヘルプを配置** | シニアユーザー（例: 圭一郎さん世代）が迷わず操作できるUX。ボタン/フィールド/設定項目の横に小さな`?`を置き、クリック or hoverで吹き出し表示。ヘルプ文言はi18n対応前提でJSON管理 |
+| 27 | ヘルプモード切替 | **グローバルトグルでON/OFF可能（デフォルトON）** | 熟練者は画面をすっきり表示できる。ヘッダー右上に切替スイッチ配置。設定はユーザープロフィールに永続化（`users.ui_preferences.help_mode_enabled`）。OFF時は`?`アイコン非表示 |
+
 ### 未決定（今後検討）
 - **音声文字起こし**: Whisper API vs Google Speech-to-Text（Phase 1.5で決定）
 - **オフライン対応**: PWA Service Worker の範囲（Phase 3で決定）

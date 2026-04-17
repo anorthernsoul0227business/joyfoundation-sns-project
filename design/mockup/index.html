@@ -39,6 +39,80 @@
     .tab-btn { transition: all 0.15s; }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+    /* ===== Mini Help System ===== */
+    .help-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      margin-left: 4px;
+      border-radius: 9999px;
+      background: #e0f0e8;
+      color: #227453;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: help;
+      position: relative;
+      border: none;
+      transition: all 0.15s;
+      vertical-align: middle;
+    }
+    .help-mark:hover { background: #319068; color: white; transform: scale(1.1); }
+    .help-mark .help-bubble {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2937;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.5;
+      white-space: normal;
+      width: 260px;
+      text-align: left;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .help-mark .help-bubble::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #1f2937;
+    }
+    .help-mark.active .help-bubble,
+    .help-mark:focus .help-bubble { display: block; }
+    body.help-off .help-mark { display: none !important; }
+
+    .help-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: #f0f9f4;
+      border: 1px solid #b5e0ca;
+      border-radius: 9999px;
+      font-size: 12px;
+      color: #227453;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .help-toggle:hover { background: #d9f0e3; }
+    .help-toggle .dot {
+      width: 8px; height: 8px; border-radius: 9999px;
+      background: #319068;
+    }
+    body.help-off .help-toggle { background: #f3f4f6; border-color: #e5e7eb; color: #6b7280; }
+    body.help-off .help-toggle .dot { background: #9ca3af; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -73,6 +147,13 @@
       </nav>
 
       <div class="flex items-center gap-3">
+        <button class="help-toggle" onclick="toggleHelpMode()" id="help-toggle-btn" title="ヘルプ表示の切替">
+          <span class="dot"></span>
+          <span id="help-toggle-label">ヘルプON</span>
+        </button>
+        <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="ヘルプモードの説明">?
+          <span class="help-bubble">画面上の小さな「?」マークを押すと、その項目の使い方が吹き出しで表示されます。慣れてきたらこのボタンでOFFにできます。</span>
+        </button>
         <button class="relative p-2 text-gray-400 hover:text-gray-600 transition">
           <i class="fas fa-bell"></i>
           <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -100,6 +181,9 @@
             <button class="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">週</button>
             <button class="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700">日</button>
           </div>
+          <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="表示切替の説明">?
+            <span class="help-bubble">カレンダーの表示単位を切り替えます。「月」で1ヶ月まとめ、「週」で7日間、「日」で1日の時間帯ごとの詳細が見られます。</span>
+          </button>
           <!-- Platform Filter -->
           <div class="flex items-center gap-2">
             <label class="flex items-center gap-1 text-xs cursor-pointer">
@@ -114,6 +198,9 @@
             <label class="flex items-center gap-1 text-xs cursor-pointer">
               <input type="checkbox" class="accent-note rounded"> <span class="text-note font-medium">note</span>
             </label>
+            <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="SNS絞り込みの説明">?
+              <span class="help-bubble">チェックを入れたSNSの投稿だけをカレンダーに表示します。例えばX（旧ツイッター）だけ確認したい時に便利です。</span>
+            </button>
           </div>
         </div>
       </div>
@@ -392,12 +479,18 @@
           <h2 class="text-lg font-bold"><i class="fas fa-file-lines mr-2 text-gray-400"></i>下書き一覧</h2>
           <p class="text-xs text-gray-400 mt-0.5">12件の下書き（3件 要確認）</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
           <button class="px-3 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
             <i class="fas fa-calendar-plus mr-1"></i>選択をカレンダーに配置
           </button>
+          <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="カレンダー配置の説明">?
+            <span class="help-bubble">チェックを入れた下書きを、カレンダー画面へまとめて移動します。移動後に日時を指定すると自動投稿の予約になります。</span>
+          </button>
           <button onclick="switchPage('create')" class="px-3 py-2 text-sm bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition font-medium shadow-sm">
             <i class="fas fa-plus mr-1"></i>新規作成
+          </button>
+          <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="新規作成の説明">?
+            <span class="help-bubble">新しい投稿を一から書きます。文章と画像を用意して、あとで投稿する時間を決めます。</span>
           </button>
         </div>
       </div>
@@ -412,6 +505,9 @@
             <button class="px-3 py-1.5 text-xs font-medium text-gray-500" onclick="filterDrafts(this,'review')">要確認 <span class="text-amber-500">3</span></button>
             <button class="px-3 py-1.5 text-xs font-medium text-gray-500" onclick="filterDrafts(this,'scheduled')">予約済み <span class="text-brand-500">2</span></button>
           </div>
+          <button type="button" class="help-mark" onclick="toggleBubble(event, this)" aria-label="ステータスの説明">?
+            <span class="help-bubble">下書きの状態で絞り込みます。「要確認」はAIが内容に気になる点を見つけたものです。</span>
+          </button>
           <!-- Platform Filter -->
           <div class="flex items-center gap-2 ml-2 border-l border-gray-200 pl-3">
             <button class="px-2 py-1 text-xs rounded-md bg-x/10 text-x font-medium border border-x/20">X</button>
@@ -1339,6 +1435,33 @@
   </div>
 
   <script>
+    // ===== Mini Help System =====
+    function toggleHelpMode() {
+      document.body.classList.toggle('help-off');
+      const off = document.body.classList.contains('help-off');
+      document.getElementById('help-toggle-label').textContent = off ? 'ヘルプOFF' : 'ヘルプON';
+      try { localStorage.setItem('helpMode', off ? 'off' : 'on'); } catch (e) {}
+    }
+
+    function toggleBubble(ev, el) {
+      ev.stopPropagation();
+      document.querySelectorAll('.help-mark.active').forEach(m => { if (m !== el) m.classList.remove('active'); });
+      el.classList.toggle('active');
+    }
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.help-mark.active').forEach(m => m.classList.remove('active'));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        if (localStorage.getItem('helpMode') === 'off') {
+          document.body.classList.add('help-off');
+          document.getElementById('help-toggle-label').textContent = 'ヘルプOFF';
+        }
+      } catch (e) {}
+    });
+
     function switchPage(page) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
