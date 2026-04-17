@@ -1,0 +1,14 @@
+{
+  "name": "@sns-calendar/config",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"process.exit(0)\""
+  },
+  "exports": {
+    "./tailwind": {
+      "types": "./tailwind/index.d.ts",
+      "default": "./tailwind/index.js"
+    }
+  }
+}
