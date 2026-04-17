@@ -1,5 +1,8 @@
 import { VERSION } from "@sns-calendar/shared-types";
 import { Button } from "@sns-calendar/ui";
+import type { HealthResponse } from "../generated";
+
+const dummyHealthResponse: HealthResponse = { status: "ok", version: "0.1.0" };
 
 export default function HomePage() {
   return (
@@ -14,6 +17,10 @@ export default function HomePage() {
         <p className="mt-4 text-base text-slate-600">
           Shared types version: <span className="font-mono">{VERSION}</span>
         </p>
+        <p className="mt-2 text-base text-slate-600">
+          OpenAPI health version:{" "}
+          <span className="font-mono">{dummyHealthResponse.version}</span>
+        </p>
         <div className="mt-8">
           <Button type="button">UI Package Button</Button>
         </div>
@@ -21,4 +28,3 @@ export default function HomePage() {
     </main>
   );
 }
-

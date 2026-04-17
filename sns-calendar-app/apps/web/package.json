@@ -6,7 +6,7 @@
     "dev": "next dev --hostname 0.0.0.0 --port 3000",
     "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "generate:api-client": "openapi-ts --config openapi-ts.config.ts"
+    "generate:api-client": "openapi-ts --file openapi-ts.config.ts"
   },
   "dependencies": {
     "@sns-calendar/config": "workspace:*",

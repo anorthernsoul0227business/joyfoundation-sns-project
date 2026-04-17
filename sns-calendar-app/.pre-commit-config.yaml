@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: generate-openapi-schema
+        name: Regenerate OpenAPI schema
+        entry: sh -c 'cd apps/api && if command -v poetry >/dev/null 2>&1; then poetry run python scripts/generate_openapi.py; else ~/.local/bin/poetry run python scripts/generate_openapi.py; fi'
+        language: system
+        pass_filenames: false
+        files: ^apps/api/app/(main\.py|schemas/.*\.py)$
+      - id: generate-api-client
+        name: Regenerate API client
+        entry: pnpm openapi:gen-client
+        language: system
+        pass_filenames: false
+        files: ^apps/api/openapi\.json$

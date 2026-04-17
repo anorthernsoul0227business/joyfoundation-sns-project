@@ -8,10 +8,12 @@ __pycache__
 .pytest_cache
 .mypy_cache
 .ruff_cache
+apps/web/src/generated/*
+!apps/web/src/generated/.gitkeep
 .DS_Store
 .env
 .env.*
 !.env.example
 poetry.lock
 pnpm-debug.log*
-
+*.tsbuildinfo

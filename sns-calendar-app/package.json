@@ -11,10 +11,12 @@
     "dev": "turbo run dev --parallel --filter=@sns-calendar/web --filter=@sns-calendar/api",
     "lint": "turbo run lint --filter=@sns-calendar/web",
     "typecheck": "turbo run typecheck --filter=@sns-calendar/web",
-    "generate:api-client": "turbo run generate:api-client --filter=@sns-calendar/web"
+    "generate:api-client": "turbo run generate:api-client --filter=@sns-calendar/web",
+    "openapi:gen-schema": "sh -c 'cd apps/api && if command -v poetry >/dev/null 2>&1; then poetry run python scripts/generate_openapi.py; else ~/.local/bin/poetry run python scripts/generate_openapi.py; fi'",
+    "openapi:gen-client": "pnpm --filter @sns-calendar/web generate:api-client",
+    "openapi:sync": "pnpm openapi:gen-schema && pnpm openapi:gen-client"
   },
   "devDependencies": {
     "turbo": "^2.0.0"
   }
 }
-
