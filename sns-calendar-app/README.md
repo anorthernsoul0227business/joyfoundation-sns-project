@@ -36,6 +36,40 @@ pnpm lint
 cd apps/api && poetry run pytest
 ```
 
+## Supabase 設定
+
+### 初回セットアップ
+
+1. 依存をインストール
+   ```bash
+   cd apps/api && poetry install
+   ```
+
+2. 環境変数を設定
+   ```bash
+   cp .env.example .env
+   # .env を開いて SUPABASE_SERVICE_ROLE_KEY に値を設定
+   # （Supabase Dashboard → Settings → API Keys → Secret keys → Reveal）
+   ```
+
+3. ローカルで Supabase を起動
+   ```bash
+   supabase start
+   ```
+
+4. ローカル管理 UI にアクセス
+   ```text
+   Studio: http://localhost:54323
+   ```
+
+### リモート接続の切替
+
+`.env` の `SUPABASE_URL` とキー類を切り替えて利用します。
+
+### マイグレーション
+
+`supabase/migrations/` は WEB-004 以降で使用します。
+
 ## OpenAPI
 
 - スキーマのみ再生成: `pnpm openapi:gen-schema`

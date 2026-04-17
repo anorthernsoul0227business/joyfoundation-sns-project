@@ -1,16 +1,34 @@
 from functools import lru_cache
+from pathlib import Path
+from typing import Optional
 
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
-    app_name: str = "SNS Calendar API"
-    environment: str = "development"
+ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
-    model_config = SettingsConfigDict(env_prefix="SNS_CALENDAR_", extra="ignore")
+
+class Settings(BaseSettings):
+    app_name: str = Field(default="SNS Calendar API", validation_alias="APP_NAME")
+    environment: str = Field(default="development", validation_alias="ENVIRONMENT")
+    supabase_url: Optional[str] = Field(default=None, validation_alias="SUPABASE_URL")
+    supabase_anon_key: Optional[str] = Field(
+        default=None,
+        validation_alias="SUPABASE_ANON_KEY",
+    )
+    supabase_service_role_key: Optional[SecretStr] = Field(
+        default=None,
+        validation_alias="SUPABASE_SERVICE_ROLE_KEY"
+    )
+
+    model_config = SettingsConfigDict(
+        env_file=ROOT_ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
-
