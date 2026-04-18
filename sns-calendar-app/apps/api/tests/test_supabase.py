@@ -24,4 +24,5 @@ def test_get_supabase_client() -> None:
     client = get_supabase_client()
 
     assert isinstance(client, supabase.Client)
-    assert getattr(client, "supabase_url", getattr(client, "url", None)) == settings.supabase_url
+    client_url = getattr(client, "supabase_url", getattr(client, "url", None))
+    assert str(client_url).rstrip("/") == settings.supabase_url.rstrip("/")

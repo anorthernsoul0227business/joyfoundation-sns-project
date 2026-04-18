@@ -68,7 +68,31 @@ cd apps/api && poetry run pytest
 
 ### マイグレーション
 
-`supabase/migrations/` は WEB-004 以降で使用します。
+`supabase/migrations/` は Pure Supabase migrations（SQL）で管理します。Alembic / SQLAlchemy は使いません。
+
+1. ローカル Supabase の状態確認
+   ```bash
+   supabase status
+   ```
+2. 未起動ならローカル Supabase を起動
+   ```bash
+   supabase start
+   ```
+3. マイグレーションを再適用して確認
+   ```bash
+   supabase db reset
+   ```
+
+### マイグレーション追加ワークフロー
+
+1. `supabase/migrations/` に `YYYYMMDDHHMMSS_description.sql` を追加します。
+2. ローカルで `supabase db reset` を実行して、最初から適用できることを確認します。
+3. 必要に応じて `supabase db dump --db-url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" --schema public -f /tmp/schema_dump.sql` で生成スキーマを確認します。
+4. API テストと既存の `pnpm typecheck && pnpm build && pnpm lint` を通して既存成果物に影響がないことを確認します。
+
+### リモート反映
+
+リモートへ反映する場合は `supabase db push` を使います。ただし WEB-004 の作業では本番リモートへの push は実行しません。
 
 ## OpenAPI
 
