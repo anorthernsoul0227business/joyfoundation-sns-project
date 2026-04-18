@@ -1,4 +1,5 @@
 import os
+import socket
 import uuid
 
 import pytest
@@ -18,9 +19,17 @@ def _has_local_supabase_env() -> bool:
     ) and ("127.0.0.1" in url or "localhost" in url)
 
 
+def _can_reach_local_supabase() -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", 54321), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
 @pytest.mark.skipif(
-    not _has_local_supabase_env(),
-    reason="Local Supabase environment variables are not configured.",
+    not _has_local_supabase_env() or not _can_reach_local_supabase(),
+    reason="Local Supabase environment variables are not configured or the local Supabase API is unreachable.",
 )
 def test_initial_schema_tables_exist() -> None:
     client = get_supabase_client()
@@ -35,8 +44,8 @@ def test_initial_schema_tables_exist() -> None:
 
 
 @pytest.mark.skipif(
-    not _has_local_supabase_env(),
-    reason="Local Supabase environment variables are not configured.",
+    not _has_local_supabase_env() or not _can_reach_local_supabase(),
+    reason="Local Supabase environment variables are not configured or the local Supabase API is unreachable.",
 )
 def test_initial_schema_foreign_keys_enforced() -> None:
     client = get_supabase_client()
