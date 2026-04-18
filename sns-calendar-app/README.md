@@ -90,6 +90,18 @@ cd apps/api && poetry run pytest
 3. 必要に応じて `supabase db dump --db-url "postgresql://postgres:postgres@127.0.0.1:54322/postgres" --schema public -f /tmp/schema_dump.sql` で生成スキーマを確認します。
 4. API テストと既存の `pnpm typecheck && pnpm build && pnpm lint` を通して既存成果物に影響がないことを確認します。
 
+### RLS 動作確認
+
+1. ローカル Supabase を起動した状態で `supabase db reset` を実行します。
+2. Supabase Studio (`http://localhost:54323`) の Table Editor から対象テーブルを開き、Policies タブで `organizations` / `org_members` / `users` のポリシーを確認します。
+3. CLI で確認する場合は `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "SELECT schemaname, tablename, policyname FROM pg_policies WHERE schemaname='public' ORDER BY tablename, policyname;"` を実行します。
+4. API 側の RLS 回帰確認は、ローカル専用の環境変数を一時指定して `cd apps/api && SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... poetry run pytest -v` で実行します。
+
+### RLS トラブルシューティング
+
+- フロントエンドや通常ユーザー権限の確認に `SUPABASE_SERVICE_ROLE_KEY` を使わないでください。service role は RLS をバイパスするため、ポリシー検証になりません。
+- `.env` は本番接続用として扱い、ローカル検証用の URL / キーはコマンド実行時の一時環境変数で渡します。
+
 ### リモート反映
 
 リモートへ反映する場合は `supabase db push` を使います。ただし WEB-004 の作業では本番リモートへの push は実行しません。
