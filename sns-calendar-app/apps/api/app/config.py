@@ -12,6 +12,7 @@ ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 class Settings(BaseSettings):
     app_name: str = Field(default="SNS Calendar API", validation_alias="APP_NAME")
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
+    frontend_url: Optional[str] = Field(default=None, validation_alias="FRONTEND_URL")
     supabase_url: Optional[str] = Field(default=None, validation_alias="SUPABASE_URL")
     supabase_anon_key: Optional[str] = Field(
         default=None,

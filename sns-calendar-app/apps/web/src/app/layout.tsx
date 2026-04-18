@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { AppShell } from "../components/AppShell";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SNS Calendar",
-  description: "WEB-001 monorepo scaffold",
+  description: "SNS Calendar authentication flow",
 };
 
 export default function RootLayout({
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body>{children}</body>
+      <body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
