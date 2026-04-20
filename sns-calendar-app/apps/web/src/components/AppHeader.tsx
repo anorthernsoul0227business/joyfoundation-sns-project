@@ -8,7 +8,7 @@ import { useAuthStore } from "../stores/auth";
 
 const navItems = [
   { href: "/calendar", label: "カレンダー", enabled: true },
-  { href: "#", label: "下書き", enabled: false },
+  { href: "/drafts", label: "下書き", enabled: true },
   { href: "#", label: "投稿作成", enabled: false },
   { href: "#", label: "AI生成", enabled: false },
 ];

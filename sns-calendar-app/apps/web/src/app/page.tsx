@@ -71,6 +71,12 @@ export default function HomePage() {
             >
               カレンダーを開く
             </Link>
+            <Link
+              className="inline-flex items-center rounded-full border border-brand-ink/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-ocean hover:text-brand-ocean"
+              href="/drafts"
+            >
+              下書きを見る
+            </Link>
             <Button className="rounded-full px-5 py-3" type="button">
               UI Package Button
             </Button>
