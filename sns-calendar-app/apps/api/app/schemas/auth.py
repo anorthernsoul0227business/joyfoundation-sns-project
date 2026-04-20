@@ -1,4 +1,3 @@
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, SecretStr
 
@@ -6,7 +5,7 @@ from pydantic import BaseModel, EmailStr, Field, SecretStr
 class SignupRequest(BaseModel):
     email: EmailStr
     password: SecretStr = Field(min_length=8)
-    display_name: Optional[str] = None
+    display_name: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -21,10 +20,10 @@ class RefreshRequest(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: EmailStr
-    display_name: Optional[str] = None
+    display_name: str | None = None
     ui_mode: str = "simple"
     help_mode_enabled: bool = True
-    default_org_id: Optional[str] = None
+    default_org_id: str | None = None
 
 
 class SessionResponse(BaseModel):

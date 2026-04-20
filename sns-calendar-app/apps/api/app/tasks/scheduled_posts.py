@@ -7,7 +7,7 @@ returns a trivial payload so the worker + beat loop is observable from logs.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.tasks.celery_app import celery_app
 
@@ -17,5 +17,5 @@ def check_scheduled_posts() -> dict[str, str]:
     """Called every minute by Celery beat as the polling heartbeat."""
     return {
         "status": "ok",
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
     }

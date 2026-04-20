@@ -5,7 +5,6 @@ import pytest
 from app.config import get_settings
 from app.core.supabase import get_supabase_client
 
-
 supabase = pytest.importorskip("supabase")
 
 

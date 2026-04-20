@@ -5,7 +5,6 @@ import uuid
 import pytest
 from supabase import Client, create_client
 
-
 LOCAL_SUPABASE_URL = "http://127.0.0.1:54321"
 
 

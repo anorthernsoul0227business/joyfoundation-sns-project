@@ -13,7 +13,6 @@ from app.schemas.auth import (
     UserResponse,
 )
 
-
 router = APIRouter()
 
 
@@ -50,7 +49,7 @@ def _normalize_user(user: Any, profile: dict[str, Any] | None = None) -> UserRes
         )
 
     return UserResponse(
-        id=getattr(user, "id"),
+        id=user.id,
         email=email,
         display_name=source.get("display_name") or metadata.get("display_name"),
         ui_mode=source.get("ui_mode", "simple"),

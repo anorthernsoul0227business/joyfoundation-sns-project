@@ -6,7 +6,7 @@ cached in-process for performance.
 """
 
 from functools import lru_cache
-from typing import Annotated, Optional
+from typing import Annotated
 
 import jwt
 from fastapi import Header, HTTPException, status
@@ -34,7 +34,7 @@ def _get_jwks_client() -> jwt.PyJWKClient:
     return jwt.PyJWKClient(jwks_url, cache_keys=True, lifespan=600)
 
 
-def _extract_bearer_token(authorization: Optional[str]) -> str:
+def _extract_bearer_token(authorization: str | None) -> str:
     if authorization is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -54,7 +54,7 @@ def _extract_bearer_token(authorization: Optional[str]) -> str:
 
 
 async def get_current_user(
-    authorization: Annotated[Optional[str], Header()] = None,
+    authorization: Annotated[str | None, Header()] = None,
 ) -> CurrentUser:
     token = _extract_bearer_token(authorization)
 

@@ -11,7 +11,6 @@ from supabase import Client, create_client
 from app.core.security import _extract_bearer_token, get_current_user
 from app.main import app
 
-
 LOCAL_SUPABASE_URL = "http://127.0.0.1:54321"
 
 

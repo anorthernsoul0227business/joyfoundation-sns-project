@@ -163,8 +163,37 @@ Docker Desktop 4.30+ の一部構成で `docker-credential-desktop` が PATH に
 - `.pre-commit-config.yaml` は Python 側のスキーマ変更時に `openapi.json` を再生成し、`openapi.json` が変わった場合に TS クライアント生成を走らせます。
 - 初回だけ手元で `pre-commit install` を実行してください。フック自体はリポジトリに含めていますが、自動インストールはしません。
 
-## CI 整合性チェック
+## CI/CD（GitHub Actions）
 
-- `.github/workflows/openapi-check.yml` は Pull Request ごとに `pnpm openapi:sync` を実行します。
-- 実行後に `git diff --exit-code -- apps/api/openapi.json` で OpenAPI スキーマの再生成漏れを検出します。
-- `apps/web/src/generated/` はコミット対象外のため、CI では生成コマンドが成功することをもって整合性を確認します。
+`.github/workflows/ci.yml` が PR と main への push で走ります。3 ジョブ構成:
+
+| ジョブ | 役割 | 主要ステップ |
+|---|---|---|
+| **frontend** | Next.js 品質ゲート | `pnpm typecheck` / `pnpm lint` / `pnpm build` + axios サプライチェーン監査 |
+| **backend** | FastAPI 品質ゲート | `poetry run ruff check` / `poetry run pytest` |
+| **openapi-schema-sync** | 契約整合性 | `pnpm openapi:gen-schema` 後に `git diff --exit-code` で生成漏れ検出 |
+
+### サプライチェーン監査
+
+`ci.yml` の `Security audit (axios supply-chain)` ステップが `pnpm-lock.yaml` を grep し、既知の悪意あるバージョン（`axios@1.14.1` / `axios@0.30.4` / `plain-crypto-js@4.2.x`）を検出したら fail します。
+
+### Dependabot
+
+`.github/dependabot.yml` で毎週 (npm/pip) と毎月 (GitHub Actions / Docker) の自動更新 PR を受け付けます。axios のサプライチェーン攻撃バージョンは `ignore` 指定で PR 提案対象から外しています。
+
+### ローカルでの再現
+
+```bash
+# Backend
+cd apps/api && poetry run ruff check . && poetry run pytest
+
+# Frontend
+pnpm typecheck && pnpm build && pnpm lint
+
+# OpenAPI 整合性
+pnpm openapi:gen-schema && git diff --exit-code -- apps/api/openapi.json
+```
+
+### リモートリポジトリ化時の注意
+
+現状 `.github/` は `sns-calendar-app/` 配下にあります。将来 `sns-calendar-app` を独立 Git リポジトリとして切り出す前提の配置です。`joyfoundation_project/` 全体を単一リポジトリとして GitHub に push する場合は、`.github/` をリポジトリルートに移動するか、Actions のパスを調整してください。
