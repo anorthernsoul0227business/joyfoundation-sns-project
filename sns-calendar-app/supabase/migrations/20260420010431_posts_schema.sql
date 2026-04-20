@@ -7,7 +7,7 @@
 CREATE TABLE public.posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   status VARCHAR(20) NOT NULL DEFAULT 'draft'
     CHECK (status IN ('draft', 'scheduled', 'publishing', 'published', 'failed', 'archived')),
   scheduled_at TIMESTAMPTZ,
