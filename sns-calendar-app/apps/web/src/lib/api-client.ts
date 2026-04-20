@@ -1,13 +1,20 @@
 "use client";
 
 import {
+  getCalendarApiCalendarGet,
+  getPostApiPostsPostIdGet,
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
   meApiAuthMeGet,
   refreshApiAuthRefreshPost,
   signupApiAuthSignupPost,
 } from "../generated/sdk.gen";
-import type { SessionResponse, UserResponse } from "../generated/types.gen";
+import type {
+  CalendarResponse,
+  PostResponse,
+  SessionResponse,
+  UserResponse,
+} from "../generated/types.gen";
 import { client } from "../generated/client.gen";
 import type { AuthSession, AuthUser } from "../stores/auth";
 import { useAuthStore } from "../stores/auth";
@@ -194,6 +201,30 @@ export async function fetchCurrentUser() {
   const normalized = normalizeUser(user);
   useAuthStore.getState().setUser(normalized);
   return normalized;
+}
+
+export async function fetchCalendarEvents(query: {
+  from: string;
+  to: string;
+  platforms?: Array<"x" | "ig" | "note" | "youtube" | "line">;
+}) {
+  return withAuthRetry(
+    () =>
+      getCalendarApiCalendarGet({
+        query,
+      }) as Promise<ClientResult<CalendarResponse>>,
+  );
+}
+
+export async function fetchPostDetail(postId: string) {
+  return withAuthRetry(
+    () =>
+      getPostApiPostsPostIdGet({
+        path: {
+          post_id: postId,
+        },
+      }) as Promise<ClientResult<PostResponse>>,
+  );
 }
 
 export async function logout() {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { VERSION } from "@sns-calendar/shared-types";
 import { Button } from "@sns-calendar/ui";
@@ -44,8 +45,8 @@ export default function HomePage() {
             こんにちは、{user.displayName || user.email}
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            WEB-007 では認証フローの土台を実装しています。ここから先のカレンダー、
-            下書き、投稿作成画面は Sprint 2 以降で接続されます。
+            認証フローに続き、Sprint 2 では予約投稿のカレンダー閲覧画面が利用できます。
+            月・週・日ビューを切り替えながら、SNS ごとの投稿予定を確認できます。
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -63,8 +64,16 @@ export default function HomePage() {
 
           {refreshError ? <p className="mt-6 text-sm text-rose-600">{refreshError}</p> : null}
 
-          <div className="mt-8">
-            <Button type="button">UI Package Button</Button>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              className="inline-flex items-center rounded-full bg-brand-ocean px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+              href="/calendar"
+            >
+              カレンダーを開く
+            </Link>
+            <Button className="rounded-full px-5 py-3" type="button">
+              UI Package Button
+            </Button>
           </div>
         </section>
 

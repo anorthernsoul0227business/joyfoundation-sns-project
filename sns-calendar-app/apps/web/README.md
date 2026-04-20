@@ -1,6 +1,6 @@
 # SNS Calendar Web
 
-Next.js 15 / React 19 ベースのフロントエンドです。WEB-007 ではログイン、サインアップ、認証状態の永続化、ヘルプモード UI を実装しています。
+Next.js 15 / React 19 ベースのフロントエンドです。WEB-014 時点ではログイン、サインアップ、認証状態の永続化、ヘルプモード UI に加え、`/calendar` の FullCalendar ベース予約投稿カレンダーを実装しています。
 
 ## 開発起動
 
@@ -16,12 +16,21 @@ poetry run uvicorn app.main:app --reload
 
 # Web
 cd ../web
+pnpm install
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 pnpm dev
 ```
 
 ## 環境変数
 
 - `NEXT_PUBLIC_API_BASE_URL`: FastAPI のベース URL。未指定時は `http://localhost:8000`
+
+## カレンダー画面
+
+- `@fullcalendar/react` / `@fullcalendar/daygrid` / `@fullcalendar/timegrid` / `@fullcalendar/interaction` / `@fullcalendar/core` を利用します。
+- `/calendar` は認証必須です。`useAuthGuard` が未認証状態を検知すると `/login?redirect=/calendar` に遷移します。
+- カレンダーは `GET /api/calendar?from=...&to=...&platforms[]=...` を使って可視レンジ単位で再取得します。
+- イベントクリック時は `GET /api/posts/{post_id}` で投稿本文を取得し、右側パネルに表示します。
+- ローカル API を使うため、`NEXT_PUBLIC_API_BASE_URL` が FastAPI に向いていることを確認してください。
 
 ## 認証フロー概要
 

@@ -6,6 +6,13 @@ import { HelpModeToggle } from "./HelpModeToggle";
 import { logout } from "../lib/api-client";
 import { useAuthStore } from "../stores/auth";
 
+const navItems = [
+  { href: "/calendar", label: "カレンダー", enabled: true },
+  { href: "#", label: "下書き", enabled: false },
+  { href: "#", label: "投稿作成", enabled: false },
+  { href: "#", label: "AI生成", enabled: false },
+];
+
 function getInitial(label?: string | null) {
   if (!label) {
     return "U";
@@ -28,20 +35,50 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-brand-ink/10 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link className="flex items-center gap-3" href="/">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-ocean text-lg font-bold text-white">
-            S
-          </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-ocean">
-              SNS Calendar
-            </p>
-            <p className="text-sm text-slate-500">
-              {isAuthPage ? "Sign in to continue" : "Planning workspace"}
-            </p>
-          </div>
-        </Link>
+      <div className="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="flex items-center gap-6">
+          <Link className="flex items-center gap-3" href="/">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-ocean text-lg font-bold text-white">
+              S
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-brand-ocean">
+                SNS Calendar
+              </p>
+              <p className="text-sm text-slate-500">
+                {isAuthPage ? "Sign in to continue" : "Planning workspace"}
+              </p>
+            </div>
+          </Link>
+
+          {!isAuthPage ? (
+            <nav aria-label="グローバルナビゲーション" className="flex flex-wrap items-center gap-2">
+              {navItems.map((item) =>
+                item.enabled ? (
+                  <Link
+                    className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                      pathname === item.href
+                        ? "bg-brand-ocean text-white"
+                        : "text-slate-600 hover:bg-brand-sand hover:text-brand-ocean"
+                    }`}
+                    href={item.href}
+                    key={item.label}
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span
+                    aria-disabled="true"
+                    className="cursor-not-allowed rounded-full px-3 py-2 text-sm font-medium text-slate-300"
+                    key={item.label}
+                  >
+                    {item.label}
+                  </span>
+                ),
+              )}
+            </nav>
+          ) : null}
+        </div>
 
         <div className="flex items-center gap-3">
           <HelpModeToggle />
