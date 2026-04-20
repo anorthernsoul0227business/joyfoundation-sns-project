@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { PostCreate, PostResponse, PostUpdate } from "../../generated/types.gen";
 import { HelpMark } from "../../components/HelpMark";
+import { PreviewPanel } from "../../components/preview/PreviewPanel";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
 import {
   ApiError,
@@ -17,6 +18,7 @@ import {
   schedulePost,
   updatePost,
 } from "../../lib/api-client";
+import { useAuthStore } from "../../stores/auth";
 
 type PlatformValue = "x" | "ig" | "youtube" | "note" | "line";
 type EditableStatus = "draft" | "scheduled";
@@ -196,10 +198,25 @@ function LoadingSkeleton() {
   );
 }
 
+function toPreviewHandle(email?: string | null) {
+  if (!email) {
+    return "sns_calendar";
+  }
+
+  return (
+    email
+      .split("@")[0]
+      ?.toLowerCase()
+      .replace(/[^a-z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "") || "sns_calendar"
+  );
+}
+
 function CreatePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isReady } = useAuthGuard();
+  const user = useAuthStore((state) => state.user);
   const postId = searchParams.get("id")?.trim() || null;
   const isEditMode = Boolean(postId);
   const [loadState, setLoadState] = useState<LoadState>(isEditMode ? "loading" : "ready");
@@ -241,18 +258,13 @@ function CreatePageContent() {
   const selectedPlatforms = watchedPlatforms ?? EMPTY_PLATFORMS;
   const scheduledAt = watch("scheduled_at") ?? "";
   const media = watchedMedia ?? EMPTY_MEDIA;
+  const previewDisplayName = user?.displayName || user?.email || "SNS Calendar";
+  const previewHandle = toPreviewHandle(user?.email);
 
   const isReadonly = postDetail ? NON_EDITABLE_STATUSES.has(postDetail.status) : false;
   const xCount = contentText.length;
   const igCount = contentText.length;
   const isXOverLimit = selectedPlatforms.includes("x") && xCount > 280;
-  const selectedPlatformLabels = useMemo(
-    () =>
-      PLATFORM_OPTIONS.filter((option) => selectedPlatforms.includes(option.value)).map(
-        (option) => option.shortLabel,
-      ),
-    [selectedPlatforms],
-  );
 
   useEffect(() => {
     if (!isReady) {
@@ -804,73 +816,15 @@ function CreatePageContent() {
               </button>
 
               <div className={`${previewVisible ? "block" : "hidden"} xl:block`}>
-                <div className="rounded-[1.5rem] border border-brand-ink/10 bg-white p-5 shadow-sm xl:sticky xl:top-24">
-                  <p className="text-sm font-medium uppercase tracking-[0.24em] text-brand-ocean">
-                    Preview
-                  </p>
-                  <h2 className="mt-3 text-xl font-semibold text-brand-ink">プレビュー準備中</h2>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    WEB-017 で各プラットフォームの実プレビューを実装します。
-                    ここでは入力内容のサマリーだけ確認できます。
-                  </p>
-
-                  <div className="mt-5 rounded-[1.25rem] border border-brand-ink/10 bg-brand-sand/35 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      対象SNS
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {selectedPlatformLabels.length > 0 ? (
-                        selectedPlatformLabels.map((label) => (
-                          <span
-                            className="inline-flex rounded-full bg-brand-ink px-3 py-1.5 text-xs font-semibold text-white"
-                            key={label}
-                          >
-                            {label}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-sm text-slate-500">未選択</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-[1.25rem] border border-brand-ink/10 bg-brand-sand/35 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      入力サマリー
-                    </p>
-                    <dl className="mt-3 space-y-3 text-sm text-slate-600">
-                      <div className="flex items-start justify-between gap-3">
-                        <dt className="font-medium text-brand-ink">本文</dt>
-                        <dd>{contentText.length} 文字</dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <dt className="font-medium text-brand-ink">予約日時</dt>
-                        <dd>{scheduledAt || "未設定"}</dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <dt className="font-medium text-brand-ink">画像</dt>
-                        <dd>{fields.length} 件</dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <dt className="font-medium text-brand-ink">即時投稿</dt>
-                        <dd>{isEditMode ? "利用可能" : "保存後に有効"}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div className="mt-4 rounded-[1.25rem] border border-dashed border-brand-ink/15 bg-white px-4 py-8 text-center">
-                    <p className="text-sm font-semibold text-brand-ink">プレビュー領域</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                      X / IG の描画は次タスクで追加します。
-                    </p>
-                  </div>
-
-                  {isDirty ? (
-                    <p className="mt-4 text-sm text-amber-700">
-                      未保存の変更があります。保存アクションを選択してください。
-                    </p>
-                  ) : null}
-                </div>
+                <PreviewPanel
+                  contentText={contentText}
+                  displayName={previewDisplayName}
+                  handle={previewHandle}
+                  isDirty={isDirty}
+                  mediaPaths={media}
+                  scheduledAt={scheduledAt}
+                  selectedPlatforms={selectedPlatforms}
+                />
               </div>
             </aside>
           </div>
