@@ -60,6 +60,8 @@ class PostUpdate(BaseModel):
     status: Literal["draft", "scheduled", "archived"] | None = None
     scheduled_at: datetime | None = None
     ai_generated: bool | None = None
+    platforms: list[Platform] | None = None
+    media: list[PostMediaInput] | None = None
 
 
 class PostResponse(BaseModel):

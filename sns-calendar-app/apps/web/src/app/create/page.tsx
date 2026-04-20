@@ -345,6 +345,8 @@ function CreatePageContent() {
       content_text: values.content_text,
       scheduled_at: null,
       status: "draft",
+      platforms: values.platforms,
+      media: values.media,
     };
 
     const updated = await updatePost(postId, body);
@@ -377,6 +379,8 @@ function CreatePageContent() {
 
     await updatePost(postId, {
       content_text: values.content_text,
+      platforms: values.platforms,
+      media: values.media,
     });
     const scheduled = await schedulePost(postId, scheduledAtIso);
     setPostDetail(scheduled);
@@ -395,6 +399,8 @@ function CreatePageContent() {
 
     await updatePost(postId, {
       content_text: values.content_text,
+      platforms: values.platforms,
+      media: values.media,
     });
     const published = await publishPostNow(postId);
     setPostDetail(published);
@@ -580,13 +586,6 @@ function CreatePageContent() {
                   `published` / `publishing` / `archived` 状態の投稿は読み取り専用です。
                   内容確認のみ行い、一覧に戻ってください。
                 </p>
-              </div>
-            ) : null}
-
-            {isEditMode && !isReadonly ? (
-              <div className="rounded-[1.25rem] border border-brand-ink/10 bg-brand-sand/35 px-4 py-3 text-sm leading-6 text-slate-600">
-                現行 API 仕様では編集時に確実に更新されるのは本文と予約状態です。
-                投稿先と添付情報は初期表示に反映しつつ、新規作成時の入力仕様に揃えています。
               </div>
             ) : null}
 

@@ -229,6 +229,101 @@ def test_update_post(client: TestClient, primary_user: dict[str, str]) -> None:
 
 
 @skip_unless_local
+def test_update_post_replaces_platforms(
+    client: TestClient, primary_user: dict[str, str]
+) -> None:
+    created = client.post(
+        "/api/posts",
+        headers=_auth_headers(primary_user),
+        json={"content_text": "platforms test", "platforms": ["x"]},
+    ).json()
+    assert {t["platform"] for t in created["targets"]} == {"x"}
+
+    response = client.patch(
+        f"/api/posts/{created['id']}",
+        headers=_auth_headers(primary_user),
+        json={"platforms": ["ig", "note"]},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert {t["platform"] for t in body["targets"]} == {"ig", "note"}
+
+
+@skip_unless_local
+def test_update_post_clears_platforms_with_empty_list(
+    client: TestClient, primary_user: dict[str, str]
+) -> None:
+    created = client.post(
+        "/api/posts",
+        headers=_auth_headers(primary_user),
+        json={"content_text": "clear", "platforms": ["x", "ig"]},
+    ).json()
+    assert len(created["targets"]) == 2
+
+    response = client.patch(
+        f"/api/posts/{created['id']}",
+        headers=_auth_headers(primary_user),
+        json={"platforms": []},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["targets"] == []
+
+
+@skip_unless_local
+def test_update_post_replaces_media(
+    client: TestClient, primary_user: dict[str, str]
+) -> None:
+    created = client.post(
+        "/api/posts",
+        headers=_auth_headers(primary_user),
+        json={
+            "content_text": "media test",
+            "media": [
+                {"storage_path": "tmp/old.png", "mime_type": "image/png"},
+            ],
+        },
+    ).json()
+    assert len(created["media"]) == 1
+
+    response = client.patch(
+        f"/api/posts/{created['id']}",
+        headers=_auth_headers(primary_user),
+        json={
+            "media": [
+                {"storage_path": "tmp/new-a.jpg", "mime_type": "image/jpeg"},
+                {"storage_path": "tmp/new-b.webp", "mime_type": "image/webp"},
+            ],
+        },
+    )
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    paths = sorted(m["storage_path"] for m in body["media"])
+    assert paths == ["tmp/new-a.jpg", "tmp/new-b.webp"]
+
+
+@skip_unless_local
+def test_update_post_accepts_only_platforms(
+    client: TestClient, primary_user: dict[str, str]
+) -> None:
+    """Edit with platforms-only body (no content_text change) should be valid."""
+    created = client.post(
+        "/api/posts",
+        headers=_auth_headers(primary_user),
+        json={"content_text": "keep text", "platforms": ["x"]},
+    ).json()
+
+    response = client.patch(
+        f"/api/posts/{created['id']}",
+        headers=_auth_headers(primary_user),
+        json={"platforms": ["ig"]},
+    )
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert body["content_text"] == "keep text"
+    assert [t["platform"] for t in body["targets"]] == ["ig"]
+
+
+@skip_unless_local
 def test_update_to_scheduled_requires_scheduled_at(
     client: TestClient, primary_user: dict[str, str]
 ) -> None:
