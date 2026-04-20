@@ -1,8 +1,11 @@
 "use client";
 
 import {
+  createPostApiPostsPost,
+  deletePostApiPostsPostIdDelete,
   getCalendarApiCalendarGet,
   getPostApiPostsPostIdGet,
+  listPostsApiPostsGet,
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
   meApiAuthMeGet,
@@ -11,6 +14,8 @@ import {
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
+  PostCreate,
+  PostListResponse,
   PostResponse,
   SessionResponse,
   UserResponse,
@@ -216,6 +221,22 @@ export async function fetchCalendarEvents(query: {
   );
 }
 
+export async function fetchPostList(params?: {
+  status?: "draft" | "scheduled" | "publishing" | "published" | "failed" | "archived";
+  platform?: "x" | "ig" | "note" | "youtube" | "line";
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return withAuthRetry(
+    () =>
+      listPostsApiPostsGet({
+        query: params,
+      }) as Promise<ClientResult<PostListResponse>>,
+  );
+}
+
 export async function fetchPostDetail(postId: string) {
   return withAuthRetry(
     () =>
@@ -224,6 +245,24 @@ export async function fetchPostDetail(postId: string) {
           post_id: postId,
         },
       }) as Promise<ClientResult<PostResponse>>,
+  );
+}
+
+export async function createPost(values: PostCreate) {
+  return withAuthRetry(
+    () =>
+      createPostApiPostsPost({
+        body: values,
+      }) as Promise<ClientResult<PostResponse>>,
+  );
+}
+
+export async function deletePost(postId: string) {
+  return withAuthRetry(
+    () =>
+      deletePostApiPostsPostIdDelete({
+        path: { post_id: postId },
+      }) as Promise<ClientResult<unknown>>,
   );
 }
 

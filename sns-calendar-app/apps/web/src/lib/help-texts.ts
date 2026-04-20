@@ -4,6 +4,13 @@ export const helpTexts: Record<string, string> = {
   "calendar.platform_filter":
     "投稿するSNSで絞り込めます。チェックを外すと非表示になります",
   "calendar.view_toggle": "月/週/日の表示を切り替えます",
+  "drafts.status_filter": "投稿の状態で絞り込めます。「下書き」は未予約の投稿です",
+  "drafts.platform_filter": "表示するSNSを絞り込めます",
+  "drafts.search": "本文の一部を入力すると一致する投稿だけを表示します",
+  "drafts.sort": "並び替えの基準を変更します",
+  "drafts.card_actions":
+    "カードにカーソルを合わせると編集・複製・削除のボタンが表示されます",
+  "drafts.new_post": "新しい投稿を作成します",
   "login.email": "登録時のメールアドレスを入力してください。",
   "login.password": "8文字以上で設定したパスワードを入力してください。",
   "signup.email": "有効なメールアドレスを入力してください。確認メールが届きます。",
