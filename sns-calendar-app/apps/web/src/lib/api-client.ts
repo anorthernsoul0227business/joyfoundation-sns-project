@@ -9,14 +9,18 @@ import {
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
   meApiAuthMeGet,
+  publishNowApiPostsPostIdPublishNowPost,
   refreshApiAuthRefreshPost,
+  schedulePostApiPostsPostIdSchedulePost,
   signupApiAuthSignupPost,
+  updatePostApiPostsPostIdPatch,
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
   PostCreate,
   PostListResponse,
   PostResponse,
+  PostUpdate,
   SessionResponse,
   UserResponse,
 } from "../generated/types.gen";
@@ -253,6 +257,43 @@ export async function createPost(values: PostCreate) {
     () =>
       createPostApiPostsPost({
         body: values,
+      }) as Promise<ClientResult<PostResponse>>,
+  );
+}
+
+export async function updatePost(postId: string, values: PostUpdate) {
+  return withAuthRetry(
+    () =>
+      updatePostApiPostsPostIdPatch({
+        body: values,
+        path: {
+          post_id: postId,
+        },
+      }) as Promise<ClientResult<PostResponse>>,
+  );
+}
+
+export async function schedulePost(postId: string, scheduledAt: string) {
+  return withAuthRetry(
+    () =>
+      schedulePostApiPostsPostIdSchedulePost({
+        body: {
+          scheduled_at: scheduledAt,
+        },
+        path: {
+          post_id: postId,
+        },
+      }) as Promise<ClientResult<PostResponse>>,
+  );
+}
+
+export async function publishPostNow(postId: string) {
+  return withAuthRetry(
+    () =>
+      publishNowApiPostsPostIdPublishNowPost({
+        path: {
+          post_id: postId,
+        },
       }) as Promise<ClientResult<PostResponse>>,
   );
 }

@@ -4,6 +4,16 @@ export const helpTexts: Record<string, string> = {
   "calendar.platform_filter":
     "投稿するSNSで絞り込めます。チェックを外すと非表示になります",
   "calendar.view_toggle": "月/週/日の表示を切り替えます",
+  "create.content_text":
+    "投稿する本文を入力します。SNSごとの文字数制限に注意してください",
+  "create.platforms": "投稿先のSNSを選択します。複数選択できます",
+  "create.scheduled_at":
+    "予約投稿の日時を指定します。予約モードで保存するときに必須です",
+  "create.media":
+    "添付する画像のストレージパスを指定します。実ファイルアップロードは準備中です",
+  "create.save_draft": "下書きとして保存します。いつでも編集・削除できます",
+  "create.schedule": "指定した日時に自動投稿されるように予約します",
+  "create.publish_now": "今すぐ投稿します（編集モードでのみ有効）",
   "drafts.status_filter": "投稿の状態で絞り込めます。「下書き」は未予約の投稿です",
   "drafts.platform_filter": "表示するSNSを絞り込めます",
   "drafts.search": "本文の一部を入力すると一致する投稿だけを表示します",
