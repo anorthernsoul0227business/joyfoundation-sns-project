@@ -7,7 +7,7 @@ RLS policies (WEB-010) are enforced consistently.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -24,6 +24,7 @@ from app.schemas.post import (
     PostResponse,
     PostStatus,
     PostUpdate,
+    ScheduleRequest,
 )
 
 router = APIRouter()
@@ -309,3 +310,164 @@ def delete_post(
             detail="Post not found or not deletable (published posts cannot be deleted)",
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# =============================================================================
+# WEB-012: schedule / reschedule / unschedule / publish-now
+# =============================================================================
+
+def _apply_status_update(
+    client: Client, post_id: str, updates: dict[str, Any]
+) -> dict[str, Any]:
+    try:
+        updated = (
+            client.table("posts")
+            .update(updates)
+            .eq("id", post_id)
+            .execute()
+            .data
+        )
+    except APIError as exc:
+        raise _map_api_error(exc) from exc
+
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Post not found or not editable in current state",
+        )
+
+    try:
+        row = (
+            client.table("posts")
+            .select("*,post_targets(*),post_media(*)")
+            .eq("id", post_id)
+            .single()
+            .execute()
+            .data
+        )
+    except APIError as exc:
+        raise _map_api_error(exc) from exc
+    return row
+
+
+@router.post(
+    "/{post_id}/schedule",
+    response_model=PostResponse,
+)
+def schedule_post(
+    post_id: str,
+    payload: ScheduleRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> PostResponse:
+    client = _get_user_client(current_user)
+    existing = (
+        client.table("posts").select("status").eq("id", post_id).limit(1).execute().data
+    )
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if existing[0]["status"] not in ("draft", "scheduled"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot schedule a post in status '{existing[0]['status']}'",
+        )
+
+    row = _apply_status_update(
+        client,
+        post_id,
+        {
+            "status": "scheduled",
+            "scheduled_at": payload.scheduled_at.isoformat(),
+        },
+    )
+    return _serialize_post(row)
+
+
+@router.post(
+    "/{post_id}/reschedule",
+    response_model=PostResponse,
+)
+def reschedule_post(
+    post_id: str,
+    payload: ScheduleRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> PostResponse:
+    client = _get_user_client(current_user)
+    existing = (
+        client.table("posts").select("status").eq("id", post_id).limit(1).execute().data
+    )
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if existing[0]["status"] != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only scheduled posts can be rescheduled",
+        )
+
+    row = _apply_status_update(
+        client,
+        post_id,
+        {"scheduled_at": payload.scheduled_at.isoformat()},
+    )
+    return _serialize_post(row)
+
+
+@router.post(
+    "/{post_id}/unschedule",
+    response_model=PostResponse,
+)
+def unschedule_post(
+    post_id: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> PostResponse:
+    client = _get_user_client(current_user)
+    existing = (
+        client.table("posts").select("status").eq("id", post_id).limit(1).execute().data
+    )
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if existing[0]["status"] != "scheduled":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only scheduled posts can be unscheduled",
+        )
+
+    row = _apply_status_update(
+        client,
+        post_id,
+        {"status": "draft", "scheduled_at": None},
+    )
+    return _serialize_post(row)
+
+
+@router.post(
+    "/{post_id}/publish-now",
+    response_model=PostResponse,
+)
+def publish_now(
+    post_id: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+) -> PostResponse:
+    client = _get_user_client(current_user)
+    existing = (
+        client.table("posts").select("status").eq("id", post_id).limit(1).execute().data
+    )
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+    if existing[0]["status"] not in ("draft", "scheduled", "failed"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Cannot publish a post in status '{existing[0]['status']}'",
+        )
+
+    # Celery scheduler picks up status='scheduled' with scheduled_at <= now().
+    # Setting scheduled_at to the current time triggers immediate publication.
+    now = datetime.now(UTC)
+    row = _apply_status_update(
+        client,
+        post_id,
+        {
+            "status": "scheduled",
+            "scheduled_at": now.isoformat(),
+        },
+    )
+    return _serialize_post(row)

@@ -80,3 +80,7 @@ class PostResponse(BaseModel):
 class PostListResponse(BaseModel):
     items: list[PostResponse]
     total: int
+
+
+class ScheduleRequest(BaseModel):
+    scheduled_at: datetime
