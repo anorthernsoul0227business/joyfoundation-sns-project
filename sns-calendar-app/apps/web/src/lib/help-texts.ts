@@ -11,6 +11,10 @@ export const helpTexts: Record<string, string> = {
     "予約投稿の日時を指定します。予約モードで保存するときに必須です",
   "create.media":
     "添付する画像のストレージパスを指定します。実ファイルアップロードは準備中です",
+  "create.preview_realtime":
+    "本文や画像を変更するとリアルタイムでプレビューが更新されます",
+  "create.preview_tabs":
+    "プレビューを X / Instagram で切替できます。選択していないSNSのタブはグレーで表示されます",
   "create.save_draft": "下書きとして保存します。いつでも編集・削除できます",
   "create.schedule": "指定した日時に自動投稿されるように予約します",
   "create.publish_now": "今すぐ投稿します（編集モードでのみ有効）",
