@@ -194,6 +194,6 @@ pnpm typecheck && pnpm build && pnpm lint
 pnpm openapi:gen-schema && git diff --exit-code -- apps/api/openapi.json
 ```
 
-### リモートリポジトリ化時の注意
+### Actions / Dependabot の配置
 
-現状 `.github/` は `sns-calendar-app/` 配下にあります。将来 `sns-calendar-app` を独立 Git リポジトリとして切り出す前提の配置です。`joyfoundation_project/` 全体を単一リポジトリとして GitHub に push する場合は、`.github/` をリポジトリルートに移動するか、Actions のパスを調整してください。
+`.github/workflows/ci.yml` と `.github/dependabot.yml` はリポジトリルート (`joyfoundation_project/.github/`) に配置しています。`ci.yml` は `sns-calendar-app/**` と `.github/workflows/ci.yml` のパス変更時のみ発火するよう `paths:` フィルタを指定し、`sns-auto-poster` 側の変更では走らない構成です。
