@@ -248,6 +248,11 @@ def update_post(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> PostResponse:
     updates = payload.model_dump(exclude_unset=True, exclude_none=False)
+    # Related-collection replacements are handled separately after the posts UPDATE.
+    platforms_update = updates.pop("platforms", None)
+    media_update = updates.pop("media", None)
+    replace_related = payload.model_fields_set & {"platforms", "media"}
+
     if "scheduled_at" in updates and updates["scheduled_at"] is not None:
         updates["scheduled_at"] = updates["scheduled_at"].isoformat()
     if updates.get("status") == "scheduled" and updates.get("scheduled_at") is None:
@@ -255,7 +260,7 @@ def update_post(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="scheduled_at is required when status is 'scheduled'",
         )
-    if not updates:
+    if not updates and not replace_related:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="No fields to update",
@@ -263,18 +268,58 @@ def update_post(
 
     client = _get_user_client(current_user)
     try:
-        updated = (
-            client.table("posts")
-            .update(updates)
-            .eq("id", post_id)
-            .execute()
-            .data
-        )
-        if not updated:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Post not found or not editable",
+        if updates:
+            updated = (
+                client.table("posts")
+                .update(updates)
+                .eq("id", post_id)
+                .execute()
+                .data
             )
+            if not updated:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Post not found or not editable",
+                )
+        elif replace_related:
+            # Confirm the post exists and is editable before replacing relations.
+            existing = (
+                client.table("posts")
+                .select("id")
+                .eq("id", post_id)
+                .limit(1)
+                .execute()
+                .data
+            )
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Post not found or not editable",
+                )
+
+        if platforms_update is not None:
+            client.table("post_targets").delete().eq("post_id", post_id).execute()
+            if platforms_update:
+                client.table("post_targets").insert(
+                    [{"post_id": post_id, "platform": p} for p in platforms_update]
+                ).execute()
+
+        if media_update is not None:
+            client.table("post_media").delete().eq("post_id", post_id).execute()
+            if media_update:
+                client.table("post_media").insert(
+                    [
+                        {
+                            "post_id": post_id,
+                            "storage_path": m["storage_path"],
+                            "mime_type": m["mime_type"],
+                            "width": m.get("width"),
+                            "height": m.get("height"),
+                            "sort_order": m.get("sort_order", 0),
+                        }
+                        for m in media_update
+                    ]
+                ).execute()
 
         row = (
             client.table("posts")

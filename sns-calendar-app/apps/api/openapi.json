@@ -1530,6 +1530,41 @@
               }
             ],
             "title": "Ai Generated"
+          },
+          "platforms": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "x",
+                    "ig",
+                    "note",
+                    "youtube",
+                    "line"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platforms"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PostMediaInput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media"
           }
         },
         "type": "object",
