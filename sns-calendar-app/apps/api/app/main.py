@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.calendar import router as calendar_router
 from app.api.posts import router as posts_router
 from app.config import get_settings
 from app.schemas.health import HealthResponse
@@ -24,6 +25,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(posts_router, prefix="/api/posts", tags=["posts"])
+app.include_router(calendar_router, prefix="/api/calendar", tags=["calendar"])
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -861,6 +861,101 @@
         }
       }
     },
+    "/api/calendar": {
+      "get": {
+        "tags": [
+          "calendar"
+        ],
+        "summary": "Get Calendar",
+        "operationId": "get_calendar_api_calendar_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "From"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "title": "To"
+            }
+          },
+          {
+            "name": "platforms",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "x",
+                      "ig",
+                      "note",
+                      "youtube",
+                      "line"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Platforms"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -882,6 +977,102 @@
   },
   "components": {
     "schemas": {
+      "CalendarEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "scheduled",
+              "publishing",
+              "published",
+              "failed",
+              "archived"
+            ],
+            "title": "Status"
+          },
+          "platforms": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "x",
+                "ig",
+                "note",
+                "youtube",
+                "line"
+              ]
+            },
+            "type": "array",
+            "title": "Platforms"
+          },
+          "has_media": {
+            "type": "boolean",
+            "title": "Has Media",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "start",
+          "status"
+        ],
+        "title": "CalendarEvent"
+      },
+      "CalendarRange": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time",
+            "title": "To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "CalendarRange"
+      },
+      "CalendarResponse": {
+        "properties": {
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "range": {
+            "$ref": "#/components/schemas/CalendarRange"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events",
+          "range"
+        ],
+        "title": "CalendarResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
