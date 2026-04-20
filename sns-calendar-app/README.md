@@ -106,6 +106,46 @@ cd apps/api && poetry run pytest
 
 リモートへ反映する場合は `supabase db push` を使います。ただし WEB-004 の作業では本番リモートへの push は実行しません。
 
+## Docker Compose（Redis + Celery）
+
+WEB-008 で `docker-compose.yml` に Redis + FastAPI + Celery worker + Celery beat を配置しました。ローカル開発で Celery タスクを動かす際に利用します。
+
+### 初回ビルドと起動
+
+```bash
+docker compose build
+docker compose up -d redis
+docker compose up -d celery-worker celery-beat
+# FastAPI もコンテナで動かす場合は
+# docker compose up -d api
+```
+
+### 環境変数
+
+`docker-compose.yml` は `${SUPABASE_URL}` などをホスト環境から読み込みます。`.env`（sns-calendar-app 直下）を用意して `docker compose --env-file .env up` で読み込ませるのが簡単です。
+
+### 状態確認
+
+```bash
+docker compose ps
+docker logs sns-calendar-celery-worker --tail 50
+docker logs sns-calendar-celery-beat --tail 20
+```
+
+Celery beat は毎分 `app.tasks.scheduled_posts.check_scheduled_posts` を発火します（WEB-008 ではヘルスビート相当。実投稿ロジックは Sprint 3 以降の WEB-022 で実装）。
+
+### 停止・クリーンアップ
+
+```bash
+docker compose stop
+docker compose down
+docker compose down -v
+```
+
+### Docker credential helper 不在時の回避
+
+Docker Desktop 4.30+ の一部構成で `docker-credential-desktop` が PATH に無いと `docker compose pull` が失敗します。暫定対応として `~/.docker/config.json` の `credsStore` キーを削除（`{"auths":{}}` に置換）してください。
+
 ## OpenAPI
 
 - スキーマのみ再生成: `pnpm openapi:gen-schema`
