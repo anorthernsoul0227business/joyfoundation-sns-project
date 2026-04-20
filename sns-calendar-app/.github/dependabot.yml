@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # pnpm (frontend monorepo)
+  - package-ecosystem: "npm"
+    directory: "/sns-calendar-app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    # axios supply-chain attack guard
+    ignore:
+      - dependency-name: "axios"
+        versions: ["1.14.1", "0.30.4"]
+      - dependency-name: "plain-crypto-js"
+        versions: ["4.2.0", "4.2.1"]
+
+  # Python (backend)
+  - package-ecosystem: "pip"
+    directory: "/sns-calendar-app/apps/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/sns-calendar-app/apps/api"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "docker"

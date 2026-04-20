@@ -1,0 +1,31 @@
+{
+  "extends": "../../packages/config/typescript/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@hookform/resolvers": [
+        "../../packages/hookform-resolvers"
+      ],
+      "@hookform/resolvers/zod": [
+        "../../packages/hookform-resolvers/zod"
+      ],
+      "react-hook-form": [
+        "../../packages/react-hook-form"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

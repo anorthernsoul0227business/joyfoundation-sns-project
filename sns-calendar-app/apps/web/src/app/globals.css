@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  background: #f7f3eb;
+}
+
+body {
+  margin: 0;
+  background: #f7f3eb;
+  color: #1f2937;
+  font-family: "Hiragino Sans", "Yu Gothic", "YuGothic", "Meiryo", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.help-off .help-mark {
+  display: none;
+}
+
+.help-popover::before {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: 1px solid rgba(31, 41, 55, 0.08);
+  border-top: 1px solid rgba(31, 41, 55, 0.08);
+  background: white;
+  content: "";
+}
+
+.calendar-shell .fc {
+  --fc-border-color: rgba(31, 41, 55, 0.08);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.7);
+  --fc-now-indicator-color: #0f6e8c;
+  font-size: 0.95rem;
+}
+
+.calendar-shell .fc .fc-scrollgrid,
+.calendar-shell .fc .fc-timegrid-slot,
+.calendar-shell .fc .fc-col-header-cell,
+.calendar-shell .fc .fc-daygrid-day {
+  border-color: rgba(31, 41, 55, 0.08);
+}
+
+.calendar-shell .fc .fc-toolbar {
+  display: none;
+}
+
+.calendar-shell .fc .fc-col-header-cell-cushion,
+.calendar-shell .fc .fc-daygrid-day-number,
+.calendar-shell .fc .fc-timegrid-axis-cushion,
+.calendar-shell .fc .fc-timegrid-slot-label-cushion {
+  padding: 0.55rem;
+  color: #475569;
+  font-weight: 600;
+}
+
+.calendar-shell .fc .fc-day-today {
+  background: rgba(15, 110, 140, 0.08);
+}
+
+.calendar-shell .fc .fc-daygrid-day-frame,
+.calendar-shell .fc .fc-timegrid-col-frame {
+  min-height: 6rem;
+}
+
+.calendar-shell .fc .calendar-event-chip {
+  border-radius: 14px;
+  padding: 0.15rem 0.2rem;
+}
+
+.calendar-shell .fc .fc-event {
+  cursor: pointer;
+}
+
+.calendar-shell .fc .fc-event-main {
+  padding: 0.2rem 0.35rem;
+}
+
+.calendar-shell .fc .fc-list-event:hover td,
+.calendar-shell .fc .fc-timegrid-event:hover,
+.calendar-shell .fc .fc-daygrid-event:hover {
+  filter: brightness(0.98);
+}
+
+@media (max-width: 640px) {
+  .calendar-shell .fc {
+    font-size: 0.85rem;
+  }
+
+  .calendar-shell .fc .fc-daygrid-day-frame,
+  .calendar-shell .fc .fc-timegrid-col-frame {
+    min-height: 4.5rem;
+  }
+}
