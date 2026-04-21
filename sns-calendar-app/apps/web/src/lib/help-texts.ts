@@ -25,6 +25,8 @@ export const helpTexts: Record<string, string> = {
   "drafts.card_actions":
     "カードにカーソルを合わせると編集・複製・削除のボタンが表示されます",
   "drafts.new_post": "新しい投稿を作成します",
+  "settings.sns":
+    "X (Twitter) や Instagram のアカウントをここで接続します。接続するとカレンダーから自動投稿できるようになります。接続を外すときは「切断」ボタンを押してください。",
   "login.email": "登録時のメールアドレスを入力してください。",
   "login.password": "8文字以上で設定したパスワードを入力してください。",
   "signup.email": "有効なメールアドレスを入力してください。確認メールが届きます。",

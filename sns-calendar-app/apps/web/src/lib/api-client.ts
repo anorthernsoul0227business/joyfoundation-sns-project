@@ -1,10 +1,13 @@
 "use client";
 
 import {
+  connectSnsAccountApiSnsAccountsConnectPlatformPost,
   createPostApiPostsPost,
+  deleteSnsAccountApiSnsAccountsAccountIdDelete,
   deletePostApiPostsPostIdDelete,
   getCalendarApiCalendarGet,
   getPostApiPostsPostIdGet,
+  listSnsAccountsApiSnsAccountsGet,
   listPostsApiPostsGet,
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
@@ -17,11 +20,13 @@ import {
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
+  ConnectResponse,
   PostCreate,
   PostListResponse,
   PostResponse,
   PostUpdate,
   SessionResponse,
+  SnsAccountListResponse,
   UserResponse,
 } from "../generated/types.gen";
 import { client } from "../generated/client.gen";
@@ -303,6 +308,30 @@ export async function deletePost(postId: string) {
     () =>
       deletePostApiPostsPostIdDelete({
         path: { post_id: postId },
+      }) as Promise<ClientResult<unknown>>,
+  );
+}
+
+export async function fetchSnsAccounts(): Promise<SnsAccountListResponse> {
+  return withAuthRetry(
+    () => listSnsAccountsApiSnsAccountsGet() as Promise<ClientResult<SnsAccountListResponse>>,
+  );
+}
+
+export async function connectSnsAccount(platform: "x" | "ig"): Promise<ConnectResponse> {
+  return withAuthRetry(
+    () =>
+      connectSnsAccountApiSnsAccountsConnectPlatformPost({
+        path: { platform },
+      }) as Promise<ClientResult<ConnectResponse>>,
+  );
+}
+
+export async function disconnectSnsAccount(accountId: string): Promise<void> {
+  await withAuthRetry(
+    () =>
+      deleteSnsAccountApiSnsAccountsAccountIdDelete({
+        path: { account_id: accountId },
       }) as Promise<ClientResult<unknown>>,
   );
 }

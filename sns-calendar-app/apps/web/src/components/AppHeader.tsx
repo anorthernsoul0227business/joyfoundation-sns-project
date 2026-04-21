@@ -11,7 +11,12 @@ const navItems = [
   { href: "/drafts", label: "下書き", enabled: true },
   { href: "/create", label: "投稿作成", enabled: true },
   { href: "#", label: "AI生成", enabled: false },
+  { href: "/settings/sns", label: "設定", enabled: true },
 ];
+
+function isActivePath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 function getInitial(label?: string | null) {
   if (!label) {
@@ -57,7 +62,7 @@ export function AppHeader() {
                 item.enabled ? (
                   <Link
                     className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                      pathname === item.href
+                      isActivePath(pathname, item.href)
                         ? "bg-brand-ocean text-white"
                         : "text-slate-600 hover:bg-brand-sand hover:text-brand-ocean"
                     }`}
