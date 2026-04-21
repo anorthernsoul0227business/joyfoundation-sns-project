@@ -60,3 +60,32 @@ curl -X POST http://localhost:8000/api/sns-accounts/connect/x \
 curl -X POST http://localhost:8000/api/sns-accounts/connect/ig \
   -H 'Authorization: Bearer <jwt>'
 ```
+
+## Publisher サービス
+
+`app/services/publisher/` では、SNS 投稿処理を API 層や Celery から切り離したサービスとして実装します。
+
+- `base.py`: `Publisher` 抽象クラスと共通戻り値 `PublishResult`
+- `x_publisher.py`: X OAuth 1.0a で画像アップロードと投稿を行う具象実装
+- `orchestrator.py`: `publish_target(target_id)` で `posts` / `post_targets` / `post_media` / `sns_accounts` を読み、対象ターゲットへ投稿して結果を DB に反映
+
+公開シグネチャ:
+
+```python
+from app.services.publisher.orchestrator import publish_target
+
+result = publish_target(target_id="00000000-0000-0000-0000-000000000000")
+```
+
+実投稿の手動検証手順:
+
+```bash
+cd apps/api
+poetry install
+poetry run pytest tests/services/test_x_publisher.py tests/services/test_publisher_orchestrator.py
+poetry run python -c "from app.services.publisher.orchestrator import publish_target; print(publish_target('<target-uuid>'))"
+```
+
+- `.env` に `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `X_CONSUMER_KEY`, `X_CONSUMER_SECRET` を設定する
+- `sns_accounts.access_token` は `oauth_token:oauth_token_secret` 形式で保存されている必要がある
+- `post_media.storage_path` は Phase 1 では公開 HTTP URL 前提
