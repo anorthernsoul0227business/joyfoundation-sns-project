@@ -10,7 +10,6 @@ from __future__ import annotations
 import os
 
 from celery import Celery
-from celery.schedules import crontab
 
 
 def _build_celery() -> Celery:
@@ -33,9 +32,9 @@ def _build_celery() -> Celery:
         timezone="Asia/Tokyo",
         enable_utc=True,
         beat_schedule={
-            "check-scheduled-posts-every-minute": {
+            "check-scheduled-posts": {
                 "task": "app.tasks.scheduled_posts.check_scheduled_posts",
-                "schedule": crontab(minute="*"),
+                "schedule": 60.0,
             },
         },
     )

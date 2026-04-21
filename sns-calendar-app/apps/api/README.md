@@ -94,3 +94,23 @@ poetry run python -c "from app.services.publisher.orchestrator import publish_ta
 - IG は単一画像と 2-10 枚カルーセルに対応する
 - IG の `post_media.storage_path` も Phase 1 では公開 `http(s)://` URL 前提
 - リール、動画、リポストは Phase 2 対応
+
+## Celery 予約投稿
+
+予約投稿の自動発火は Celery worker + beat で動かします。Beat は 1 分ごとに `check_scheduled_posts` を実行し、時刻到来した `posts.status='scheduled'` を `publish_post` に渡します。
+
+ローカル起動手順:
+
+```bash
+cd /Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/sns-calendar-app
+docker compose up -d redis
+
+cd apps/api
+poetry run celery -A app.tasks.celery_app worker --loglevel=info
+poetry run celery -A app.tasks.celery_app beat --loglevel=info
+```
+
+補足:
+
+- テストでは `task_always_eager=True` を使い、実ワーカーは起動しない
+- 予約投稿は 1 分ごとにポーリングされるため、テスト用データは 1-2 分以内に発火する
