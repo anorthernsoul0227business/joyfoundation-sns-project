@@ -4,6 +4,7 @@ from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+API_ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
@@ -20,9 +21,23 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="SUPABASE_SERVICE_ROLE_KEY"
     )
+    x_consumer_key: str | None = Field(default=None, validation_alias="X_CONSUMER_KEY")
+    x_consumer_secret: str | None = Field(
+        default=None,
+        validation_alias="X_CONSUMER_SECRET",
+    )
+    meta_app_id: str | None = Field(default=None, validation_alias="META_APP_ID")
+    meta_app_secret: str | None = Field(
+        default=None,
+        validation_alias="META_APP_SECRET",
+    )
+    oauth_redirect_base: str | None = Field(
+        default=None,
+        validation_alias="OAUTH_REDIRECT_BASE",
+    )
 
     model_config = SettingsConfigDict(
-        env_file=ROOT_ENV_FILE,
+        env_file=(API_ENV_FILE, ROOT_ENV_FILE),
         env_file_encoding="utf-8",
         extra="ignore",
     )

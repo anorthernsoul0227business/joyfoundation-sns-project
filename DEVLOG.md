@@ -23,6 +23,7 @@
 - 未読メール（4/15 定期スケジュール）の対応が必要
 - WS参加費変更（¥2,500→¥3,000）のシート反映が必要
 - 音のウエルビーイングOnline 5/19開始が確定
+- `sns_accounts.access_token` の at-rest 暗号化は follow-up issue 化が必要（pgcrypto 等を別Issueで導入）
 
 ---
 
