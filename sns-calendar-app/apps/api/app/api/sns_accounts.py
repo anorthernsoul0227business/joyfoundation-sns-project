@@ -142,6 +142,7 @@ def sns_account_callback(
                 access_token=(
                     f"{token_data['access_token']}:{token_data['access_token_secret']}"
                 ),
+                platform_account_id=token_data["user_id"],
             )
         else:
             if not code:
@@ -156,6 +157,7 @@ def sns_account_callback(
                 handle=token_data["handle"],
                 display_name=token_data.get("display_name"),
                 access_token=token_data["access_token"],
+                platform_account_id=token_data["user_id"],
                 expires_at=token_data.get("expires_at"),
             )
     except HTTPException as exc:

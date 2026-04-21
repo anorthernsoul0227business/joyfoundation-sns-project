@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from app.config import get_settings
 
 from .base import Publisher, PublishResult
+from .ig_publisher import IgPublisher
 from .x_publisher import XPublisher
 
 
@@ -21,7 +22,9 @@ def get_publisher(platform: str) -> Publisher:
             consumer_key=settings.x_consumer_key,
             consumer_secret=settings.x_consumer_secret,
         )
+    if normalized == "ig":
+        return IgPublisher()
     raise NotImplementedError(f"Publisher for platform '{platform}' is not implemented")
 
 
-__all__ = ["PublishResult", "Publisher", "XPublisher", "get_publisher"]
+__all__ = ["IgPublisher", "PublishResult", "Publisher", "XPublisher", "get_publisher"]

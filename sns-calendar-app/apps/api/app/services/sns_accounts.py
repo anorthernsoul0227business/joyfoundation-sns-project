@@ -114,6 +114,7 @@ def upsert_sns_account(
     handle: str,
     display_name: str | None,
     access_token: str,
+    platform_account_id: str | None = None,
     refresh_token: str | None = None,
     expires_at: datetime | None = None,
 ) -> SnsAccountSafe:
@@ -124,6 +125,7 @@ def upsert_sns_account(
         "handle": handle,
         "display_name": display_name,
         "access_token": access_token,
+        "platform_account_id": platform_account_id,
         "refresh_token": refresh_token,
         "expires_at": expires_at.isoformat() if expires_at else None,
         "is_active": True,

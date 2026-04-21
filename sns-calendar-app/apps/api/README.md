@@ -67,6 +67,7 @@ curl -X POST http://localhost:8000/api/sns-accounts/connect/ig \
 
 - `base.py`: `Publisher` 抽象クラスと共通戻り値 `PublishResult`
 - `x_publisher.py`: X OAuth 1.0a で画像アップロードと投稿を行う具象実装
+- `ig_publisher.py`: Instagram Graph API の Container ベース投稿を行う具象実装
 - `orchestrator.py`: `publish_target(target_id)` で `posts` / `post_targets` / `post_media` / `sns_accounts` を読み、対象ターゲットへ投稿して結果を DB に反映
 
 公開シグネチャ:
@@ -89,3 +90,7 @@ poetry run python -c "from app.services.publisher.orchestrator import publish_ta
 - `.env` に `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `X_CONSUMER_KEY`, `X_CONSUMER_SECRET` を設定する
 - `sns_accounts.access_token` は `oauth_token:oauth_token_secret` 形式で保存されている必要がある
 - `post_media.storage_path` は Phase 1 では公開 HTTP URL 前提
+- IG は `sns_accounts.platform_account_id` に IG Business Account ID が保存されている必要がある
+- IG は単一画像と 2-10 枚カルーセルに対応する
+- IG の `post_media.storage_path` も Phase 1 では公開 `http(s)://` URL 前提
+- リール、動画、リポストは Phase 2 対応

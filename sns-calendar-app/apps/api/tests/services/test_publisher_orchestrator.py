@@ -181,6 +181,20 @@ def test_publish_target_marks_failed_when_no_active_account(
     assert publish_store.targets[target_id]["status"] == "failed"
 
 
+def test_publish_target_marks_failed_when_no_active_ig_account(
+    publish_store: InMemoryPublishStore,
+) -> None:
+    target_id = next(iter(publish_store.targets))
+    publish_store.targets[target_id]["platform"] = "ig"
+    publish_store.accounts.clear()
+
+    result = publish_target(target_id, store=publish_store)
+
+    assert result.success is False
+    assert result.error_message == "No active IG account connected"
+    assert publish_store.targets[target_id]["status"] == "failed"
+
+
 def test_publish_target_is_idempotent_when_already_publishing(
     publish_store: InMemoryPublishStore,
     monkeypatch: pytest.MonkeyPatch,
@@ -225,3 +239,57 @@ def test_publish_target_raises_404_when_target_missing() -> None:
         publish_target(str(uuid4()), store=InMemoryPublishStore())
 
     assert exc_info.value.status_code == 404
+
+
+def test_publish_target_passes_platform_account_id_to_ig_publisher(
+    publish_store: InMemoryPublishStore,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target_id = next(iter(publish_store.targets))
+    post_id = publish_store.targets[target_id]["post_id"]
+    publish_store.targets[target_id]["platform"] = "ig"
+    publish_store.media = [
+        {
+            "post_id": post_id,
+            "storage_path": f"https://cdn.example.com/{index}.jpg",
+            "sort_order": index,
+        }
+        for index in range(1, 6)
+    ]
+    publish_store.accounts = [
+        {
+            "org_id": publish_store.posts[post_id]["org_id"],
+            "platform": "ig",
+            "is_active": True,
+            "access_token": "ig-token",
+            "platform_account_id": "178414",
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+    ]
+    calls: dict[str, object] = {}
+
+    class FakePublisher:
+        def publish(self, *, text: str, image_urls: list[str], account: dict, options: dict | None = None) -> PublishResult:
+            calls["text"] = text
+            calls["image_urls"] = image_urls
+            calls["account"] = account
+            calls["options"] = options
+            return PublishResult(success=True, platform_post_id="ig-post-1", error_message=None)
+
+    monkeypatch.setattr(
+        "app.services.publisher.orchestrator.get_publisher",
+        lambda platform: FakePublisher(),
+    )
+
+    result = publish_target(target_id, store=publish_store)
+
+    assert result.success is True
+    assert calls["text"] == "hello world"
+    assert calls["image_urls"] == [
+        "https://cdn.example.com/1.jpg",
+        "https://cdn.example.com/2.jpg",
+        "https://cdn.example.com/3.jpg",
+        "https://cdn.example.com/4.jpg",
+        "https://cdn.example.com/5.jpg",
+    ]
+    assert calls["account"] == publish_store.accounts[0]

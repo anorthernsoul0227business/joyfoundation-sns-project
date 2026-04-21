@@ -48,6 +48,7 @@ class InMemoryAccountStore:
         handle: str,
         display_name: str | None,
         access_token: str,
+        platform_account_id: str | None = None,
         refresh_token: str | None = None,
         expires_at: datetime | None = None,
     ) -> dict[str, object]:
@@ -74,6 +75,7 @@ class InMemoryAccountStore:
                 "created_at": now,
                 "updated_at": now,
                 "access_token": access_token,
+                "platform_account_id": platform_account_id,
                 "refresh_token": refresh_token,
             }
             self.accounts.append(existing)
@@ -85,6 +87,7 @@ class InMemoryAccountStore:
                     "is_active": True,
                     "updated_at": now,
                     "access_token": access_token,
+                    "platform_account_id": platform_account_id,
                     "refresh_token": refresh_token,
                 }
             )
@@ -276,6 +279,7 @@ def test_callback_ig_success_inserts_account_and_redirects(
     )
     assert len(account_store.accounts) == 1
     assert account_store.accounts[0]["handle"] == "joyfoundation_ig"
+    assert account_store.accounts[0]["platform_account_id"] == "1784"
 
 
 def test_list_sns_accounts_returns_only_current_org(

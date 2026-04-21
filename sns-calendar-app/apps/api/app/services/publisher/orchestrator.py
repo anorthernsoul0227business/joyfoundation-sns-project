@@ -110,6 +110,14 @@ def _current_timestamp() -> str:
     return datetime.now(UTC).isoformat()
 
 
+def _media_limit_for_platform(platform: str) -> int:
+    return 10 if platform == "ig" else 4
+
+
+def _missing_account_error(platform: str) -> str:
+    return "No active IG account connected" if platform == "ig" else "No active X account connected"
+
+
 def publish_target(target_id: str, store: PublishStore | None = None) -> PublishResult:
     active_store = store or SupabasePublishStore()
 
@@ -136,8 +144,10 @@ def publish_target(target_id: str, store: PublishStore | None = None) -> Publish
             detail="Parent post not found",
         )
 
+    platform = str(target["platform"])
+
     image_urls: list[str] = []
-    for media in active_store.list_media(str(post["id"]), limit=4):
+    for media in active_store.list_media(str(post["id"]), limit=_media_limit_for_platform(platform)):
         storage_path = media.get("storage_path")
         if isinstance(storage_path, str) and storage_path.startswith("http"):
             image_urls.append(storage_path)
@@ -150,13 +160,13 @@ def publish_target(target_id: str, store: PublishStore | None = None) -> Publish
 
     account = active_store.get_active_account(
         org_id=str(post["org_id"]),
-        platform=str(target["platform"]),
+        platform=platform,
     )
     if account is None:
         result = PublishResult(
             success=False,
             platform_post_id=None,
-            error_message="No active X account connected",
+            error_message=_missing_account_error(platform),
         )
         active_store.update_target(
             target_id,
@@ -176,7 +186,7 @@ def publish_target(target_id: str, store: PublishStore | None = None) -> Publish
     )
 
     try:
-        publisher = get_publisher(str(target["platform"]))
+        publisher = get_publisher(platform)
         result = publisher.publish(
             text=str(post["content_text"]),
             image_urls=image_urls,
