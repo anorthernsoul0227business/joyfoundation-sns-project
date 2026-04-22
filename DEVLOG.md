@@ -1,5 +1,37 @@
 # 開発ログ (DEVLOG)
 
+## 2026-04-22
+
+### 実施内容
+- 圭一郎さん向けサポート方針検討（ゼンさんproject側で相談 → joyfoundation に反映）
+- ゼンさんPDF「エージェントワークの運用構成と役割分担」を確認し、git ベース非同期エージェント連携の構成を把握
+- 圭一郎さん（高齢・PC操作困難）向けサポートアーキテクチャを検討し、以下を決定:
+  - **SNS投稿支援**: 既存Webアプリに音声入力AIを統合する方向（音声レイヤ追加のみで完結、PCエージェント常駐は避ける）
+  - **PC遠隔エージェント層**: 保留。Webアプリ完成後に再検討
+- `APP_DESIGN_SPEC.md` に **Section 14「音声入力AI増分設計 v0.1」** を追加:
+  - F-28〜F-32（マイクボタン / リアルタイム音声ブレスト / 対話指示 / TTS確認 / 固有名詞辞書）
+  - 技術選定: Whisper API を暫定採用（未決定事項の暫定解消）、`packages/voice-provider/` でプロバイダ抽象化
+  - 新規API: `/api/voice/transcribe`, `/api/voice/brainstorm`, `/api/voice/refine`, `/api/voice/vocabulary`, `/api/voice/sessions`
+  - 新規モデル: VoiceVocabulary, VoiceSession（90日自動削除）
+  - UI設計: シンプルモードに画面下部固定マイクボタン、音声ブレストモーダル、TTS送信前確認モーダル
+  - Phase 1.5 組み込み方針、+2〜3週の実装見積もり、VOICE-001〜007 の Issue 案
+- 既存設計との整合を確認:
+  - F-16（バッチ型音声→投稿）とは実装基盤を共有
+  - 決定#6（AI API 両対応）、決定#11-12（org_id RLS）、決定#15（NG 3層チェック）、決定#26-27（シニア配慮ヘルプ）と整合
+  - 未決定「音声文字起こし Whisper vs Google STT」を暫定決定としてクロスリファレンス追記
+
+### 成果
+- 音声入力機能の増分設計書（Section 14）完成、MVP から Phase 1.5 で組み込む計画に
+- 別プロジェクト化の判断回避（feature branch 戦略で Turborepo モノレポの恩恵を維持）
+
+### 課題・備考
+- **圭一郎さんの音声サンプルでの Whisper 精度実測**がブロッカー。`scripts/voice-poc/whisper_precision_test.py` を次タスクとして作成予定
+- iOS Safari のマイク権限 UX は実機検証が必要
+- TTSエンジン（ブラウザ SpeechSynthesis vs OpenAI TTS）の選定は未決
+- 本設計は `main` ブランチ上の追記（計画ドキュメントのため）。実装着手時に `feat/voice-input` を切る
+
+---
+
 ## 2026-04-16（午後）
 
 ### 実施内容
