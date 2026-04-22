@@ -13,8 +13,9 @@ SKIP LOCKED は現状取り回しが複雑なので、compare-and-swap 風に lo
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from app.core.supabase import get_supabase_client
 from app.services.notifier import notify_post_result
