@@ -32,6 +32,52 @@
 
 ---
 
+## 2026-04-22（夜・GCP + Vercel 本番稼働）
+
+### 実施内容
+- **GCP Cloud Run セットアップ**（手順書どおりに実行、所要 約60分）:
+  - プロジェクト `shc-sns-calendar`（番号 817894013861）作成＋Billing 紐付け
+  - API 有効化: run / artifactregistry / secretmanager / iamcredentials / cloudbuild
+  - Artifact Registry `sns-calendar-api`（asia-northeast1）
+  - Secret Manager に 9 シークレット登録（Supabase / X / Meta / R2 / INTERNAL_API_TOKEN）
+  - Service Account 2種（cloud-run-runtime / github-deployer）
+  - Workload Identity Federation（github-pool + github-provider）
+  - GitHub Secrets 登録（GCP_*、INTERNAL_API_TOKEN、CLOUD_RUN_API_URL）
+  - GitHub Variables 設定（CLOUD_RUN_ENABLED / PUBLISH_FLUSH_ENABLED = true）
+- **Cloud Run 初回デプロイ**:
+  - 1回目: config.py の `parents[3]` が IndexError で起動失敗
+  - fix PR #27 で `_safe_env_file` ヘルパー追加、try/except で None 許容化
+  - 2回目: デプロイ成功 → `/health` 200、`/internal/publish/flush` 401/200 確認
+- **GH Actions Cron 疎通**: `publish_flush.yml` 手動トリガー → 6秒で success
+- **Vercel デプロイ**:
+  - Vercel CLI ログイン（GitHub OAuth）
+  - プロジェクト `shc-sns-calendar-web` 作成
+  - 初回デプロイ失敗（Next.js 未検出） → Vercel API で rootDirectory を `apps/web` に変更
+  - 2回目デプロイ成功: https://shc-sns-calendar-web.vercel.app
+- **Cloud Run CORS 連動**:
+  - `FRONTEND_URL` 環境変数を Vercel URL で更新 → Cloud Run 新リビジョン `sns-calendar-api-00003-dfd`
+  - OPTIONS preflight で `access-control-allow-origin: https://shc-sns-calendar-web.vercel.app` を確認
+
+### 成果
+- **完全無料スタック**が本番稼働開始（Supabase + Vercel + Cloud Run + R2 全て無料枠内）
+- フロント〜バックエンド〜DB〜Realtime〜Cron の5層が疎通
+- **固定費 $0/月**で SaaS 販売可能な基盤が完成
+- 圭一郎さんがアクセスできる本番URL確定: https://shc-sns-calendar-web.vercel.app
+
+### 残課題
+- Supabase Auth Settings → Site URL / Redirect URLs に Vercel URL を登録（ブラウザから認証メールのリダイレクトを成立させるため）
+- 圭一郎さんユーザー登録 + SNS OAuth 連携（X / IG Business）
+- ARCH-005 Resend（認証メール用 SMTP、現状 Supabase デフォルト SMTP 使用中 = 1日3通制限）
+- B2 ファシリ89期告知反映
+- Supabase 運用検討（#12）
+
+### 備考
+- Vercel プロジェクト設定（rootDirectory / buildCommand / installCommand）は CLI で直接変更できず、Vercel API (`PATCH /v9/projects/{id}`) で更新
+- `vercel.json` を monorepo root に置くアプローチは Next.js 検出に失敗、project-level 設定のほうが安定
+- Cloud Run の環境変数更新は `gcloud run services update --update-env-vars=` で新リビジョン作成（イメージ再ビルド不要）
+
+---
+
 ## 2026-04-22（夕方・D案実装着手：ARCH-001/002/003/004 コード側完了）
 
 ### 実施内容
