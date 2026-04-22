@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.calendar import router as calendar_router
+from app.api.internal import router as internal_router
 from app.api.media import router as media_router
 from app.api.notifications import router as notifications_router
-from app.api.notifications_ws import router as notifications_ws_router
 from app.api.posts import router as posts_router
 from app.api.sns_accounts import router as sns_accounts_router
 from app.config import get_settings
@@ -38,7 +38,7 @@ app.include_router(calendar_router, prefix="/api/calendar", tags=["calendar"])
 app.include_router(sns_accounts_router, prefix="/api/sns-accounts", tags=["sns-accounts"])
 app.include_router(media_router, prefix="/api/media", tags=["media"])
 app.include_router(notifications_router, prefix="/api/notifications", tags=["notifications"])
-app.include_router(notifications_ws_router, prefix="/ws", tags=["notifications-ws"])
+app.include_router(internal_router)
 
 
 @app.get("/health", response_model=HealthResponse)

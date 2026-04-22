@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     r2_bucket_name: str | None = Field(default=None, validation_alias="R2_BUCKET_NAME")
     r2_public_url: str | None = Field(default=None, validation_alias="R2_PUBLIC_URL")
 
+    # ARCH-001: GitHub Actions Cron → /internal/publish/flush 認証トークン
+    internal_api_token: SecretStr | None = Field(
+        default=None,
+        validation_alias="INTERNAL_API_TOKEN",
+    )
+
     model_config = SettingsConfigDict(
         env_file=(API_ENV_FILE, ROOT_ENV_FILE),
         env_file_encoding="utf-8",

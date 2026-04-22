@@ -504,8 +504,9 @@ def publish_now(
             detail=f"Cannot publish a post in status '{existing[0]['status']}'",
         )
 
-    # Celery scheduler picks up status='scheduled' with scheduled_at <= now().
-    # Setting scheduled_at to the current time triggers immediate publication.
+    # ARCH-001/002: pg_cron が publish_queue に enqueue し、GitHub Actions Cron が
+    # /internal/publish/flush を叩いて FastAPI プロセス内で同期投稿する。
+    # scheduled_at を現在時刻にすることで即時投稿相当となる。
     now = datetime.now(UTC)
     row = _apply_status_update(
         client,

@@ -1,0 +1,41 @@
+name: Publish Flush (Cron)
+
+# ARCH-001: Celery Beat を撤廃した後の予約投稿実行トリガー。
+# pg_cron が publish_queue に enqueue した行を、FastAPI /internal/publish/flush
+# で順次処理させる。
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'   # 5分毎 (UTC、遅延はベストエフォート)
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "1 リクエストで処理する最大件数"
+        required: false
+        default: "20"
+
+concurrency:
+  group: publish-flush
+  cancel-in-progress: false
+
+jobs:
+  flush:
+    runs-on: ubuntu-latest
+    if: ${{ vars.PUBLISH_FLUSH_ENABLED == 'true' }}
+    steps:
+      - name: Call API flush endpoint
+        env:
+          API_URL: ${{ secrets.CLOUD_RUN_API_URL }}
+          TOKEN: ${{ secrets.INTERNAL_API_TOKEN }}
+          LIMIT: ${{ github.event.inputs.limit || '20' }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$TOKEN" ]; then
+            echo "CLOUD_RUN_API_URL or INTERNAL_API_TOKEN not configured. Skipping." >&2
+            exit 0
+          fi
+          echo "POST ${API_URL}/internal/publish/flush?limit=${LIMIT}"
+          curl -sS -X POST "${API_URL}/internal/publish/flush?limit=${LIMIT}" \
+            -H "X-Internal-Token: ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body \
+            --max-time 60
