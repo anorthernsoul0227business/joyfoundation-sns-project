@@ -4,6 +4,8 @@ export const helpTexts: Record<string, string> = {
   "calendar.platform_filter":
     "投稿するSNSで絞り込めます。チェックを外すと非表示になります",
   "calendar.view_toggle": "月/週/日の表示を切り替えます",
+  "calendar.drafts_sidebar":
+    "下書きをここからカレンダーへドラッグすると予約できます。時刻は12:00で配置されます（後で編集可能）。",
   "create.content_text":
     "投稿する本文を入力します。SNSごとの文字数制限に注意してください",
   "create.platforms": "投稿先のSNSを選択します。複数選択できます",
