@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.joyfoundation.sns-auto-poster</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/scripts/run_auto_posters.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>900</integer>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/logs/launchd_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kitakoujirou/Desktop/AI関連/joyfoundation_project/logs/launchd_stderr.log</string>
+    <key>WorkingDirectory</key>
+    <string>/Users/kitakoujirou/Desktop/AI関連/joyfoundation_project</string>
+</dict>
+</plist>

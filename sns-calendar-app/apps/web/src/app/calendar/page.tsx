@@ -12,10 +12,21 @@ import type {
   EventClickArg,
   EventContentArg,
 } from "@fullcalendar/core";
-import type { CalendarEvent, PostResponse } from "../../generated/types.gen";
+import type {
+  CalendarEvent,
+  PostResponse,
+} from "../../generated/types.gen";
+import type { DropArg } from "@fullcalendar/interaction";
 import { HelpMark } from "../../components/HelpMark";
+import { DraftsSidebar } from "../../components/calendar/DraftsSidebar";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
-import { fetchCalendarEvents, fetchPostDetail } from "../../lib/api-client";
+import {
+  ApiError,
+  fetchCalendarEvents,
+  fetchPostDetail,
+  fetchPostList,
+  schedulePost,
+} from "../../lib/api-client";
 
 type CalendarView = "dayGridMonth" | "timeGridWeek" | "timeGridDay";
 type PlatformValue = "x" | "ig" | "youtube" | "note" | "line";
@@ -109,6 +120,13 @@ function getPostPlatforms(post: PostResponse | null) {
   return Array.from(new Set(post.targets.map((target) => target.platform)));
 }
 
+function combineDateWithDefaultTimeJst(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}T12:00:00+09:00`;
+}
+
 export default function CalendarPage() {
   const { isReady } = useAuthGuard();
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -125,6 +143,11 @@ export default function CalendarPage() {
   const [selectedPost, setSelectedPost] = useState<PostResponse | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [draftItems, setDraftItems] = useState<Array<PostResponse>>([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [draftsError, setDraftsError] = useState<string | null>(null);
+  const [dropError, setDropError] = useState<string | null>(null);
+  const [draftsReloadKey, setDraftsReloadKey] = useState(0);
 
   useEffect(() => {
     setInitialView(window.innerWidth < 640 ? "timeGridDay" : "dayGridMonth");
@@ -177,6 +200,36 @@ export default function CalendarPage() {
   }, [isReady, selectedPlatforms, visibleRange]);
 
   useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+    let active = true;
+    setDraftsLoading(true);
+    setDraftsError(null);
+    fetchPostList({ status: "draft" })
+      .then((response) => {
+        if (!active) {
+          return;
+        }
+        setDraftItems(response.items);
+      })
+      .catch(() => {
+        if (!active) {
+          return;
+        }
+        setDraftsError("下書きの取得に失敗しました。");
+      })
+      .finally(() => {
+        if (active) {
+          setDraftsLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [isReady, draftsReloadKey]);
+
+  useEffect(() => {
     if (!selectedEventId) {
       return;
     }
@@ -215,6 +268,46 @@ export default function CalendarPage() {
       from: arg.view.activeStart.toISOString(),
       to: arg.view.activeEnd.toISOString(),
     });
+  }
+
+  function refetchCalendarRange() {
+    if (!visibleRange) {
+      return;
+    }
+    if (selectedPlatforms.length === 0) {
+      return;
+    }
+    fetchCalendarEvents({
+      from: visibleRange.from,
+      to: visibleRange.to,
+      platforms: selectedPlatforms,
+    })
+      .then((response) => setCalendarEvents(response.events))
+      .catch(() => setErrorMessage("カレンダーの取得に失敗しました。時間をおいて再試行してください。"));
+  }
+
+  function refreshDrafts() {
+    setDraftsReloadKey((key) => key + 1);
+  }
+
+  async function handleCalendarDrop(info: DropArg) {
+    const draftId = info.draggedEl.getAttribute("data-draft-id");
+    if (!draftId) {
+      return;
+    }
+    const scheduledAt = combineDateWithDefaultTimeJst(info.date);
+    setDropError(null);
+    try {
+      await schedulePost(draftId, scheduledAt);
+      refetchCalendarRange();
+      refreshDrafts();
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "予約に失敗しました。時間をおいて再試行してください。";
+      setDropError(message);
+    }
   }
 
   function handleTogglePlatform(platform: PlatformValue) {
@@ -419,8 +512,22 @@ export default function CalendarPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="mt-6 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+            <aside className="order-first xl:order-none">
+              <DraftsSidebar
+                drafts={draftItems}
+                errorMessage={draftsError}
+                isLoading={draftsLoading}
+                onRefresh={refreshDrafts}
+              />
+            </aside>
+
             <section className="space-y-4">
+              {dropError ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {dropError}
+                </div>
+              ) : null}
               {errorMessage ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {errorMessage}
@@ -443,6 +550,8 @@ export default function CalendarPage() {
                   allDaySlot={false}
                   datesSet={handleDatesSet}
                   dayMaxEvents={3}
+                  drop={handleCalendarDrop}
+                  droppable
                   eventClassNames={getEventClassNames}
                   eventClick={handleEventClick}
                   eventContent={renderEventContent}

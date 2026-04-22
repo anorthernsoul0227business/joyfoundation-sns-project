@@ -1,27 +1,40 @@
 "use client";
 
 import {
+  connectSnsAccountApiSnsAccountsConnectPlatformPost,
   createPostApiPostsPost,
+  deleteSnsAccountApiSnsAccountsAccountIdDelete,
   deletePostApiPostsPostIdDelete,
   getCalendarApiCalendarGet,
   getPostApiPostsPostIdGet,
+  listSnsAccountsApiSnsAccountsGet,
   listPostsApiPostsGet,
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
   meApiAuthMeGet,
+  listNotificationsApiNotificationsGet,
+  markAllNotificationsReadApiNotificationsReadAllPost,
+  markNotificationReadApiNotificationsNotificationIdReadPost,
   publishNowApiPostsPostIdPublishNowPost,
   refreshApiAuthRefreshPost,
   schedulePostApiPostsPostIdSchedulePost,
   signupApiAuthSignupPost,
   updatePostApiPostsPostIdPatch,
+  uploadMediaApiMediaUploadPost,
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
+  ConnectResponse,
+  MediaUploadResponse,
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
   PostCreate,
   PostListResponse,
   PostResponse,
   PostUpdate,
   SessionResponse,
+  SnsAccountListResponse,
   UserResponse,
 } from "../generated/types.gen";
 import { client } from "../generated/client.gen";
@@ -304,6 +317,88 @@ export async function deletePost(postId: string) {
       deletePostApiPostsPostIdDelete({
         path: { post_id: postId },
       }) as Promise<ClientResult<unknown>>,
+  );
+}
+
+export async function fetchSnsAccounts(): Promise<SnsAccountListResponse> {
+  return withAuthRetry(
+    () => listSnsAccountsApiSnsAccountsGet() as Promise<ClientResult<SnsAccountListResponse>>,
+  );
+}
+
+export async function connectSnsAccount(platform: "x" | "ig"): Promise<ConnectResponse> {
+  return withAuthRetry(
+    () =>
+      connectSnsAccountApiSnsAccountsConnectPlatformPost({
+        path: { platform },
+      }) as Promise<ClientResult<ConnectResponse>>,
+  );
+}
+
+export async function disconnectSnsAccount(accountId: string): Promise<void> {
+  await withAuthRetry(
+    () =>
+      deleteSnsAccountApiSnsAccountsAccountIdDelete({
+        path: { account_id: accountId },
+      }) as Promise<ClientResult<unknown>>,
+  );
+}
+
+export interface UploadMediaOptions {
+  autoResizeIg?: boolean;
+}
+
+export async function uploadMedia(
+  files: File[],
+  options: UploadMediaOptions = {},
+): Promise<MediaUploadResponse> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file, file.name);
+  }
+  return withAuthRetry(
+    () =>
+      uploadMediaApiMediaUploadPost({
+        body: formData as unknown as { files: Array<Blob | File> },
+        query: {
+          auto_resize_ig: options.autoResizeIg ?? false,
+        },
+      }) as Promise<ClientResult<MediaUploadResponse>>,
+  );
+}
+
+export async function fetchNotifications(
+  options: { limit?: number; offset?: number; unreadOnly?: boolean } = {},
+): Promise<NotificationListResponse> {
+  return withAuthRetry(
+    () =>
+      listNotificationsApiNotificationsGet({
+        query: {
+          limit: options.limit,
+          offset: options.offset,
+          unread_only: options.unreadOnly,
+        },
+      }) as Promise<ClientResult<NotificationListResponse>>,
+  );
+}
+
+export async function markNotificationRead(
+  notificationId: string,
+): Promise<NotificationReadResponse> {
+  return withAuthRetry(
+    () =>
+      markNotificationReadApiNotificationsNotificationIdReadPost({
+        path: { notification_id: notificationId },
+      }) as Promise<ClientResult<NotificationReadResponse>>,
+  );
+}
+
+export async function markAllNotificationsRead(): Promise<NotificationReadAllResponse> {
+  return withAuthRetry(
+    () =>
+      markAllNotificationsReadApiNotificationsReadAllPost() as Promise<
+        ClientResult<NotificationReadAllResponse>
+      >,
   );
 }
 

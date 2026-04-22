@@ -1,0 +1,67 @@
+name: Deploy Backend (Railway)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sns-calendar-app/apps/api/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch:
+    inputs:
+      service:
+        description: "Railway service to redeploy"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - api
+          - celery-worker
+          - celery-beat
+
+concurrency:
+  group: deploy-backend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ vars.RAILWAY_ENABLED == 'true' }}
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENVIRONMENT }}
+    defaults:
+      run:
+        working-directory: sns-calendar-app/apps/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.com/install.sh | sh
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
+
+      - name: Determine services
+        id: services
+        run: |
+          TARGET="${{ inputs.service }}"
+          if [ -z "$TARGET" ] || [ "$TARGET" = "all" ]; then
+            echo "list=api celery-worker celery-beat" >> "$GITHUB_OUTPUT"
+          else
+            echo "list=$TARGET" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy
+        run: |
+          set -euo pipefail
+          for svc in ${{ steps.services.outputs.list }}; do
+            echo "::group::Deploying $svc"
+            railway up \
+              --service "$svc" \
+              --environment "${RAILWAY_ENVIRONMENT:-production}" \
+              --detach
+            echo "::endgroup::"
+          done

@@ -1,0 +1,88 @@
+name: Deploy Frontend (Vercel)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "sns-calendar-app/apps/web/**"
+      - "sns-calendar-app/packages/**"
+      - "sns-calendar-app/pnpm-lock.yaml"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy target (preview or production)"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - preview
+          - production
+
+concurrency:
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ vars.VERCEL_ENABLED == 'true' }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: sns-calendar-app/pnpm-lock.yaml
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Determine target
+        id: target
+        run: |
+          TARGET="${{ inputs.target }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="production"
+          fi
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+      - name: Pull Vercel environment
+        working-directory: sns-calendar-app/apps/web
+        run: |
+          if [ "${{ steps.target.outputs.target }}" = "production" ]; then
+            vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          else
+            vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          fi
+
+      - name: Build
+        working-directory: sns-calendar-app/apps/web
+        run: |
+          if [ "${{ steps.target.outputs.target }}" = "production" ]; then
+            vercel build --prod --token=$VERCEL_TOKEN
+          else
+            vercel build --token=$VERCEL_TOKEN
+          fi
+
+      - name: Deploy
+        working-directory: sns-calendar-app/apps/web
+        run: |
+          if [ "${{ steps.target.outputs.target }}" = "production" ]; then
+            vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+          else
+            vercel deploy --prebuilt --token=$VERCEL_TOKEN
+          fi
