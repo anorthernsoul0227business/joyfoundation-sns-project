@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="SNS Calendar API", validation_alias="APP_NAME")
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
     frontend_url: str | None = Field(default=None, validation_alias="FRONTEND_URL")
+    allowed_origins: str | None = Field(default=None, validation_alias="ALLOWED_ORIGINS")
     supabase_url: str | None = Field(default=None, validation_alias="SUPABASE_URL")
     supabase_anon_key: str | None = Field(
         default=None,

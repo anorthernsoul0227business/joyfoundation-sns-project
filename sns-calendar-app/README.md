@@ -197,3 +197,66 @@ pnpm openapi:gen-schema && git diff --exit-code -- apps/api/openapi.json
 ### Actions / Dependabot の配置
 
 `.github/workflows/ci.yml` と `.github/dependabot.yml` はリポジトリルート (`joyfoundation_project/.github/`) に配置しています。`ci.yml` は `sns-calendar-app/**` と `.github/workflows/ci.yml` のパス変更時のみ発火するよう `paths:` フィルタを指定し、`sns-auto-poster` 側の変更では走らない構成です。
+
+## 本番デプロイ (WEB-029)
+
+Phase 1 は **Vercel + Railway + Supabase Cloud** の三位構成です。詳細な env 変数と投入先は [`docs/ENV_VARS.md`](../docs/ENV_VARS.md) を参照してください。
+
+### 構成
+
+| レイヤ | サービス | ディレクトリ |
+|---|---|---|
+| フロント | Vercel | `apps/web` |
+| API | Railway (`api` サービス) | `apps/api` |
+| Celery worker | Railway (`celery-worker`) | `apps/api` |
+| Celery beat | Railway (`celery-beat`) | `apps/api` |
+| Redis | Railway Redis プラグイン | - |
+| DB | Supabase Cloud | `supabase/migrations/` |
+| 画像 | Cloudflare R2 | - |
+
+### 初回セットアップ手順
+
+#### 1. Supabase Cloud
+
+```bash
+# Supabase プロジェクト作成後、ローカルから push
+supabase link --project-ref <project-ref>
+supabase db push
+```
+
+Auth 設定で確認メールを OFF（Phase 1 簡素化）。サービスロールキー／anon キーを控える。
+
+#### 2. Vercel プロジェクト
+
+- GitHub リポジトリ連携（`main` ブランチ）
+- Root directory: `sns-calendar-app/apps/web`
+- Install command: `pnpm install --frozen-lockfile` （モノレポルートで実行）
+- Build command: `pnpm --filter @sns-calendar/web build`
+- Output directory: `.next`
+- Env 変数: `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_WS_URL`
+
+#### 3. Railway プロジェクト
+
+3 サービスを同じリポジトリから派生:
+
+| サービス名 | Config パス | 起動コマンド |
+|---|---|---|
+| `api` | `sns-calendar-app/apps/api/railway.json` | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+| `celery-worker` | `sns-calendar-app/apps/api/railway.worker.json` | `celery -A app.tasks.celery_app worker --loglevel=info` |
+| `celery-beat` | `sns-calendar-app/apps/api/railway.beat.json` | `celery -A app.tasks.celery_app beat --loglevel=info` |
+
+Railway ダッシュボードで各サービスの `Settings → Config-as-Code Path` を上表のパスに設定。Redis プラグインを追加し、`REDIS_URL` を `CELERY_BROKER_URL` / `CELERY_RESULT_BACKEND` に参照させる。
+
+#### 4. OAuth コールバック URL
+
+本番 URL 確定後、X / Meta のデベロッパーコンソールに `https://<railway-host>/api/sns-accounts/callback/x` (および `/ig`) を登録。`OAUTH_REDIRECT_BASE` も同じ URL に合わせる。
+
+### 継続デプロイ
+
+`.github/workflows/deploy-frontend.yml` と `.github/workflows/deploy-backend.yml` が `main` ブランチへの push で起動します。実際にデプロイするには Repository Variables に `VERCEL_ENABLED=true` / `RAILWAY_ENABLED=true` をセットし、対応するシークレット（[`docs/ENV_VARS.md`](../docs/ENV_VARS.md#github-actions-シークレット) 参照）を投入してください。未設定のままなら noop で止まるため、誤起動しません。
+
+### ロールバック
+
+- **フロント**: Vercel Dashboard → Deployments → 旧デプロイを *Promote to Production*
+- **API**: Railway Dashboard → Deployments → 旧リビジョンを *Redeploy*
+- **DB**: マイグレーションは前方互換で追加する方針（rollback 用スクリプトは書かない）。事故時は `supabase db dump` で取得したスナップショットから部分復旧する
