@@ -26,17 +26,53 @@ PostSummary = dict[str, list[dict[str, Any]]]
 
 
 class EmailChannel:
-    """SMTP_SSL でメールを送信する通知チャネル."""
+    """メール送信チャネル。Resend API を優先し、未設定なら SMTP_SSL にフォールバック.
+
+    ARCH-005: RESEND_API_KEY が設定されていれば Resend API で送信。
+    設定がなければ従来どおり smtplib SMTP_SSL で送信する。
+    """
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
 
     def send(self, *, to: str, subject: str, body: str) -> bool:
         settings = self._settings
+        if settings.resend_api_key and settings.smtp_from_address:
+            return self._send_via_resend(to=to, subject=subject, body=body)
+
         if not (settings.smtp_host and settings.smtp_from_address):
-            logger.warning("SMTP is not configured; skipping email to %s", to)
+            logger.warning("No email backend configured; skipping email to %s", to)
             return False
 
+        return self._send_via_smtp(to=to, subject=subject, body=body)
+
+    def _send_via_resend(self, *, to: str, subject: str, body: str) -> bool:
+        settings = self._settings
+        try:
+            import resend  # type: ignore[import-not-found]
+        except ImportError:
+            logger.warning("resend package not installed; skipping email to %s", to)
+            return False
+
+        assert settings.resend_api_key is not None
+        assert settings.smtp_from_address is not None
+        resend.api_key = settings.resend_api_key.get_secret_value()
+        try:
+            resend.Emails.send(
+                {
+                    "from": settings.smtp_from_address,
+                    "to": [to],
+                    "subject": subject,
+                    "text": body,
+                }
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Failed to send email via Resend to %s: %s", to, exc)
+            return False
+        return True
+
+    def _send_via_smtp(self, *, to: str, subject: str, body: str) -> bool:
+        settings = self._settings
         message = EmailMessage()
         message["From"] = settings.smtp_from_address
         message["To"] = to
@@ -52,7 +88,7 @@ class EmailChannel:
                     )
                 smtp.send_message(message)
         except (OSError, smtplib.SMTPException) as exc:
-            logger.warning("Failed to send email to %s: %s", to, exc)
+            logger.warning("Failed to send email via SMTP to %s: %s", to, exc)
             return False
         return True
 
