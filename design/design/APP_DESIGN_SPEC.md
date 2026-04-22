@@ -1103,3 +1103,135 @@ Sprint 4 (Phase 1.5 の末尾 or Phase 1.5.5) に追加:
 2. `scripts/voice-poc/whisper_precision_test.py` を作成 → 圭一郎さんの音声サンプル1本で精度計測
 3. 結果次第で Whisper 維持 / Google STT 切替を本決定
 4. `feat/voice-input` ブランチを切るのは VOICE-001 着手時（main 上の設計追記フェーズ完了後）
+
+---
+
+## 15. 無料スタック移行計画 v0.1（販売化を見据えた固定費ゼロ設計）
+
+**策定日**: 2026-04-22
+**ステータス**: Draft（実装着手前の設計フェーズ）
+**影響範囲**: バックエンドのランタイム / ジョブ / リアルタイム通知レイヤ
+
+### 15.1 背景と目的
+
+本アプリは将来的に **SaaS 販売** を目標とする。Phase 1 MVP は FastAPI + Celery (Worker/Beat) + Redis の構成で完成しているが、この構成を有料ホスティング（Railway 等）に乗せると **固定費 $5〜10/月が発生** する。利用者0の MVP 段階から固定費が発生すると、販売収益と運用コストのスケール連動が崩れ、ビジネスモデルの制約になる。
+
+方針: **利用者0のアイドル時は固定費0円、利用者増加時は従量で各サービスが自然に有料化** するアーキテクチャに移行する。
+
+### 15.2 構成比較
+
+| レイヤ | 現行 (Phase 1 MVP) | 移行後 (D案) | 理由 |
+|---|---|---|---|
+| フロント | Next.js (Vercel Hobby) | **同じ** | Hobby Free で商用可否は規約確認要 |
+| 認証・DB | Supabase Postgres | **同じ** | Free tier 500MB |
+| API | FastAPI on Railway | **FastAPI on Cloud Run** | Scale-to-zero、無料枠内 |
+| ジョブスケジューラ | Celery Beat | **Supabase pg_cron** | DB内完結、無料、運用コスト0 |
+| ジョブ実行 | Celery Worker (Redis 経由) | **FastAPI endpoint を GitHub Actions Cron が叩く**（既存 `auto_post.yml` 踏襲） | GH Actions 無料枠内、Cloud Run と相性良 |
+| リアルタイム通知 | FastAPI WebSocket + Redis PubSub | **Supabase Realtime**（notifications テーブル INSERT 購読） | 無料、Redis 不要 |
+| ストレージ | Cloudflare R2 | **同じ** | 無料枠内（10GB-month + 1M Class A ops/月） |
+| メール | （未実装） | **Resend** | 3000通/月無料、SMTP Transactional |
+
+### 15.3 削除されるコンポーネント
+
+1. **Celery 関連一式**
+   - `apps/api/app/tasks/celery_app.py` / `scheduled_posts.py`
+   - `apps/api/railway.worker.json` / `railway.beat.json`
+   - `celery` / `redis` の Python 依存
+2. **Redis**
+   - broker 用途 → pg_cron + GH Actions で代替
+   - PubSub 用途 → Supabase Realtime で代替
+3. **FastAPI WebSocket 実装**
+   - `apps/api/app/api/notifications_ws.py` → Supabase Realtime 購読に置き換え
+
+### 15.4 追加/変更されるコンポーネント
+
+1. **Supabase pg_cron**
+   - `supabase/migrations/` に cron 設定 SQL を追加
+   - 毎分 `posts` テーブルから予約時刻到達の行を検出し、`publish_queue` テーブルに INSERT
+2. **GitHub Actions Cron**（既存 `auto_post.yml` のパターン流用）
+   - 5分毎に `POST /internal/publish/flush` を叩く
+   - 認証: `X-Internal-Token` ヘッダー（GH Secrets）
+3. **Cloud Run デプロイ設定**
+   - `apps/api/service.yaml`（Cloud Run YAML）
+   - `.github/workflows/deploy-backend-cloudrun.yml`（既存 deploy-backend.yml を置換）
+   - Workload Identity Federation で GH→GCP 認証
+4. **Supabase Realtime 購読（Web）**
+   - `apps/web/src/hooks/useNotifications.ts` を `supabase-js` の `.channel().on('postgres_changes', ...)` に書き換え
+
+### 15.5 ARCH-001〜005 実装タスク案
+
+| ID | タスク | 工数 | 依存 |
+|---|---|---|---|
+| **ARCH-001** | Celery Beat → pg_cron + GitHub Actions Cron 移行 | 0.5日 | なし |
+| **ARCH-002** | Celery Worker → FastAPI 内部エンドポイント + GH Actions 呼び出し置換 | 0.5日 | ARCH-001 |
+| **ARCH-003** | Redis PubSub → Supabase Realtime 移行（WebSocket 実装削除） | 0.5日 | なし |
+| **ARCH-004** | FastAPI デプロイ先 Railway → Cloud Run 切替 | 0.5日 | ARCH-001〜003 |
+| **ARCH-005** | Resend 導入（認証メール / 投稿結果通知） | 0.3日 | ARCH-004 |
+
+合計: **2〜3日**
+
+### 15.6 Cloud Run 採用の根拠と制約
+
+**採用理由**:
+- **Dockerfile 既存のまま使える**（現行 `apps/api/Dockerfile` が uvicorn で PORT=8000 起動）
+- **Scale-to-zero** でアイドル時の費用 0
+- Google Cloud 無料枠: 毎月 **200万リクエスト + 36万 vCPU秒 + 18万 GiB秒**
+- リージョン選択可（`asia-northeast1` 東京）
+
+**制約**:
+- **コールドスタート 1〜3秒**（初回リクエスト or 長時間アイドル後）
+- **WebSocket 長時間接続は課金対象**（→ Realtime 移行で回避）
+- **バックグラウンドジョブ非推奨**（リクエスト処理中のみCPU保証） → Celery 撤廃と整合
+
+**スケール時の対処**:
+- 利用者増でコールドスタートが問題 → `min-instances=1` に設定（月 $5〜相当の課金開始）
+- Supabase Free 500MB 到達 → Pro $25/月
+- これらは **販売収益が発生した後の話** なので計画的に昇格可
+
+### 15.7 監視と昇格トリガー
+
+販売化後に備え、以下のメトリクスを月次確認:
+
+| サービス | 無料枠 | 警告閾値 | 昇格先 |
+|---|---|---|---|
+| Supabase DB | 500 MB | 400 MB | Pro $25/月 |
+| Supabase MAU | 50,000 | 40,000 | Pro $25/月 |
+| Cloud Run req | 200万/月 | 150万/月 | 従量 ($0.40/100万req) |
+| Cloud Run CPU | 36万 vCPU秒 | 28万 | 従量 |
+| Vercel 帯域 | 100 GB/月 | 80 GB | Pro $20/月 |
+| R2 ストレージ | 10 GB-month | 8 GB | 従量 ($0.015/GB-month) |
+| Resend 送信 | 3000/月 | 2400 | Pro $20/月 |
+
+### 15.8 リスクと緩和策
+
+| リスク | 緩和策 |
+|---|---|
+| Cloud Run コールドスタート UX 悪化 | ログイン時に `/health` を先行打鍵してウォームアップ |
+| GH Actions Cron 遅延（高負荷時） | 投稿は1件ずつ処理、DB側で `locked_at` で排他制御 |
+| pg_cron 停止（Supabase障害） | GH Actions 側の cron も投稿対象を直接ポーリング可能な構造にする（二重化） |
+| Realtime 接続切断 | `useNotifications` フックで自動再接続（exponential backoff） |
+| Supabase Free 仕様変更 | `#12 Supabase運用検討` タスクで年次レビュー |
+
+### 15.9 Phase 1 MVP コードとの差分
+
+Phase 1 MVP は Railway 前提で実装完了（#22 マージ）。この設計書は **追加の feature branch (`feat/free-stack-migration`) で段階的に実装** する。`main` ブランチの既存コードは **破棄ではなく漸進的に置換**:
+
+1. ARCH-003 から着手（Realtime 移行は独立・リスク低）
+2. ARCH-001/002 で Celery を削除
+3. ARCH-004 で Cloud Run デプロイ
+4. Railway 関連設定 (`railway.*.json`) は最終削除
+
+### 15.10 次アクション
+
+1. 本設計書を `docs/free-stack-migration` ブランチで PR 化
+2. ARCH-001〜005 の Codex ブリーフィングを `docs/codex_brief_ARCH-00*.md` に作成
+3. 実装着手は別 feature branch で（`feat/arch-001-pg-cron-migration` 等 ARCH ごと）
+4. 完了後、圭一郎さん環境へのデプロイ（P2 Vercel + D案 Cloud Run）
+
+### 15.11 未解決事項
+
+- [ ] **Vercel Hobby Free の商用利用規約**確認（SaaS 販売が規約違反にならないか）
+- [ ] **Cloud Run の Workload Identity Federation** 設定手順（GH Actions → GCP 認証）
+- [ ] **Supabase pg_cron** のタイムゾーン設定（JST vs UTC）
+- [ ] **Realtime の接続数上限**（Free で concurrent 200接続、販売化時は要Pro）
+- [ ] **販売モデル**の粗案（Freemium / Per-seat / Per-org / Usage-based）→ 別設計書（BIZ-001）で扱う
