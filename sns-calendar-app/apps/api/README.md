@@ -95,6 +95,54 @@ poetry run python -c "from app.services.publisher.orchestrator import publish_ta
 - IG の `post_media.storage_path` も Phase 1 では公開 `http(s)://` URL 前提
 - リール、動画、リポストは Phase 2 対応
 
+## 画像アップロード (WEB-024)
+
+`POST /api/media/upload` は Cloudflare R2 に画像を保存し、`post_media.storage_path` に入れる公開URLを返します。`auto_resize_ig=true` を付けると IG 向けに 4:5 (1080x1350) 白余白パディングを適用します。
+
+必要な環境変数:
+
+```bash
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=https://cdn.example.com/media
+```
+
+リクエスト:
+
+```bash
+curl -X POST 'http://localhost:8000/api/media/upload?auto_resize_ig=true' \
+  -H 'Authorization: Bearer <jwt>' \
+  -F 'files=@/path/to/image1.jpg' \
+  -F 'files=@/path/to/image2.png'
+```
+
+レスポンス（`MediaUploadResponse`）:
+
+```json
+{
+  "media": [
+    {
+      "public_url": "https://cdn.example.com/media/post-media/{org_id}/2026/04/22/abc.jpg",
+      "storage_path": "post-media/{org_id}/2026/04/22/abc.jpg",
+      "width": 1080,
+      "height": 1350,
+      "mime_type": "image/jpeg"
+    }
+  ]
+}
+```
+
+制約:
+
+- 1 枚あたり 10 MB 上限（`413 Request Entity Too Large`）
+- リクエスト上限 10 枚（`400 Bad Request`）
+- 許容 MIME: `image/jpeg` / `image/png` / `image/webp`
+- `auto_resize_ig=true` は常に JPEG で出力（quality=90）
+- R2 認証未設定時は `503 Service Unavailable`
+- `post_media` テーブルへの書き込みはしない（投稿作成時のフローに任せる）
+
 ## 投稿結果メール通知 (WEB-023)
 
 `publish_post` 完了後に `app.services.notifier.notify_post_result` が呼ばれ、対象投稿オーナーの `public.users.email` に結果をメール送信します。Phase 1 は SMTP_SSL のみ対応、送信失敗は warning ログで握り潰し、投稿本体の処理は必ず成功扱いとなります。

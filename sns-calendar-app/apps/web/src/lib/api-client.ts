@@ -17,10 +17,12 @@ import {
   schedulePostApiPostsPostIdSchedulePost,
   signupApiAuthSignupPost,
   updatePostApiPostsPostIdPatch,
+  uploadMediaApiMediaUploadPost,
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
   ConnectResponse,
+  MediaUploadResponse,
   PostCreate,
   PostListResponse,
   PostResponse,
@@ -333,6 +335,29 @@ export async function disconnectSnsAccount(accountId: string): Promise<void> {
       deleteSnsAccountApiSnsAccountsAccountIdDelete({
         path: { account_id: accountId },
       }) as Promise<ClientResult<unknown>>,
+  );
+}
+
+export interface UploadMediaOptions {
+  autoResizeIg?: boolean;
+}
+
+export async function uploadMedia(
+  files: File[],
+  options: UploadMediaOptions = {},
+): Promise<MediaUploadResponse> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file, file.name);
+  }
+  return withAuthRetry(
+    () =>
+      uploadMediaApiMediaUploadPost({
+        body: formData as unknown as { files: Array<Blob | File> },
+        query: {
+          auto_resize_ig: options.autoResizeIg ?? false,
+        },
+      }) as Promise<ClientResult<MediaUploadResponse>>,
   );
 }
 

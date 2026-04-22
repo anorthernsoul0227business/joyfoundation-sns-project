@@ -17,6 +17,7 @@ import {
   publishPostNow,
   schedulePost,
   updatePost,
+  uploadMedia,
 } from "../../lib/api-client";
 import { useAuthStore } from "../../stores/auth";
 
@@ -251,6 +252,44 @@ function CreatePageContent() {
     control,
     name: "media",
   });
+
+  const [mediaUploadState, setMediaUploadState] = useState<{
+    isUploading: boolean;
+    error: string | null;
+  }>({ isUploading: false, error: null });
+
+  const handleMediaUpload = async (
+    files: FileList | null,
+    options: { autoResizeIg: boolean },
+  ) => {
+    if (!files || files.length === 0) {
+      return;
+    }
+    setMediaUploadState({ isUploading: true, error: null });
+    try {
+      const fileList = Array.from(files);
+      const response = await uploadMedia(fileList, {
+        autoResizeIg: options.autoResizeIg,
+      });
+      for (const item of response.media) {
+        const mime = (item.mime_type ?? "image/jpeg") as
+          | "image/png"
+          | "image/jpeg"
+          | "image/webp";
+        append({
+          storage_path: item.public_url,
+          mime_type: mediaEnum.options.includes(mime) ? mime : "image/jpeg",
+        });
+      }
+      setMediaUploadState({ isUploading: false, error: null });
+    } catch (uploadError) {
+      const message =
+        uploadError instanceof ApiError
+          ? uploadError.message
+          : "画像アップロードに失敗しました";
+      setMediaUploadState({ isUploading: false, error: message });
+    }
+  };
 
   const watchedPlatforms = watch("platforms");
   const watchedMedia = watch("media");
@@ -708,25 +747,71 @@ function CreatePageContent() {
               </section>
 
               <section className="rounded-[1.5rem] border border-brand-ink/10 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-brand-ink">画像 URL</p>
                     <HelpMark topic="create.media" />
                   </div>
-                  <button
-                    className="inline-flex items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isReadonly}
-                    onClick={() =>
-                      append({
-                        mime_type: "image/png",
-                        storage_path: "",
-                      })
-                    }
-                    type="button"
-                  >
-                    + 画像を追加
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      className={`inline-flex cursor-pointer items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean ${
+                        isReadonly || mediaUploadState.isUploading
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
+                      }`}
+                    >
+                      {mediaUploadState.isUploading ? "アップロード中…" : "画像をアップロード"}
+                      <input
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={isReadonly || mediaUploadState.isUploading}
+                        multiple
+                        onChange={(event) => {
+                          void handleMediaUpload(event.target.files, { autoResizeIg: false });
+                          event.target.value = "";
+                        }}
+                        type="file"
+                      />
+                    </label>
+                    <label
+                      className={`inline-flex cursor-pointer items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean ${
+                        isReadonly || mediaUploadState.isUploading
+                          ? "cursor-not-allowed opacity-50"
+                          : ""
+                      }`}
+                      title="Instagram 用に 1080x1350 白余白パディングしてアップロードします"
+                    >
+                      IG向けリサイズ
+                      <input
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={isReadonly || mediaUploadState.isUploading}
+                        multiple
+                        onChange={(event) => {
+                          void handleMediaUpload(event.target.files, { autoResizeIg: true });
+                          event.target.value = "";
+                        }}
+                        type="file"
+                      />
+                    </label>
+                    <button
+                      className="inline-flex items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isReadonly}
+                      onClick={() =>
+                        append({
+                          mime_type: "image/png",
+                          storage_path: "",
+                        })
+                      }
+                      type="button"
+                    >
+                      + URL 手入力
+                    </button>
+                  </div>
                 </div>
+                {mediaUploadState.error ? (
+                  <p className="mt-3 text-sm text-rose-600">{mediaUploadState.error}</p>
+                ) : null}
 
                 <div className="mt-4 space-y-3">
                   {fields.length === 0 ? (

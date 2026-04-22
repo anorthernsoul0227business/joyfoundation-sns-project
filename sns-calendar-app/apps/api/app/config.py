@@ -46,6 +46,17 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="SMTP_FROM_ADDRESS",
     )
+    r2_account_id: str | None = Field(default=None, validation_alias="R2_ACCOUNT_ID")
+    r2_access_key_id: str | None = Field(
+        default=None,
+        validation_alias="R2_ACCESS_KEY_ID",
+    )
+    r2_secret_access_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="R2_SECRET_ACCESS_KEY",
+    )
+    r2_bucket_name: str | None = Field(default=None, validation_alias="R2_BUCKET_NAME")
+    r2_public_url: str | None = Field(default=None, validation_alias="R2_PUBLIC_URL")
 
     model_config = SettingsConfigDict(
         env_file=(API_ENV_FILE, ROOT_ENV_FILE),
