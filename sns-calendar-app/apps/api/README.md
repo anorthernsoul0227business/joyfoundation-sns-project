@@ -95,6 +95,46 @@ poetry run python -c "from app.services.publisher.orchestrator import publish_ta
 - IG の `post_media.storage_path` も Phase 1 では公開 `http(s)://` URL 前提
 - リール、動画、リポストは Phase 2 対応
 
+## 投稿結果メール通知 (WEB-023)
+
+`publish_post` 完了後に `app.services.notifier.notify_post_result` が呼ばれ、対象投稿オーナーの `public.users.email` に結果をメール送信します。Phase 1 は SMTP_SSL のみ対応、送信失敗は warning ログで握り潰し、投稿本体の処理は必ず成功扱いとなります。
+
+必要な環境変数:
+
+```bash
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465            # 省略時は 465
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM_ADDRESS=no-reply@example.com
+```
+
+`SMTP_HOST` または `SMTP_FROM_ADDRESS` 未設定時は送信処理をスキップします（no-op）。
+
+ローカル開発では [Mailpit](https://github.com/axllent/mailpit) / [MailHog](https://github.com/mailhog/MailHog) 等のローカル SMTP サーバを使うと実メールを送らずに動作確認できます。Mailpit 例:
+
+```bash
+docker run -d --name mailpit -p 1025:1025 -p 8025:8025 axllent/mailpit
+# SMTP_HOST=localhost SMTP_PORT=1025 ... (非SSLのため実運用では推奨しません)
+```
+
+単体で呼び出したい場合:
+
+```python
+from app.services.notifier import notify_post_result
+
+notify_post_result(
+    post_id="...",
+    owner_email="owner@example.com",
+    summary={
+        "success": [{"platform": "x", "platform_post_id": "111"}],
+        "failed": [{"platform": "instagram", "error": "token expired"}],
+    },
+)
+```
+
+テストでは `publish_post.run(post_id, notifier=fake_notifier)` で notifier を注入できます。
+
 ## Celery 予約投稿
 
 予約投稿の自動発火は Celery worker + beat で動かします。Beat は 1 分ごとに `check_scheduled_posts` を実行し、時刻到来した `posts.status='scheduled'` を `publish_post` に渡します。

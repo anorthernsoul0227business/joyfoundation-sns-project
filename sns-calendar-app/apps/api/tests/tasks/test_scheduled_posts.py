@@ -20,6 +20,7 @@ class QueryResult:
 class FakeSupabaseClient:
     posts: dict[str, dict[str, Any]] = field(default_factory=dict)
     post_targets: dict[str, dict[str, Any]] = field(default_factory=dict)
+    users: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def table(self, name: str) -> FakeTableQuery:
         return FakeTableQuery(self, name)
@@ -74,6 +75,8 @@ class FakeTableQuery:
             source = list(self.client.posts.values())
         elif self.table_name == "post_targets":
             source = list(self.client.post_targets.values())
+        elif self.table_name == "users":
+            source = list(self.client.users.values())
         else:
             raise AssertionError(f"Unsupported table: {self.table_name}")
 
@@ -101,10 +104,17 @@ def eager_celery() -> Any:
         celery_app.conf.task_eager_propagates = previous_propagates
 
 
-def _post(post_id: str, *, status: str = "scheduled", scheduled_at: str = "2026-04-21T00:00:00+00:00") -> dict[str, Any]:
+def _post(
+    post_id: str,
+    *,
+    status: str = "scheduled",
+    scheduled_at: str = "2026-04-21T00:00:00+00:00",
+    user_id: str | None = None,
+) -> dict[str, Any]:
     return {
         "id": post_id,
         "org_id": str(uuid4()),
+        "user_id": user_id,
         "status": status,
         "scheduled_at": scheduled_at,
         "published_at": None,
@@ -310,6 +320,77 @@ def test_publish_post_marks_target_failed_when_publish_target_raises(
     assert client.post_targets[target_id]["status"] == "failed"
     assert client.post_targets[target_id]["error_message"] == "boom"
     assert result["results"][0]["error"] == "unhandled: boom"
+
+
+def test_publish_post_dispatches_notification_with_mixed_summary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id = str(uuid4())
+    post_id = str(uuid4())
+    ok_target = str(uuid4())
+    failed_target = str(uuid4())
+    client = FakeSupabaseClient(
+        posts={post_id: _post(post_id, status="publishing", user_id=user_id)},
+        post_targets={
+            ok_target: _target(ok_target, post_id, platform="x", status="pending"),
+            failed_target: _target(
+                failed_target, post_id, platform="instagram", status="pending"
+            ),
+        },
+        users={user_id: {"id": user_id, "email": "owner@example.com"}},
+    )
+
+    def fake_publish(target_id: str) -> PublishResult:
+        if target_id == ok_target:
+            return _mark_target_published(client, target_id)
+        client.post_targets[target_id]["status"] = "failed"
+        client.post_targets[target_id]["error_message"] = "token expired"
+        return PublishResult(False, None, "token expired")
+
+    calls: list[dict[str, Any]] = []
+
+    def fake_notifier(**kwargs: Any) -> None:
+        calls.append(kwargs)
+
+    monkeypatch.setattr("app.tasks.scheduled_posts.get_supabase_client", lambda: client)
+    monkeypatch.setattr("app.tasks.scheduled_posts.publish_target", fake_publish)
+
+    publish_post.run(post_id, notifier=fake_notifier)
+
+    assert len(calls) == 1
+    call = calls[0]
+    assert call["post_id"] == post_id
+    assert call["owner_email"] == "owner@example.com"
+    summary = call["summary"]
+    assert len(summary["success"]) == 1
+    assert summary["success"][0]["platform"] == "x"
+    assert len(summary["failed"]) == 1
+    assert summary["failed"][0]["platform"] == "instagram"
+    assert summary["failed"][0]["error"] == "token expired"
+
+
+def test_publish_post_skips_notification_when_user_email_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id = str(uuid4())
+    post_id = str(uuid4())
+    target_id = str(uuid4())
+    client = FakeSupabaseClient(
+        posts={post_id: _post(post_id, status="publishing", user_id=user_id)},
+        post_targets={target_id: _target(target_id, post_id, status="pending")},
+        users={},
+    )
+
+    monkeypatch.setattr("app.tasks.scheduled_posts.get_supabase_client", lambda: client)
+    monkeypatch.setattr(
+        "app.tasks.scheduled_posts.publish_target",
+        lambda target_id: _mark_target_published(client, target_id),
+    )
+
+    def fail_if_called(**kwargs: Any) -> None:
+        pytest.fail("notifier should not be called when user email cannot be resolved")
+
+    publish_post.run(post_id, notifier=fail_if_called)
 
 
 def _mark_target_published(client: FakeSupabaseClient, target_id: str) -> PublishResult:

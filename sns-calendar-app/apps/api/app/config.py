@@ -35,6 +35,17 @@ class Settings(BaseSettings):
         default=None,
         validation_alias="OAUTH_REDIRECT_BASE",
     )
+    smtp_host: str | None = Field(default=None, validation_alias="SMTP_HOST")
+    smtp_port: int = Field(default=465, validation_alias="SMTP_PORT")
+    smtp_user: str | None = Field(default=None, validation_alias="SMTP_USER")
+    smtp_password: SecretStr | None = Field(
+        default=None,
+        validation_alias="SMTP_PASSWORD",
+    )
+    smtp_from_address: str | None = Field(
+        default=None,
+        validation_alias="SMTP_FROM_ADDRESS",
+    )
 
     model_config = SettingsConfigDict(
         env_file=(API_ENV_FILE, ROOT_ENV_FILE),

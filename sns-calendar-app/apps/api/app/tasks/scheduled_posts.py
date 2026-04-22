@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.core.supabase import get_supabase_client
+from app.services.notifier import notify_post_result
 from app.services.publisher.base import PublishResult
 from app.services.publisher.orchestrator import publish_target
 from app.tasks.celery_app import celery_app
@@ -64,8 +65,9 @@ def check_scheduled_posts() -> dict[str, Any]:
     bind=True,
     max_retries=0,
 )
-def publish_post(self: Any, post_id: str) -> dict[str, Any]:
+def publish_post(self: Any, post_id: str, *, notifier: Any = None) -> dict[str, Any]:
     del self
+    notify = notifier or notify_post_result
 
     client = get_supabase_client()
     targets = (
@@ -138,8 +140,60 @@ def publish_post(self: Any, post_id: str) -> dict[str, Any]:
     if parent_update is not None:
         client.table("posts").update(parent_update).eq("id", post_id).execute()
 
+    _dispatch_notification(client, post_id=post_id, results=results, notifier=notify)
+
     return {
         "post_id": post_id,
         "parent_status": parent_status,
         "results": results,
     }
+
+
+def _dispatch_notification(
+    client: Any,
+    *,
+    post_id: str,
+    results: list[dict[str, Any]],
+    notifier: Any,
+) -> None:
+    """publish_post 終了時に owner メールへ結果通知を送る。失敗は握り潰す."""
+    if not results:
+        return
+    try:
+        post_rows = (
+            client.table("posts")
+            .select("user_id")
+            .eq("id", post_id)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        user_id = post_rows[0].get("user_id") if post_rows else None
+        if not user_id:
+            return
+
+        user_rows = (
+            client.table("users")
+            .select("email")
+            .eq("id", user_id)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+        owner_email = user_rows[0].get("email") if user_rows else None
+        if not owner_email:
+            return
+
+        summary: dict[str, list[dict[str, Any]]] = {
+            "success": [r for r in results if r.get("success")],
+            "failed": [r for r in results if not r.get("success")],
+        }
+        notifier(post_id=post_id, owner_email=owner_email, summary=summary)
+    except Exception:  # pragma: no cover - defensive
+        logger.warning(
+            "Failed to dispatch post result notification for post_id=%s",
+            post_id,
+            exc_info=True,
+        )
