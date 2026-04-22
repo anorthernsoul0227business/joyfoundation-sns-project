@@ -2,6 +2,11 @@
   "root": true,
   "extends": [
     "../../packages/config/eslint/index.js"
+  ],
+  "ignorePatterns": [
+    "tests/e2e/",
+    "playwright.config.ts",
+    "playwright-report/",
+    "test-results/"
   ]
 }
-

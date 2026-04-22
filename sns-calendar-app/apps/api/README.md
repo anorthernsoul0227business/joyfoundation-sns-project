@@ -202,3 +202,45 @@ poetry run celery -A app.tasks.celery_app beat --loglevel=info
 
 - テストでは `task_always_eager=True` を使い、実ワーカーは起動しない
 - 予約投稿は 1 分ごとにポーリングされるため、テスト用データは 1-2 分以内に発火する
+
+## E2E テスト (WEB-028)
+
+Playwright でエンドツーエンドシナリオを検証します。骨格スケルトンは `apps/web/tests/e2e/` に格納されています（`E2E_FULL_STACK=1` を設定した場合のみ実行、未設定ではスキップ）。
+
+ローカル実行手順:
+
+```bash
+# 1. Redis + Supabase ローカル CLI を起動
+docker compose up -d redis
+supabase start
+
+# 2. バックエンド（別ターミナル）
+cd apps/api
+poetry install
+poetry run uvicorn app.main:app --reload --port 8000
+poetry run celery -A app.tasks.celery_app worker --loglevel=info
+poetry run celery -A app.tasks.celery_app beat --loglevel=info
+
+# 3. フロントエンド（別ターミナル）
+cd apps/web
+pnpm install
+pnpm exec playwright install --with-deps chromium
+E2E_FULL_STACK=1 pnpm test:e2e
+```
+
+主要な環境変数:
+
+- `E2E_FULL_STACK=1`: 実バックエンドを要するシナリオを有効化（未設定は `test.skip`）
+- `PLAYWRIGHT_BASE_URL`: フロントの URL（デフォルト `http://localhost:3000`）
+- `NEXT_PUBLIC_API_BASE_URL`: API の URL（デフォルト `http://localhost:8000`）
+- `PLAYWRIGHT_REUSE_SERVER=0`: 既存の dev サーバを使わず毎回再起動
+
+モック方針:
+
+- X / Instagram の外部 API は `page.route` で `api.x.com` / `graph.facebook.com` をキャプチャし固定レスポンスを返す
+- OAuth のリダイレクト先はテスト内でスタブ化する
+- 実投稿は常にモック。本番 API は絶対に呼ばない
+
+CI:
+
+`.github/workflows/e2e.yml` が opt-in で動きます。PR に `run-e2e` ラベルを付けるか、`workflow_dispatch` で手動実行してください。
