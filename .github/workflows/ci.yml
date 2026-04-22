@@ -71,6 +71,10 @@ jobs:
     defaults:
       run:
         working-directory: sns-calendar-app/apps/api
+    env:
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: ci-dummy-anon
+      SUPABASE_SERVICE_ROLE_KEY: ci-dummy-service-role
     steps:
       - uses: actions/checkout@v4
 
