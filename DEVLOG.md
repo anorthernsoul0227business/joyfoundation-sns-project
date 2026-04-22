@@ -32,6 +32,60 @@
 
 ---
 
+## 2026-04-22（夕方・D案実装着手：ARCH-001/002/003/004 コード側完了）
+
+### 実施内容
+- **ARCH-003 Realtime 移行**:
+  - Supabase migration `20260422120000_enable_realtime_notifications.sql` 追加・本番適用
+  - `apps/api/app/api/notifications_ws.py` 削除、`main.py` から /ws ルート削除
+  - `notifier.py` の `_publish_redis` + redis/json/os 依存削除
+  - Web 側に `@supabase/supabase-js` 追加、`apps/web/src/lib/supabase.ts` 新規、`useNotifications.ts` を Realtime 版に書き換え
+  - `apps/web/.env.example` に `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` 追加
+- **ARCH-001 pg_cron + publish_queue**:
+  - Supabase migration `20260422130000_publish_queue_pgcron.sql` 追加（マイグレーションファイルはコミットのみ、本番適用は別途）
+  - `apps/api/app/api/internal.py` 新規、`/internal/publish/flush` エンドポイント実装
+  - `config.py` に `INTERNAL_API_TOKEN` 設定追加
+  - `.github/workflows/publish_flush.yml` 新規（5分毎、`PUBLISH_FLUSH_ENABLED=true` 条件付き）
+- **ARCH-002 Celery 撤廃 + Publisher service**:
+  - `apps/api/app/services/publish_flush.py` 新規（既存 `scheduled_posts.py` のロジック移植）
+  - `apps/api/app/tasks/` ディレクトリ一式削除（celery_app.py / scheduled_posts.py / __init__.py）
+  - `tests/tasks/test_scheduled_posts.py` / `tests/test_celery.py` 削除
+  - `railway.worker.json` / `railway.beat.json` / `railway.json` 削除
+  - `pyproject.toml` から `celery` / `redis` 依存削除（poetry lock 再生成）
+  - `apps/api/tests/api/test_internal.py` 新規（token 認証テスト 5件）
+- **ARCH-004 Cloud Run デプロイ準備（コード側のみ）**:
+  - `.github/workflows/deploy-backend.yml` を Cloud Run 用に書き換え（Workload Identity Federation）
+  - `railway.json` 削除
+  - 既存 Dockerfile はそのまま利用可（PORT 環境変数対応済み）
+  - `/health` エンドポイントも既存（HealthResponse 含む）
+
+### 成果
+- **Celery + Redis 依存完全撤廃**。Docker イメージの軽量化（redis/celery/amqp/billiard 等 13パッケージ削除）
+- **通知配信が Supabase Realtime に統合**。RLS の SELECT policy が認可境界として機能、サーバー側の JWT 検証・接続管理が不要
+- **予約投稿ジョブ基盤が完成**（pg_cron → publish_queue → FastAPI /flush → publisher/orchestrator）
+- **Cloud Run デプロイワークフロー**準備完了（GCP 側のプロジェクト・WIF 設定は次タスク）
+- テスト: API 78 passed / Frontend typecheck/lint/build すべて成功
+- OpenAPI スキーマ更新（`internal` ルート追加、`tests/api/test_internal.py` で検証）
+
+### 残課題
+- **pg_cron マイグレーション本番適用**: 動作確認後に `supabase db push` で `20260422130000` を適用
+- **GCP セットアップ**（手動）: プロジェクト作成・API 有効化・Artifact Registry 作成・Workload Identity Federation
+- **GitHub Secrets 追加**:
+  - `INTERNAL_API_TOKEN`（`openssl rand -hex 32` で生成）
+  - `CLOUD_RUN_API_URL`（Cloud Run デプロイ後）
+  - `GCP_PROJECT_ID` / `GCP_WORKLOAD_IDENTITY_PROVIDER` / `GCP_SERVICE_ACCOUNT`
+- **GitHub Variables**:
+  - `CLOUD_RUN_ENABLED=true`（deploy-backend 有効化）
+  - `PUBLISH_FLUSH_ENABLED=true`（GH Actions cron 有効化）
+- **ARCH-005 Resend**: 未着手
+
+### 備考
+- 既存 `.github/workflows/auto_post.yml`（CSV シート連携の自動投稿）は別用途なので触らない
+- Phase 1 MVP の実装コード（`apps/api/app/services/publisher/`）は流用。Celery を剥がして同期呼び出しに変更しただけ
+- ブランチ: `feat/arch-003-realtime-migration`（PR #25）。当初は ARCH-003 単体だったが、時間効率から ARCH-001/002/004 を同じブランチに積んでいる
+
+---
+
 ## 2026-04-22（午後・P1→D案方針転換）
 
 ### 実施内容
