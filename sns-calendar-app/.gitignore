@@ -16,3 +16,4 @@ apps/web/src/generated/*
 !.env.example
 pnpm-debug.log*
 *.tsbuildinfo
+.vercel
