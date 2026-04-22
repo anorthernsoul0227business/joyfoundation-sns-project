@@ -4,8 +4,22 @@ from pathlib import Path
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-API_ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
-ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
+def _safe_env_file(levels: int) -> Path | None:
+    """指定階層の .env パスを返す。Cloud Run 等浅い階層では None.
+
+    ローカル開発では monorepo ルートの .env を使い、Cloud Run 等の
+    コンテナ環境では存在しないので pathlib IndexError を避ける。
+    """
+    try:
+        return Path(__file__).resolve().parents[levels] / ".env"
+    except IndexError:
+        return None
+
+
+API_ENV_FILE = _safe_env_file(1)
+ROOT_ENV_FILE = _safe_env_file(3)
+_ENV_FILES = tuple(p for p in (API_ENV_FILE, ROOT_ENV_FILE) if p is not None)
 
 
 class Settings(BaseSettings):
@@ -66,7 +80,7 @@ class Settings(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=(API_ENV_FILE, ROOT_ENV_FILE),
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
         extra="ignore",
     )
