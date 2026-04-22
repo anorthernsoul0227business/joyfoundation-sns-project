@@ -32,6 +32,46 @@
 
 ---
 
+## 2026-04-22（午後・P1→D案方針転換）
+
+### 実施内容
+- **P1. Supabase 本番準備 完了**:
+  - 既存プロジェクト `sns-calendar-app`（ref: `msghvqclexpvgkrctxug`, Tokyo, Free tier）にリンク
+  - マイグレーション6本を本番適用（`supabase db push`）
+  - GitHub Secrets に SUPABASE_URL / ANON_KEY / SERVICE_ROLE_KEY 登録
+  - `apps/web/.env.example` を新規作成（Web は API 経由のため NEXT_PUBLIC_API_BASE_URL のみ）
+- **方針転換**: 圭一郎さん個人利用 → **SaaS 販売化を目標** に変更。固定費ゼロの設計を優先
+- **D案「無料スタック移行計画」決定**:
+  - 現行 Phase 1 MVP: Railway ($5〜10/月) + Celery + Redis 前提
+  - 移行後: Cloud Run (Scale-to-zero) + pg_cron + GitHub Actions Cron + Supabase Realtime
+  - 固定費 **月額 0 円**、販売収益と従量課金で連動スケール
+- `APP_DESIGN_SPEC.md` に **Section 15「無料スタック移行計画 v0.1」** を追加:
+  - 15.1 背景と目的（SaaS販売前提の固定費ゼロ設計）
+  - 15.2 現行 vs D案の構成比較（8レイヤ）
+  - 15.5 ARCH-001〜005 実装タスク（計 2〜3 日）
+  - 15.7 監視と昇格トリガー（7サービス別の警告閾値）
+  - 15.8 リスクと緩和策（コールドスタート / 二重化 / 仕様変更）
+- **ARCH-001〜005 Codex ブリーフィング作成**:
+  - ARCH-001: Celery Beat → pg_cron + GH Actions Cron
+  - ARCH-002: Celery Worker → FastAPI 内部エンドポイント
+  - ARCH-003: Redis PubSub → Supabase Realtime
+  - ARCH-004: Railway → Cloud Run（Workload Identity Federation）
+  - ARCH-005: Resend 導入（認証メール・投稿結果通知）
+
+### 成果
+- 販売化可能な **固定費ゼロ** アーキテクチャの設計書完成
+- 5つの Codex ブリーフィングで実装着手準備完了（工数見積もり 2〜3 日）
+- Phase 1 MVP を破棄せず、漸進的に置換する移行戦略（`feat/free-stack-migration` ブランチ）
+
+### 課題・備考
+- **Vercel Hobby Free の商用利用規約**確認必要（SaaS 販売で規約違反にならないか）
+- **Cloud Run Workload Identity Federation** の初回セットアップ（GCP プロジェクト・IAM・OIDC）
+- **独自ドメイン取得**（Resend SPF/DKIM、Cloud Run カスタムドメイン）未決
+- **販売モデル**（Freemium / Per-seat / Per-org）は BIZ-001 別設計書で扱う
+- 本日は設計フェーズ完了、実装は明日以降。今日は P2 Vercel も着手せず（Cloud Run 先行が合理的）
+
+---
+
 ## 2026-04-16（午後）
 
 ### 実施内容
