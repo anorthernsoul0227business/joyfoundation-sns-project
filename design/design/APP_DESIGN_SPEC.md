@@ -796,8 +796,310 @@ User → Frontend → Backend API → DB
 | 27 | ヘルプモード切替 | **グローバルトグルでON/OFF可能（デフォルトON）** | 熟練者は画面をすっきり表示できる。ヘッダー右上に切替スイッチ配置。設定はユーザープロフィールに永続化（`users.ui_preferences.help_mode_enabled`）。OFF時は`?`アイコン非表示 |
 
 ### 未決定（今後検討）
-- **音声文字起こし**: Whisper API vs Google Speech-to-Text（Phase 1.5で決定）
+- **音声文字起こし**: Whisper API vs Google Speech-to-Text（Phase 1.5で決定） → **2026-04-22 暫定決定: Whisper API（Section 14参照）**
 - **オフライン対応**: PWA Service Worker の範囲（Phase 3で決定）
 - **生成結果のキャッシュ**: 同一資料再生成時の差分管理（Phase 1.5で決定）
 - **評価モデル選定**: Claude Sonnet vs GPT-4o（評価データセット構築後に相関検証して決定）
 - **自動再生成閾値**: スコア60 vs 50 vs 70（データセット構築後にチューニング）
+
+---
+
+## 14. 音声入力AI 増分設計 v0.1（追加: 2026-04-22）
+
+### 14.1 目的と位置づけ
+
+既存 F-16「音声→投稿生成」は**バッチ型**（音声ファイルアップロード → Whisper → 下書き生成）を想定。本セクションはその延長として、**リアルタイム口述ブレスト**を追加する。
+
+**背景**: プライマリペルソナA（高齢事業者・代表例として圭一郎さん）はキーボード入力が負担。思いついた瞬間にスマホ/iPad のマイクボタンを押して話すだけで、SNS投稿の下書き3案が生成される体験を MVP に組み込みたい。
+
+**既存機能との関係**:
+| 機能 | 種別 | 対象ペルソナ |
+|---|---|---|
+| F-16 音声→投稿生成 | バッチ型（資料添付） | B/C |
+| F-28〜F-32（本増分） | リアルタイム口述型 | **A（プライマリ）** |
+
+両者は同じ Whisper 基盤を共有し、共通の AI Generator パイプラインに合流する。
+
+### 14.2 追加機能
+
+| # | 機能 | 詳細 | 優先度 | Phase |
+|---|---|---|---|---|
+| F-28 | マイクボタン音声入力 | 画面下部固定マイクボタン。長押し or タップで録音開始・終了 | P1 | 1.5 |
+| F-29 | リアルタイム音声ブレスト | 口述 → Whisper → LLMで X/IG/note の3案を並列生成 | P1 | 1.5 |
+| F-30 | 対話的追加指示 | 生成結果に対し音声で「もう少し柔らかく」等の修正指示 | P2 | 2 |
+| F-31 | TTS送信前確認 | 予約直前に生成テキストを読み上げ、タップで承認 | P1 | 1.5 |
+| F-32 | 固有名詞辞書 | 「ハーモニックデイ」「マラマハワイ」等のカスタム語彙 | P2 | 1.5 |
+
+### 14.3 技術選択（未決定事項の暫定決定）
+
+**暫定決定: OpenAI Whisper API を採用**
+
+| 比較軸 | Whisper API | Google Speech-to-Text | Web Speech API |
+|---|---|---|---|
+| 日本語精度 | ◎ | ◎ | △〜○（端末依存） |
+| コスト | $0.006/分 | $0.016-0.024/分 | 無料 |
+| カスタム語彙 | △（プロンプト誘導のみ） | ✅（Phrase hints） | ❌ |
+| APIシンプルさ | ◎ | ○ | ○ |
+| ストリーミング | ❌（バッチのみ） | ✅ | ✅ |
+
+**選定理由**:
+- MVPはコスト最優先。圭一郎さん1人で月1000分使っても $6
+- 固有名詞精度に実運用で問題が出たら Google STT（カスタム辞書）へ切替可能な抽象化を入れる
+
+**抽象化方針**: 決定事項#6（AI API両対応）と同パターンで `packages/voice-provider/` にプロバイダ抽象を置く:
+```typescript
+interface VoiceProvider {
+  transcribe(audio: Blob, opts: { vocabulary?: string[] }): Promise<Transcript>
+}
+// OpenAIWhisperProvider / GoogleSpeechProvider / WebSpeechProvider
+```
+
+### 14.4 新規APIエンドポイント
+
+```
+# 文字起こし単体
+POST   /api/voice/transcribe
+       body: multipart/form-data (audio file, max 25MB / 10分)
+       res:  { transcript, detected_language, duration_seconds, provider, cost_usd }
+
+# 音声→3案下書き生成（一気通貫）
+POST   /api/voice/brainstorm
+       body: multipart + { target_platforms[], tone, ng_rules[], additional_instructions }
+       res:  {
+         transcript,
+         drafts: [{ platform, text, char_count, prompt_version_id }],
+         session_id
+       }
+
+# 既存下書きに音声で修正指示（Phase 2）
+POST   /api/voice/refine
+       body: { post_id, audio_blob }
+       res:  { transcript, refined_text, diff_summary }
+
+# 固有名詞辞書
+GET    /api/voice/vocabulary
+POST   /api/voice/vocabulary        { term, pronunciation? }
+DELETE /api/voice/vocabulary/:id
+
+# 音声セッション履歴（監査・再生）
+GET    /api/voice/sessions?from=&to=
+GET    /api/voice/sessions/:id
+DELETE /api/voice/sessions/:id
+```
+
+### 14.5 データモデル拡張
+
+```
+VoiceVocabulary (固有名詞辞書)
+├── id (uuid, PK)
+├── org_id (FK → Org)          # 決定#11 のマルチテナント設計に準拠
+├── term (text)                  # 例: "ハーモニックデイ"
+├── pronunciation (text, nullable) # 例: "はーもにっくでい"
+├── language (default 'ja')
+├── usage_count (int, 呼び出し回数)
+├── created_at
+└── updated_at
+
+VoiceSession (音声ブレストセッション履歴)
+├── id (uuid, PK)
+├── user_id (FK → User)
+├── org_id (FK → Org)
+├── audio_url (R2 URL, 90日後自動削除)
+├── transcript (text)
+├── duration_seconds (int)
+├── provider ('whisper' | 'google_stt' | 'web_speech')
+├── cost_usd (numeric, 監査用)
+├── generated_post_ids (uuid[], 生成された下書きID配列)
+├── created_at
+└── deleted_at (soft delete)
+```
+
+**RLS**: 決定#12 の org_id 方式をそのまま適用。`sns_accounts_safe` 的な公開ビューは不要（音声URL・トークンは含まれない）。
+
+### 14.6 UI 増分設計
+
+#### 14.6.1 シンプルモードホーム画面への追加（ペルソナA向け）
+
+既存 4.3 ホーム画面の下部に固定マイクボタンを追加:
+
+```
+┌──────────────────────────────────┐
+│  🏠 こんにちは、圭一郎さん        │
+│  （既存: 今日の投稿・明日の投稿）   │
+│  ...                              │
+│  ┌─────────────────────────────┐ │
+│  │   ＋ 新しい投稿を作る        │ │
+│  └─────────────────────────────┘ │
+│                                   │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  ← 追加
+│  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  │
+│  ┃                            ┃  │
+│  ┃   🎤  話して投稿を作る     ┃  │  ← 画面下部固定
+│  ┃   （長押しで録音）         ┃  │    80px高・大型
+│  ┃                            ┃  │
+│  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  │
+│ [🏠] [📝] [📅] [⚙]              │
+└──────────────────────────────────┘
+```
+
+#### 14.6.2 音声ブレストモーダル（録音中 → 生成結果）
+
+```
+─── 録音中 ─────────────────────
+┌──────────────────────────────────┐
+│  🎤 音声ブレスト                   │
+│                                   │
+│    🔴 録音中... 12秒               │
+│    ▁▂▅▇▅▂▁  （波形表示）          │
+│                                   │
+│    [■ 停止して生成]               │
+│                                   │
+│  💡 話し方のコツ:                  │
+│   • 日時・場所・金額を含める       │
+│   • 固有名詞はゆっくり発音         │
+│                                   │
+│  [キャンセル]                      │
+└──────────────────────────────────┘
+
+─── 生成結果 ───────────────────
+┌──────────────────────────────────┐
+│  ✨ 3案を生成しました              │
+│                                   │
+│  📝 文字起こし                    │
+│  「今日は自由が丘で波動体験会の    │
+│   告知を書きたい。夕方6時から、    │
+│   参加費3000円、初回の人向け」     │
+│  [✏️ 修正] [🎤 再録音]            │
+│                                   │
+│  ━━━ X（140字）━━━                │
+│  ┌────────────────────────────┐   │
+│  │ 🔵 4/25(金) 18:00〜          │   │
+│  │ 自由が丘で波動体験会を       │   │
+│  │ 開催します🎵 ...           │   │
+│  └────────────────────────────┘   │
+│  [🔊 読み上げ] [この案で進める]   │
+│                                   │
+│  ━━━ Instagram（300-500字）━━━   │
+│  ...                              │
+│                                   │
+│  ━━━ note（長文）━━━              │
+│  ...                              │
+│                                   │
+│  🎤 [もう一度話して指示する] ← F-30 (Phase 2) │
+└──────────────────────────────────┘
+```
+
+#### 14.6.3 TTS送信前確認（F-31）
+
+誤送信防止のため、予約・即時投稿の直前に必須挿入:
+
+```
+┌──────────────────────────────────┐
+│  🔊 内容を読み上げます             │
+│                                   │
+│  「自由が丘で波動体験会を開催     │
+│   します。4月25日金曜日の...」    │
+│                                   │
+│  🟢━━━━━━━━━━○ 読み上げ中 (5/18秒) │
+│                                   │
+│  [⏸ 一時停止] [🔁 最初から]      │
+│                                   │
+│  内容は合っていますか？             │
+│                                   │
+│  [❌ 修正する] [✅ この内容で予約] │
+└──────────────────────────────────┘
+```
+
+### 14.7 処理フロー
+
+```
+ユーザー: マイク長押し
+  ↓
+Browser: MediaRecorder API で音声キャプチャ (WebM/Opus)
+  ↓ マイク離す
+Frontend → POST /api/voice/brainstorm
+          (multipart: audio blob + target_platforms + tone + vocabulary)
+  ↓
+Backend (Celery or FastAPI同期):
+  1. VoiceSession作成 + R2に音声保存
+  2. VoiceVocabulary → Whisper の prompt パラメータに語彙ヒント注入
+  3. Whisper API → transcript
+  4. 既存 AI Generator に transcript を渡す
+     (既存プロンプト資産流用、target_platforms 分並列生成)
+  5. NGチェック3層（決定#15）適用
+  6. 3案をレスポンス、VoiceSession.generated_post_ids 更新
+  ↓
+Frontend: 3案表示 + TTS再生ボタン有効化
+  ↓ ユーザー承認
+既存の POST /api/posts + /schedule フローに合流
+```
+
+### 14.8 シニア配慮（決定#26/#27との整合）
+
+- マイクボタン: **画面下部固定・80px高**（誤タップ回避）
+- 録音中: **視覚波形 + 秒数カウンター**で状態を明示
+- **ヘルプモードON時**: マイクボタン横に `?` アイコン → Popoverで使い方
+- 誤認識の修正は **「手打ち」または「再録音」の二択のみ**（複雑な編集UIを出さない）
+- TTSはデフォルト **0.9倍速・大きめボリューム**（設定で調整可）
+- 長時間録音（60秒超）は録音中にアラート（「長すぎると認識精度が落ちます」）
+
+### 14.9 セキュリティ・プライバシー
+
+- 音声データは **R2 に 90日保持 → 自動削除**（監査・改善用途、プライバシーポリシーに明示）
+- ユーザー設定で **「音声履歴を残さない」オプション**（`users.ui_preferences.voice_history_enabled = false` → 文字起こし完了後即削除）
+- Whisper API 送信データは OpenAI の学習に使用されない（Zero Retention Policy に準拠、API仕様確認済み）
+- ブラウザのマイク権限は初回のみ要求、以降永続化（iOS Safari で要実機確認）
+
+### 14.10 コスト試算
+
+| 項目 | 単価 | 圭一郎さん想定（月30セッション×30秒） | 一般ユーザー（月10セッション） |
+|---|---|---|---|
+| Whisper API | $0.006/分 | $0.09 | $0.03 |
+| LLM生成（3案並列） | 既存 $0.032/投稿 × 3 | $2.88 | $0.96 |
+| R2ストレージ | ~$0.015/GB・月 | 〜$0.01 | 〜$0.01 |
+| **合計** | | **~$3/月** | **~$1/月** |
+
+既存 MVP コスト想定 ~$5-15/月 に対し、音声機能追加コストは **10-20% 程度の増分**。
+
+### 14.11 Phase 判断
+
+| Phase | 実装範囲 |
+|---|---|
+| **Phase 1.5** | F-28（マイクボタン）、F-29（リアルタイムブレスト）、F-31（TTS確認）、F-32（辞書 基本） |
+| **Phase 2** | F-30（対話的追加指示）、F-32（辞書 高度化）、Google STT 切替オプション |
+
+**Phase 1.5 に組み込む根拠**:
+- 既存 F-16（音声ファイル→投稿）と実装基盤（Whisper + AI Generator）を共有できる
+- プライマリペルソナA（圭一郎さん）が **MVP時点で使える状態**を作ることが joyfoundation 要件の本質
+- UI増分は既存画面への追加のみ、DB/API も軽微
+
+### 14.12 実装タスク案（既存Sprint計画への追加）
+
+既存の 30 Issue / 4 Sprint 計画（`IMPLEMENTATION_PLAN.md`）に対し、以下 7 Issue の追加を想定:
+
+```
+Sprint 4 (Phase 1.5 の末尾 or Phase 1.5.5) に追加:
+- VOICE-001: packages/voice-provider/ 抽象化パッケージ（Whisper実装込み）
+- VOICE-002: POST /api/voice/transcribe エンドポイント
+- VOICE-003: POST /api/voice/brainstorm エンドポイント（AI Generator連携）
+- VOICE-004: フロント マイクボタンコンポーネント（shadcn拡張）
+- VOICE-005: 音声ブレストモーダル UI
+- VOICE-006: TTS送信前確認モーダル（既存投稿作成フローへの割り込み）
+- VOICE-007: VoiceSession/VoiceVocabulary マイグレーション + RLS + 90日自動削除ジョブ
+```
+
+**見積もり**: +2〜3週（既存 7-8週 → 合計 9-11週）
+
+### 14.13 未解決事項
+
+- [ ] **圭一郎さんの音声サンプルでの Whisper 精度実測** — `scripts/voice-poc/whisper_precision_test.py` で先行検証
+- [ ] **iOS Safari のマイク権限UX** — 実機検証が必要
+- [ ] **TTSエンジン選定** — ブラウザ SpeechSynthesis API（無料）vs OpenAI TTS（高品質 $15/1M文字）
+- [ ] **オフライン時の挙動** — 録音のみローカル保存し、オンライン復帰時に送信するか
+
+### 14.14 次アクション
+
+1. 本設計を `IMPLEMENTATION_PLAN.md` の Sprint 計画に反映（VOICE-001〜007 を追記）
+2. `scripts/voice-poc/whisper_precision_test.py` を作成 → 圭一郎さんの音声サンプル1本で精度計測
+3. 結果次第で Whisper 維持 / Google STT 切替を本決定
+4. `feat/voice-input` ブランチを切るのは VOICE-001 着手時（main 上の設計追記フェーズ完了後）
