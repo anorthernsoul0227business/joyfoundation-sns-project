@@ -1,12 +1,18 @@
-"""投稿結果のメール通知サービス (WEB-023).
+"""投稿結果の通知サービス (WEB-023 / WEB-027).
 
-SMTP_SSL 経由で送信する薄いラッパー。設定未設定・送信失敗はすべて
-warning ログで握り潰し、呼び出し側の処理フローを止めない。
+送信チャネル:
+- Email (SMTP_SSL) — WEB-023
+- DB 永続化 + Redis PubSub `notifications:{user_id}` — WEB-027
+
+すべてのチャネルは失敗しても warning ログで握り潰し、呼び出し側の処理フロー
+（publish_post）を止めない。
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import smtplib
 from email.message import EmailMessage
 from typing import Any
@@ -84,30 +90,119 @@ def _build_body(post_id: str, summary: PostSummary) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _classify(summary: PostSummary) -> str:
+    success_count = len(summary.get("success") or [])
+    failed_count = len(summary.get("failed") or [])
+    if failed_count and success_count:
+        return "post_partial"
+    if failed_count:
+        return "post_failed"
+    return "post_published"
+
+
+def _persist_notification(
+    *,
+    user_id: str,
+    post_id: str,
+    kind: str,
+    title: str,
+    body: str,
+) -> dict[str, Any] | None:
+    """`notifications` テーブルに INSERT。失敗は warning で握り潰して None を返す."""
+    try:
+        from app.core.supabase import get_supabase_client
+
+        client = get_supabase_client()
+        response = (
+            client.table("notifications")
+            .insert(
+                {
+                    "user_id": user_id,
+                    "kind": kind,
+                    "title": title,
+                    "body": body,
+                    "related_post_id": post_id,
+                }
+            )
+            .execute()
+        )
+        rows = response.data or []
+        return rows[0] if rows else None
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(
+            "notifications insert failed for user_id=%s post_id=%s: %s",
+            user_id,
+            post_id,
+            exc,
+        )
+        return None
+
+
+def _publish_redis(user_id: str, payload: dict[str, Any]) -> None:
+    """Redis PubSub に publish。Redis 未利用なら no-op."""
+    try:
+        import redis  # type: ignore[import-not-found]
+    except ImportError:  # pragma: no cover - redis は本番前提
+        logger.warning("redis package is not installed; skipping publish")
+        return
+
+    broker_url = os.environ.get("CELERY_BROKER_URL") or os.environ.get(
+        "REDIS_URL"
+    ) or "redis://localhost:6379/0"
+    try:
+        client = redis.from_url(broker_url)
+        client.publish(f"notifications:{user_id}", json.dumps(payload))
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("redis publish failed for user_id=%s: %s", user_id, exc)
+
+
 def notify_post_result(
     *,
     post_id: str,
     owner_email: str,
     summary: PostSummary,
+    user_id: str | None = None,
     channel: EmailChannel | None = None,
 ) -> None:
-    """publish_post の結果 summary を owner にメール通知する.
+    """publish_post の結果 summary を owner に通知する (mail + DB + WS).
 
-    summary は ``{"success": [...], "failed": [...]}`` 形式の dict を想定する.
-    送信失敗は warning ログのみで握り潰し、例外を伝播しない.
+    summary は ``{"success": [...], "failed": [...]}`` 形式。各チャネルの失敗は
+    warning ログで握り潰し、例外を伝播しない。
     """
-    if not owner_email:
-        logger.warning("notify_post_result: owner_email is empty for post_id=%s", post_id)
-        return
+    subject = _build_subject(summary)
+    body = _build_body(post_id, summary)
 
-    try:
-        active_channel = channel or EmailChannel(get_settings())
-        subject = _build_subject(summary)
-        body = _build_body(post_id, summary)
-        active_channel.send(to=owner_email, subject=subject, body=body)
-    except Exception as exc:  # pragma: no cover - defensive
+    if owner_email:
+        try:
+            active_channel = channel or EmailChannel(get_settings())
+            active_channel.send(to=owner_email, subject=subject, body=body)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                "notify_post_result swallowed email error for post_id=%s: %s",
+                post_id,
+                exc,
+            )
+    else:
         logger.warning(
-            "notify_post_result swallowed error for post_id=%s: %s",
-            post_id,
-            exc,
+            "notify_post_result: owner_email is empty for post_id=%s", post_id
         )
+
+    if user_id:
+        kind = _classify(summary)
+        inserted = _persist_notification(
+            user_id=user_id,
+            post_id=post_id,
+            kind=kind,
+            title=subject,
+            body=body,
+        )
+        payload: dict[str, Any] = {
+            "type": kind,
+            "title": subject,
+            "body": body,
+            "post_id": post_id,
+        }
+        if inserted and inserted.get("id"):
+            payload["notification_id"] = str(inserted["id"])
+            payload["created_at"] = inserted.get("created_at")
+        _publish_redis(user_id, payload)

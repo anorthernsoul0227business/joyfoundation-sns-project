@@ -12,6 +12,9 @@ import {
   loginApiAuthLoginPost,
   logoutApiAuthLogoutPost,
   meApiAuthMeGet,
+  listNotificationsApiNotificationsGet,
+  markAllNotificationsReadApiNotificationsReadAllPost,
+  markNotificationReadApiNotificationsNotificationIdReadPost,
   publishNowApiPostsPostIdPublishNowPost,
   refreshApiAuthRefreshPost,
   schedulePostApiPostsPostIdSchedulePost,
@@ -23,6 +26,9 @@ import type {
   CalendarResponse,
   ConnectResponse,
   MediaUploadResponse,
+  NotificationListResponse,
+  NotificationReadAllResponse,
+  NotificationReadResponse,
   PostCreate,
   PostListResponse,
   PostResponse,
@@ -358,6 +364,41 @@ export async function uploadMedia(
           auto_resize_ig: options.autoResizeIg ?? false,
         },
       }) as Promise<ClientResult<MediaUploadResponse>>,
+  );
+}
+
+export async function fetchNotifications(
+  options: { limit?: number; offset?: number; unreadOnly?: boolean } = {},
+): Promise<NotificationListResponse> {
+  return withAuthRetry(
+    () =>
+      listNotificationsApiNotificationsGet({
+        query: {
+          limit: options.limit,
+          offset: options.offset,
+          unread_only: options.unreadOnly,
+        },
+      }) as Promise<ClientResult<NotificationListResponse>>,
+  );
+}
+
+export async function markNotificationRead(
+  notificationId: string,
+): Promise<NotificationReadResponse> {
+  return withAuthRetry(
+    () =>
+      markNotificationReadApiNotificationsNotificationIdReadPost({
+        path: { notification_id: notificationId },
+      }) as Promise<ClientResult<NotificationReadResponse>>,
+  );
+}
+
+export async function markAllNotificationsRead(): Promise<NotificationReadAllResponse> {
+  return withAuthRetry(
+    () =>
+      markAllNotificationsReadApiNotificationsReadAllPost() as Promise<
+        ClientResult<NotificationReadAllResponse>
+      >,
   );
 }
 

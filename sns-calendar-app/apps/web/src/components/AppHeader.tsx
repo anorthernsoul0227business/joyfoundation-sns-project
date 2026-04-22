@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { HelpModeToggle } from "./HelpModeToggle";
+import { NotificationBell } from "./NotificationBell";
 import { logout } from "../lib/api-client";
 import { useAuthStore } from "../stores/auth";
 
@@ -86,6 +87,7 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-3">
+          {isAuthenticated && !isAuthPage ? <NotificationBell /> : null}
           <HelpModeToggle />
           {isAuthenticated && user ? (
             <>

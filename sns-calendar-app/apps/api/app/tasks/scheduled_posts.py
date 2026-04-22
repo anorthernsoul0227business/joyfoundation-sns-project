@@ -190,7 +190,12 @@ def _dispatch_notification(
             "success": [r for r in results if r.get("success")],
             "failed": [r for r in results if not r.get("success")],
         }
-        notifier(post_id=post_id, owner_email=owner_email, summary=summary)
+        notifier(
+            post_id=post_id,
+            owner_email=owner_email,
+            summary=summary,
+            user_id=user_id,
+        )
     except Exception:  # pragma: no cover - defensive
         logger.warning(
             "Failed to dispatch post result notification for post_id=%s",
