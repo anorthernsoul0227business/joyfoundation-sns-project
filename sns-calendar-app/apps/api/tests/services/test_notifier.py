@@ -101,7 +101,9 @@ def test_email_channel_returns_false_when_not_configured(
         sent = channel.send(to="owner@example.com", subject="s", body="b")
 
     assert sent is False
-    assert any("SMTP is not configured" in record.message for record in caplog.records)
+    assert any(
+        "No email backend configured" in record.message for record in caplog.records
+    )
 
 
 def test_email_channel_handles_connection_error(
@@ -219,3 +221,77 @@ def test_notify_post_result_swallows_send_failure(
         )
 
     assert any("Failed to send email" in record.message for record in caplog.records)
+
+
+# ARCH-005: Resend API backend tests ------------------------------------------
+
+
+def _install_fake_resend(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    """sys.modules に擬似 resend モジュールを差し込む."""
+    import sys
+    import types
+
+    state: dict[str, Any] = {"api_key": None, "payload": None}
+
+    class _Emails:
+        @staticmethod
+        def send(payload: dict[str, Any]) -> dict[str, Any]:
+            state["payload"] = payload
+            return {"id": "rsnd_test_123"}
+
+    # モジュールレベル属性 api_key への代入を state に反映する
+    class _ModuleWrapper(types.ModuleType):
+        @property
+        def api_key(self) -> Any:  # type: ignore[override]
+            return state["api_key"]
+
+        @api_key.setter
+        def api_key(self, value: str) -> None:
+            state["api_key"] = value
+
+    wrapper = _ModuleWrapper("resend")
+    wrapper.Emails = _Emails  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "resend", wrapper)
+    return state
+
+
+def test_email_channel_uses_resend_when_key_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = _install_fake_resend(monkeypatch)
+
+    channel = EmailChannel(
+        _settings(RESEND_API_KEY="resend-test-key", SMTP_HOST=None)
+    )
+
+    sent = channel.send(
+        to="owner@example.com",
+        subject="件名",
+        body="本文テスト",
+    )
+
+    assert sent is True
+    assert state["api_key"] == "resend-test-key"
+    payload = state["payload"]
+    assert payload is not None
+    assert payload["from"] == "sender@example.com"
+    assert payload["to"] == ["owner@example.com"]
+    assert payload["subject"] == "件名"
+    assert payload["text"] == "本文テスト"
+
+
+def test_email_channel_falls_back_to_smtp_without_resend_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_fake_smtp(monkeypatch)
+    channel = EmailChannel(_settings())  # RESEND_API_KEY 未設定
+
+    sent = channel.send(
+        to="owner@example.com",
+        subject="件名",
+        body="本文",
+    )
+
+    assert sent is True
+    instance = _FakeSMTP.last_instance  # type: ignore[attr-defined]
+    assert instance.host == "smtp.example.com"

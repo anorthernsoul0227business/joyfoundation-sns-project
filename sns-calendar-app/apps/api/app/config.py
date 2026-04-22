@@ -79,6 +79,13 @@ class Settings(BaseSettings):
         validation_alias="INTERNAL_API_TOKEN",
     )
 
+    # ARCH-005: Resend SMTP Transactional (認証メール / 投稿結果通知)
+    # 値が設定されている場合、EmailChannel は SMTP ではなく Resend API を使う
+    resend_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="RESEND_API_KEY",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_ENV_FILES,
         env_file_encoding="utf-8",

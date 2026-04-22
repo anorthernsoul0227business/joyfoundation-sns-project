@@ -2154,6 +2154,25 @@ requests = ">=2.0.0"
 rsa = ["oauthlib[signedtoken] (>=3.0.0)"]
 
 [[package]]
+name = "resend"
+version = "2.29.0"
+description = "Resend Python SDK"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "resend-2.29.0-py2.py3-none-any.whl", hash = "sha256:aad7c6097c26cf2dbe46534a1fc8d92637fbdea28243b00a3363c8d3136331de"},
+    {file = "resend-2.29.0.tar.gz", hash = "sha256:cd905809a64128b29d5beda1d4a5bda8d60d438a66942ed736ca40238e9d2331"},
+]
+
+[package.dependencies]
+requests = ">=2.31.0"
+typing-extensions = ">=4.4.0"
+
+[package.extras]
+async = ["httpx (>=0.24.0)"]
+
+[[package]]
 name = "responses"
 version = "0.25.8"
 description = "A utility library for mocking out the `requests` Python library."
@@ -3031,4 +3050,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "4b8706b68aaff7c3f028a1eccb9efe863fb5cbfd18d9a9d68cbe8327cc05eccb"
+content-hash = "9cf92200f4ec3e7138d504cc9bb0eecdd2a5d119313f35df1cbbce6639089f74"
