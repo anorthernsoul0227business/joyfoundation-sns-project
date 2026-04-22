@@ -1,27 +1,125 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { VERSION } from "@sns-calendar/shared-types";
-import { Button } from "@sns-calendar/ui";
-import { fetchCurrentUser } from "../lib/api-client";
+import type { CalendarEvent, PostResponse, SnsAccountSafe } from "../generated/types.gen";
+import { QuickActions } from "../components/home/QuickActions";
+import { RecentDraftsSection } from "../components/home/RecentDraftsSection";
+import { SystemStatusBanner } from "../components/home/SystemStatusBanner";
+import { TodaysPostsSection } from "../components/home/TodaysPostsSection";
+import { WelcomeSection } from "../components/home/WelcomeSection";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 import { useAuthStore } from "../stores/auth";
+import {
+  fetchCalendarEvents,
+  fetchCurrentUser,
+  fetchPostList,
+  fetchSnsAccounts,
+} from "../lib/api-client";
+
+const ALL_PLATFORMS: Array<"x" | "ig" | "youtube" | "note" | "line"> = [
+  "x",
+  "ig",
+  "youtube",
+  "note",
+  "line",
+];
+
+function getTodayAndTomorrowRange(): { from: string; to: string } {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 2);
+  return {
+    from: start.toISOString(),
+    to: end.toISOString(),
+  };
+}
 
 export default function HomePage() {
   const { isReady } = useAuthGuard();
   const user = useAuthStore((state) => state.user);
   const session = useAuthStore((state) => state.session);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [todaysEvents, setTodaysEvents] = useState<Array<CalendarEvent>>([]);
+  const [todaysLoading, setTodaysLoading] = useState(false);
+  const [todaysError, setTodaysError] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<Array<PostResponse>>([]);
+  const [draftsLoading, setDraftsLoading] = useState(false);
+  const [draftsError, setDraftsError] = useState<string | null>(null);
+  const [snsAccounts, setSnsAccounts] = useState<Array<SnsAccountSafe> | null>(null);
+  const [snsLoading, setSnsLoading] = useState(false);
 
   useEffect(() => {
     if (!isReady) {
       return;
     }
-
     fetchCurrentUser().catch(() => {
       setRefreshError("プロフィールの再取得に失敗しました。");
     });
+  }, [isReady]);
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+    let active = true;
+
+    setTodaysLoading(true);
+    setTodaysError(null);
+    const range = getTodayAndTomorrowRange();
+    fetchCalendarEvents({
+      from: range.from,
+      to: range.to,
+      platforms: ALL_PLATFORMS,
+    })
+      .then((response) => {
+        if (!active) return;
+        setTodaysEvents(
+          response.events.filter(
+            (event) => event.status === "scheduled" || event.status === "publishing",
+          ),
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setTodaysError("予約投稿の取得に失敗しました。");
+      })
+      .finally(() => {
+        if (active) setTodaysLoading(false);
+      });
+
+    setDraftsLoading(true);
+    setDraftsError(null);
+    fetchPostList({ status: "draft" })
+      .then((response) => {
+        if (!active) return;
+        setDrafts(response.items);
+      })
+      .catch(() => {
+        if (!active) return;
+        setDraftsError("下書きの取得に失敗しました。");
+      })
+      .finally(() => {
+        if (active) setDraftsLoading(false);
+      });
+
+    setSnsLoading(true);
+    fetchSnsAccounts()
+      .then((response) => {
+        if (!active) return;
+        setSnsAccounts(response.accounts);
+      })
+      .catch(() => {
+        if (!active) return;
+        setSnsAccounts([]);
+      })
+      .finally(() => {
+        if (active) setSnsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [isReady]);
 
   if (!isReady || !user || !session) {
@@ -35,77 +133,26 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-4rem)] bg-brand-sand px-6 py-12">
-      <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <section className="rounded-[2rem] border border-brand-ink/10 bg-white p-10 shadow-xl shadow-brand-ink/5">
-          <p className="text-sm font-medium uppercase tracking-[0.3em] text-brand-ocean">
-            Authenticated Home
+    <main className="min-h-[calc(100vh-4rem)] bg-brand-sand px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
+        <WelcomeSection displayName={user.displayName || user.email} />
+        <QuickActions />
+        <SystemStatusBanner accounts={snsAccounts} isLoading={snsLoading} />
+        <TodaysPostsSection
+          errorMessage={todaysError}
+          events={todaysEvents}
+          isLoading={todaysLoading}
+        />
+        <RecentDraftsSection
+          drafts={drafts}
+          errorMessage={draftsError}
+          isLoading={draftsLoading}
+        />
+        {refreshError ? (
+          <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {refreshError}
           </p>
-          <h1 className="mt-4 text-4xl font-semibold text-brand-ink">
-            こんにちは、{user.displayName || user.email}
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-            認証フローに続き、Sprint 2 では予約投稿のカレンダー閲覧画面が利用できます。
-            月・週・日ビューを切り替えながら、SNS ごとの投稿予定を確認できます。
-          </p>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-brand-ocean/15 bg-brand-sand/50 p-5">
-              <p className="text-sm font-medium text-brand-ocean">Shared types version</p>
-              <p className="mt-2 font-mono text-lg text-brand-ink">{VERSION}</p>
-            </div>
-            <div className="rounded-2xl border border-brand-ocean/15 bg-brand-sand/50 p-5">
-              <p className="text-sm font-medium text-brand-ocean">Session expires at</p>
-              <p className="mt-2 font-mono text-lg text-brand-ink">
-                {new Date(session.expiresAt * 1000).toLocaleString("ja-JP")}
-              </p>
-            </div>
-          </div>
-
-          {refreshError ? <p className="mt-6 text-sm text-rose-600">{refreshError}</p> : null}
-
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link
-              className="inline-flex items-center rounded-full bg-brand-ocean px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
-              href="/calendar"
-            >
-              カレンダーを開く
-            </Link>
-            <Link
-              className="inline-flex items-center rounded-full border border-brand-ink/10 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-ocean hover:text-brand-ocean"
-              href="/drafts"
-            >
-              下書きを見る
-            </Link>
-            <Button className="rounded-full px-5 py-3" type="button">
-              UI Package Button
-            </Button>
-          </div>
-        </section>
-
-        <aside className="rounded-[2rem] border border-brand-ink/10 bg-white/80 p-8 shadow-lg shadow-brand-ink/5">
-          <p className="text-sm font-medium uppercase tracking-[0.24em] text-brand-ocean">
-            Session Summary
-          </p>
-          <dl className="mt-6 space-y-5 text-sm text-slate-600">
-            <div>
-              <dt className="font-medium text-brand-ink">Email</dt>
-              <dd className="mt-1">{user.email}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-brand-ink">Display name</dt>
-              <dd className="mt-1">{user.displayName || "未設定"}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-brand-ink">UI mode</dt>
-              <dd className="mt-1">{user.uiMode}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-brand-ink">Help mode</dt>
-              <dd className="mt-1">{user.helpModeEnabled ? "ON" : "OFF"}</dd>
-            </div>
-          </dl>
-        </aside>
+        ) : null}
       </div>
     </main>
   );

@@ -35,4 +35,10 @@ export const helpTexts: Record<string, string> = {
   "signup.password": "8文字以上で設定してください。",
   "signup.password_confirm": "上と同じパスワードをもう一度入力してください。",
   "signup.display_name": "サービス内で表示される名前です。後から変更できます。",
+  "home.welcome":
+    "ここが毎日の起点です。下のボタンから投稿を作るか、カレンダーで予約を確認できます。",
+  "home.todays_posts":
+    "今日と明日に予約している投稿です。時刻が近いものから順に並びます。",
+  "home.recent_drafts":
+    "最近の下書きです。カードをクリックすると編集画面が開きます。",
 };
