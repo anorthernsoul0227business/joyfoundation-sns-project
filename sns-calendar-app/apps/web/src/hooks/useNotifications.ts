@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { NotificationItem } from "../generated/types.gen";
 import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
 } from "../lib/api-client";
+import { getSupabaseClient, isSupabaseConfigured } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth";
 
 type UseNotificationsReturn = {
@@ -20,15 +22,6 @@ type UseNotificationsReturn = {
   markAllRead: () => Promise<void>;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-const MIN_RECONNECT_MS = 1000;
-const MAX_RECONNECT_MS = 30000;
-
-function buildWsUrl(token: string): string {
-  const wsBase = API_BASE_URL.replace(/^http/, "ws");
-  return `${wsBase}/ws/notifications?token=${encodeURIComponent(token)}`;
-}
-
 export function useNotifications(enabled: boolean = true): UseNotificationsReturn {
   const accessToken = useAuthStore((state) => state.session?.accessToken ?? null);
   const [items, setItems] = useState<Array<NotificationItem>>([]);
@@ -36,10 +29,7 @@ export function useNotifications(enabled: boolean = true): UseNotificationsRetur
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-
-  const socketRef = useRef<WebSocket | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const reconnectTimerRef = useRef<number | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const refresh = useCallback(async () => {
     if (!enabled || !accessToken) {
@@ -91,65 +81,50 @@ export function useNotifications(enabled: boolean = true): UseNotificationsRetur
     if (!enabled || !accessToken) {
       return;
     }
+
     let cancelled = false;
 
-    const connect = () => {
-      if (cancelled) return;
-      let socket: WebSocket;
-      try {
-        socket = new WebSocket(buildWsUrl(accessToken));
-      } catch {
-        scheduleReconnect();
-        return;
-      }
-      socketRef.current = socket;
+    refresh();
 
-      socket.onopen = () => {
-        reconnectAttemptsRef.current = 0;
-        setIsConnected(true);
-      };
+    const client = getSupabaseClient();
+    if (!client || !isSupabaseConfigured()) {
+      setIsConnected(false);
+      return;
+    }
 
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data?.type === "notification") {
+    // Realtime は RLS の SELECT policy を通る。user JWT を渡せば
+    // auth.uid() = user_id の通知のみ購読される。
+    client.realtime.setAuth(accessToken);
+
+    const channel = client
+      .channel("notifications-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          if (!cancelled) {
             refresh();
           }
-        } catch {
-          // ignore malformed frames
-        }
-      };
+        },
+      )
+      .subscribe((status) => {
+        if (cancelled) return;
+        setIsConnected(status === "SUBSCRIBED");
+      });
 
-      socket.onclose = () => {
-        setIsConnected(false);
-        socketRef.current = null;
-        if (!cancelled) {
-          scheduleReconnect();
-        }
-      };
-
-      socket.onerror = () => {
-        // handled via onclose
-      };
-    };
-
-    const scheduleReconnect = () => {
-      if (cancelled) return;
-      const attempt = reconnectAttemptsRef.current;
-      const delay = Math.min(MIN_RECONNECT_MS * 2 ** attempt, MAX_RECONNECT_MS);
-      reconnectAttemptsRef.current = attempt + 1;
-      reconnectTimerRef.current = window.setTimeout(connect, delay);
-    };
-
-    refresh();
-    connect();
+    channelRef.current = channel;
 
     return () => {
       cancelled = true;
-      if (reconnectTimerRef.current !== null) {
-        window.clearTimeout(reconnectTimerRef.current);
+      const current = channelRef.current;
+      channelRef.current = null;
+      if (current) {
+        client.removeChannel(current);
       }
-      socketRef.current?.close();
     };
   }, [enabled, accessToken, refresh]);
 

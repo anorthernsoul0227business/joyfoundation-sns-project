@@ -1,8 +1,11 @@
-"""投稿結果の通知サービス (WEB-023 / WEB-027).
+"""投稿結果の通知サービス (WEB-023 / WEB-027 / ARCH-003).
 
 送信チャネル:
 - Email (SMTP_SSL) — WEB-023
-- DB 永続化 + Redis PubSub `notifications:{user_id}` — WEB-027
+- DB 永続化 — WEB-027 / ARCH-003
+
+DB への INSERT は Supabase Realtime の postgres_changes 経由で Web クライアントに
+届く（ARCH-003 で Redis PubSub + WebSocket を撤廃）。
 
 すべてのチャネルは失敗しても warning ログで握り潰し、呼び出し側の処理フロー
 （publish_post）を止めない。
@@ -10,9 +13,7 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import os
 import smtplib
 from email.message import EmailMessage
 from typing import Any
@@ -138,24 +139,6 @@ def _persist_notification(
         return None
 
 
-def _publish_redis(user_id: str, payload: dict[str, Any]) -> None:
-    """Redis PubSub に publish。Redis 未利用なら no-op."""
-    try:
-        import redis  # type: ignore[import-not-found]
-    except ImportError:  # pragma: no cover - redis は本番前提
-        logger.warning("redis package is not installed; skipping publish")
-        return
-
-    broker_url = os.environ.get("CELERY_BROKER_URL") or os.environ.get(
-        "REDIS_URL"
-    ) or "redis://localhost:6379/0"
-    try:
-        client = redis.from_url(broker_url)
-        client.publish(f"notifications:{user_id}", json.dumps(payload))
-    except Exception as exc:  # pragma: no cover - defensive
-        logger.warning("redis publish failed for user_id=%s: %s", user_id, exc)
-
-
 def notify_post_result(
     *,
     post_id: str,
@@ -189,20 +172,11 @@ def notify_post_result(
 
     if user_id:
         kind = _classify(summary)
-        inserted = _persist_notification(
+        # INSERT は Supabase Realtime で自動的にクライアントへ配信される。
+        _persist_notification(
             user_id=user_id,
             post_id=post_id,
             kind=kind,
             title=subject,
             body=body,
         )
-        payload: dict[str, Any] = {
-            "type": kind,
-            "title": subject,
-            "body": body,
-            "post_id": post_id,
-        }
-        if inserted and inserted.get("id"):
-            payload["notification_id"] = str(inserted["id"])
-            payload["created_at"] = inserted.get("created_at")
-        _publish_redis(user_id, payload)
