@@ -8,7 +8,9 @@ type WelcomeSectionProps = {
 
 function formatToday(): string {
   return new Intl.DateTimeFormat("ja-JP", {
-    dateStyle: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
     weekday: "short",
   }).format(new Date());
 }

@@ -7,7 +7,9 @@ module.exports = {
           sand: "#f7f3eb",
           ink: "#1f2937",
           ocean: "#0f766e"
-        }
+        },
+        x: "#000000",
+        ig: "#E4405F"
       }
     }
   }
