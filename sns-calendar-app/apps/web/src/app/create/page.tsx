@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { type DragEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -257,9 +257,13 @@ function CreatePageContent() {
     isUploading: boolean;
     error: string | null;
   }>({ isUploading: false, error: null });
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false);
+  // dragenter / dragleave は子要素を跨ぐたびに発火するため、深さをカウントして
+  // ゾーン全体から本当に離れたときだけハイライトを解除する。
+  const dragDepthRef = useRef(0);
 
   const handleMediaUpload = async (
-    files: FileList | null,
+    files: FileList | File[] | null,
     options: { autoResizeIg: boolean },
   ) => {
     if (!files || files.length === 0) {
@@ -289,6 +293,57 @@ function CreatePageContent() {
           : "画像アップロードに失敗しました";
       setMediaUploadState({ isUploading: false, error: message });
     }
+  };
+
+  const mediaDropDisabled = () => isReadonly || mediaUploadState.isUploading;
+
+  const handleMediaDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (mediaDropDisabled()) {
+      return;
+    }
+    // drop を許可するには dragover で preventDefault が必須。
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleMediaDragEnter = (event: DragEvent<HTMLDivElement>) => {
+    if (mediaDropDisabled()) {
+      return;
+    }
+    event.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDraggingMedia(true);
+  };
+
+  const handleMediaDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    if (mediaDropDisabled()) {
+      return;
+    }
+    event.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDraggingMedia(false);
+    }
+  };
+
+  const handleMediaDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDraggingMedia(false);
+    if (mediaDropDisabled()) {
+      return;
+    }
+    const images = Array.from(event.dataTransfer.files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (images.length === 0) {
+      setMediaUploadState({
+        isUploading: false,
+        error: "画像ファイル（JPEG / PNG / WebP）をドロップしてください",
+      });
+      return;
+    }
+    void handleMediaUpload(images, { autoResizeIg: false });
   };
 
   const watchedPlatforms = watch("platforms");
@@ -813,10 +868,28 @@ function CreatePageContent() {
                   <p className="mt-3 text-sm text-rose-600">{mediaUploadState.error}</p>
                 ) : null}
 
-                <div className="mt-4 space-y-3">
+                <div
+                  className={`mt-4 space-y-3 rounded-[1.25rem] transition ${
+                    isDraggingMedia
+                      ? "outline-dashed outline-2 outline-offset-4 outline-brand-ocean/60"
+                      : ""
+                  }`}
+                  onDragEnter={handleMediaDragEnter}
+                  onDragLeave={handleMediaDragLeave}
+                  onDragOver={handleMediaDragOver}
+                  onDrop={handleMediaDrop}
+                >
                   {fields.length === 0 ? (
-                    <div className="rounded-[1.25rem] border border-dashed border-brand-ink/15 bg-brand-sand/25 px-4 py-6 text-sm text-slate-500">
-                      画像はまだ追加されていません。MVP では `storage_path` と `mime_type` を手入力します。
+                    <div
+                      className={`rounded-[1.25rem] border border-dashed px-4 py-6 text-sm transition ${
+                        isDraggingMedia
+                          ? "border-brand-ocean bg-brand-ocean/5 text-brand-ocean"
+                          : "border-brand-ink/15 bg-brand-sand/25 text-slate-500"
+                      }`}
+                    >
+                      {isDraggingMedia
+                        ? "ここに画像をドロップしてアップロード"
+                        : "画像をここにドラッグ&ドロップ、または上のボタンからアップロードできます。URL を手入力することも可能です。"}
                     </div>
                   ) : null}
 
