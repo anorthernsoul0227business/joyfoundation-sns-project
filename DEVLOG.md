@@ -32,7 +32,14 @@
   - api-client に `listDriveImages`/`importDriveImage`/`fetchDriveThumbnailBlob`、生成 SDK 再生成
   - create ページに「Drive から選ぶ」ボタン追加
 - **検証**: web typecheck / backend pytest（97 passed）/ ruff 通過
-- **前提作業（未完・要オペレーター対応）**: ①GCPで Drive API 有効化 ②共有フォルダ `1TbaQla9...` を SA `sheets-api-service@gmailsendapp-478003...` に閲覧者共有 ③Cloud Run に SA資格情報 Secret＋`DRIVE_SHARED_FOLDER_ID`。これらが済むまで本番では休眠
+- **実 Drive スモークテスト**: 既存 SA で実機検証。Drive API は既に有効、`HSC_SNS用画像フォルダ`(`1vPODCZ9...`)が SA に共有済みと判明（旧 ID `1TbaQla9...` は未共有）。list/download/thumbnail すべて実 HTTP で成功
+- **残ops**: 本番のみ Cloud Run に SA資格情報 Secret＋`DRIVE_SHARED_FOLDER_ID=1vPODCZ9...`（gcloud 環境が必要）
+
+### 本番デプロイ（フロント, 同日）
+- 第1ゴール=「圭一郎さんが使える状態」を確認（速度優先・急造可だが変更容易性は維持）。投稿公開は当面レビュー/手動ゲート（=方式B）、将来の完全自動投稿(A)はその延長線
+- デプロイ機構を確認: フロントは **Vercel CLI 手動**（GH Actions deploy は無効）。本番は #29(ef094be) で止まっていた
+- ローカルが Node 25 で `next dev` がハングするが、**Vercel リモートビルド(Node 20)** でプレビュー→本番昇格。#30(実画像プレビュー)・#31(D&D/ヘルプ)・#32(Drive UI) を本番反映
+- ブラウザで本番描画＋HelpMark ツールチップ表示を確認。Drive ボタンはバックエンド(Cloud Run)未更新のため一時休眠
 
 ---
 
