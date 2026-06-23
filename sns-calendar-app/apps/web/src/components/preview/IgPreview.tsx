@@ -67,15 +67,14 @@ export function IgPreview({ contentText, displayName, handle, mediaPaths }: IgPr
       <div className="p-4">
         {primaryMedia ? (
           <div className="relative overflow-hidden rounded-[1.5rem] border border-brand-ink/10 bg-slate-200">
-            <div className="aspect-square bg-gradient-to-br from-ig/20 via-rose-100 to-orange-100">
-              <div className="flex h-full w-full items-center justify-center px-6 text-center">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-ig">
-                    {primaryMedia.mime_type}
-                  </p>
-                  <p className="text-sm text-slate-600">{primaryMedia.storage_path}</p>
-                </div>
-              </div>
+            <div className="aspect-square">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt="primary media"
+                className="h-full w-full object-cover"
+                loading="lazy"
+                src={primaryMedia.storage_path}
+              />
             </div>
             {extraMediaCount > 0 ? (
               <span className="absolute right-3 top-3 rounded-full bg-black/65 px-2.5 py-1 text-xs font-semibold text-white">

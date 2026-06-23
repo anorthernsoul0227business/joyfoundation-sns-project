@@ -95,12 +95,13 @@ export function XPreview({ contentText, displayName, handle, mediaPaths, schedul
                     }`}
                     key={`${item.storage_path}-${index}`}
                   >
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-200 via-slate-100 to-slate-200 text-center text-xs text-slate-500">
-                      <div className="space-y-2 px-4">
-                        <p className="font-semibold text-slate-600">{item.mime_type}</p>
-                        <p className="line-clamp-2 break-all">{item.storage_path}</p>
-                      </div>
-                    </div>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      alt={`media ${index + 1}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                      src={item.storage_path}
+                    />
                   </div>
                 ))}
               </div>

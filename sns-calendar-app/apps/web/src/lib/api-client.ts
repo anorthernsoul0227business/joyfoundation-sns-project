@@ -20,7 +20,6 @@ import {
   schedulePostApiPostsPostIdSchedulePost,
   signupApiAuthSignupPost,
   updatePostApiPostsPostIdPatch,
-  uploadMediaApiMediaUploadPost,
 } from "../generated/sdk.gen";
 import type {
   CalendarResponse,
@@ -352,19 +351,41 @@ export async function uploadMedia(
   files: File[],
   options: UploadMediaOptions = {},
 ): Promise<MediaUploadResponse> {
-  const formData = new FormData();
-  for (const file of files) {
-    formData.append("files", file, file.name);
+  const buildRequest = (): Request => {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("files", file, file.name);
+    }
+    const url = new URL(`${API_BASE_URL}/api/media/upload`);
+    url.searchParams.set("auto_resize_ig", String(options.autoResizeIg ?? false));
+    const token = useAuthStore.getState().session?.accessToken;
+    const headers = new Headers();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return new Request(url.toString(), {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+  };
+
+  const send = async (): Promise<Response> => fetch(buildRequest());
+
+  let response = await send();
+  if (response.status === 401 && (await refreshSession())) {
+    response = await send();
   }
-  return withAuthRetry(
-    () =>
-      uploadMediaApiMediaUploadPost({
-        body: formData as unknown as { files: Array<Blob | File> },
-        query: {
-          auto_resize_ig: options.autoResizeIg ?? false,
-        },
-      }) as Promise<ClientResult<MediaUploadResponse>>,
-  );
+  if (response.status === 401) {
+    useAuthStore.getState().clear();
+  }
+
+  if (!response.ok) {
+    const fallback =
+      response.status === 401 ? "認証に失敗しました。" : "リクエストに失敗しました。";
+    throw new ApiError(await readErrorMessage(response, fallback), response.status);
+  }
+  return (await response.json()) as MediaUploadResponse;
 }
 
 export async function fetchNotifications(

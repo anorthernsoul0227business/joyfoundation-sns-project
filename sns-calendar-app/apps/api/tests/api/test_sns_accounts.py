@@ -116,7 +116,10 @@ def account_store(monkeypatch: pytest.MonkeyPatch) -> InMemoryAccountStore:
     monkeypatch.setattr(
         sns_accounts_api,
         "get_settings",
-        lambda: SimpleNamespace(oauth_redirect_base="http://localhost:8000"),
+        lambda: SimpleNamespace(
+            oauth_redirect_base="http://localhost:8000",
+            frontend_url=None,
+        ),
     )
     monkeypatch.setattr(
         sns_accounts_api.sns_account_service,

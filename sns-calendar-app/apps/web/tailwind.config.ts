@@ -7,6 +7,14 @@ const config: Config = {
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
   ],
+  theme: {
+    extend: {
+      colors: {
+        x: "#000000",
+        ig: "#E4405F",
+      },
+    },
+  },
 };
 
 export default config;

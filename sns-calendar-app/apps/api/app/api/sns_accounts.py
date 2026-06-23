@@ -40,7 +40,9 @@ def _callback_url(platform: Platform) -> str:
 
 
 def _settings_redirect_url(platform: Platform | None = None, handle: str | None = None) -> str:
-    base = f"{_require_oauth_redirect_base()}/settings/sns"
+    settings = get_settings()
+    frontend_base = (settings.frontend_url or _require_oauth_redirect_base()).rstrip("/")
+    base = f"{frontend_base}/settings/sns"
     if platform and handle:
         return f"{base}?{urlencode({'connected': platform, 'handle': handle})}"
     return base
