@@ -20,6 +20,20 @@
 - 残2件（Googleドライブ連携 / RAG ナレッジ積み上げ）は設計・外部API設定を要する大物として別途
 - D&D とツールチップ位置は実機でのインタラクション確認が望ましい
 
+### 追加実装（同日）: Google Drive 画像ピッカー（要望②）
+- **方式決定**: サービスアカウント方式（既存 Sheets 用 SA を再利用）＋ 選択画像は R2 にコピー（publisher が http URL 前提のため整合）。Picker/個別OAuth は使わずシニア配慮でログイン不要に
+- **バックエンド**:
+  - `app/services/drive.py`: SA で共有フォルダの画像/サブフォルダ一覧・DL・サムネ取得（thumbnailLink 優先でグリッド高速化）。重い google-api-python-client は使わず google-auth + Drive REST
+  - `app/api/drive.py`（`/api/media/drive/*`）: `GET /list`・`GET /thumbnail/{id}`・`POST /import`（DL→既存 upload_original→public_url 返却）
+  - config に `GOOGLE_SERVICE_ACCOUNT_JSON/_FILE`・`DRIVE_SHARED_FOLDER_ID` 追加。依存 `google-auth` 追加
+  - テスト: 単体7＋API7（Drive はフェイク、R2 は moto）= 全通過
+- **フロント**:
+  - `components/DriveImagePicker.tsx`: フォルダ階層ナビ＋画像グリッドのモーダル。サムネは認証付き fetch→blob で表示、選択→import→media 配列へ append
+  - api-client に `listDriveImages`/`importDriveImage`/`fetchDriveThumbnailBlob`、生成 SDK 再生成
+  - create ページに「Drive から選ぶ」ボタン追加
+- **検証**: web typecheck / backend pytest（97 passed）/ ruff 通過
+- **前提作業（未完・要オペレーター対応）**: ①GCPで Drive API 有効化 ②共有フォルダ `1TbaQla9...` を SA `sheets-api-service@gmailsendapp-478003...` に閲覧者共有 ③Cloud Run に SA資格情報 Secret＋`DRIVE_SHARED_FOLDER_ID`。これらが済むまで本番では休眠
+
 ---
 
 ## 2026-04-23

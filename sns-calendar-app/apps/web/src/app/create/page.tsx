@@ -7,6 +7,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { PostCreate, PostResponse, PostUpdate } from "../../generated/types.gen";
+import { DriveImagePicker } from "../../components/DriveImagePicker";
 import { HelpMark } from "../../components/HelpMark";
 import { PreviewPanel } from "../../components/preview/PreviewPanel";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
@@ -258,6 +259,7 @@ function CreatePageContent() {
     error: string | null;
   }>({ isUploading: false, error: null });
   const [isDraggingMedia, setIsDraggingMedia] = useState(false);
+  const [drivePickerOpen, setDrivePickerOpen] = useState(false);
   // dragenter / dragleave は子要素を跨ぐたびに発火するため、深さをカウントして
   // ゾーン全体から本当に離れたときだけハイライトを解除する。
   const dragDepthRef = useRef(0);
@@ -852,6 +854,14 @@ function CreatePageContent() {
                     <button
                       className="inline-flex items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isReadonly}
+                      onClick={() => setDrivePickerOpen(true)}
+                      type="button"
+                    >
+                      Drive から選ぶ
+                    </button>
+                    <button
+                      className="inline-flex items-center rounded-full border border-brand-ink/10 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-brand-ocean hover:text-brand-ocean disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isReadonly}
                       onClick={() =>
                         append({
                           mime_type: "image/png",
@@ -867,6 +877,21 @@ function CreatePageContent() {
                 {mediaUploadState.error ? (
                   <p className="mt-3 text-sm text-rose-600">{mediaUploadState.error}</p>
                 ) : null}
+
+                <DriveImagePicker
+                  onClose={() => setDrivePickerOpen(false)}
+                  onImported={(item) => {
+                    const mime = (item.mime_type ?? "image/jpeg") as
+                      | "image/png"
+                      | "image/jpeg"
+                      | "image/webp";
+                    append({
+                      storage_path: item.public_url,
+                      mime_type: mediaEnum.options.includes(mime) ? mime : "image/jpeg",
+                    });
+                  }}
+                  open={drivePickerOpen}
+                />
 
                 <div
                   className={`mt-4 space-y-3 rounded-[1.25rem] transition ${

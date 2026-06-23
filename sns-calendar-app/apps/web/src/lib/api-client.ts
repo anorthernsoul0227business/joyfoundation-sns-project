@@ -6,6 +6,8 @@ import {
   deleteSnsAccountApiSnsAccountsAccountIdDelete,
   deletePostApiPostsPostIdDelete,
   getCalendarApiCalendarGet,
+  importDriveImageApiMediaDriveImportPost,
+  listDriveFolderApiMediaDriveListGet,
   getPostApiPostsPostIdGet,
   listSnsAccountsApiSnsAccountsGet,
   listPostsApiPostsGet,
@@ -24,6 +26,8 @@ import {
 import type {
   CalendarResponse,
   ConnectResponse,
+  DriveListResponse,
+  MediaUploadItem,
   MediaUploadResponse,
   NotificationListResponse,
   NotificationReadAllResponse,
@@ -386,6 +390,56 @@ export async function uploadMedia(
     throw new ApiError(await readErrorMessage(response, fallback), response.status);
   }
   return (await response.json()) as MediaUploadResponse;
+}
+
+export async function listDriveImages(folderId?: string): Promise<DriveListResponse> {
+  return withAuthRetry(
+    () =>
+      listDriveFolderApiMediaDriveListGet({
+        query: folderId ? { folder_id: folderId } : undefined,
+      }) as Promise<ClientResult<DriveListResponse>>,
+  );
+}
+
+export async function importDriveImage(
+  fileId: string,
+  autoResizeIg = false,
+): Promise<MediaUploadItem> {
+  return withAuthRetry(
+    () =>
+      importDriveImageApiMediaDriveImportPost({
+        body: { file_id: fileId, auto_resize_ig: autoResizeIg },
+      }) as Promise<ClientResult<MediaUploadItem>>,
+  );
+}
+
+// サムネイルは認証必須エンドポイントを <img src> で直接読めないため、
+// Bearer 付き fetch で blob を取得し、呼び出し側で object URL 化する。
+export async function fetchDriveThumbnailBlob(fileId: string): Promise<Blob> {
+  const send = async (): Promise<Response> => {
+    const token = useAuthStore.getState().session?.accessToken;
+    const headers = new Headers();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return fetch(`${API_BASE_URL}/api/media/drive/thumbnail/${encodeURIComponent(fileId)}`, {
+      headers,
+    });
+  };
+
+  let response = await send();
+  if (response.status === 401 && (await refreshSession())) {
+    response = await send();
+  }
+  if (response.status === 401) {
+    useAuthStore.getState().clear();
+  }
+  if (!response.ok) {
+    const fallback =
+      response.status === 401 ? "認証に失敗しました。" : "サムネイル取得に失敗しました。";
+    throw new ApiError(await readErrorMessage(response, fallback), response.status);
+  }
+  return response.blob();
 }
 
 export async function fetchNotifications(

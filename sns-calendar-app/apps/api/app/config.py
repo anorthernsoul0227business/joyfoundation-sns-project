@@ -86,6 +86,21 @@ class Settings(BaseSettings):
         validation_alias="RESEND_API_KEY",
     )
 
+    # Google Drive 連携 (画像ピッカー)。サービスアカウント JSON を文字列で渡す。
+    # ローカル開発ではファイルパスでも可 (GOOGLE_SERVICE_ACCOUNT_FILE)。
+    google_service_account_json: SecretStr | None = Field(
+        default=None,
+        validation_alias="GOOGLE_SERVICE_ACCOUNT_JSON",
+    )
+    google_service_account_file: str | None = Field(
+        default=None,
+        validation_alias="GOOGLE_SERVICE_ACCOUNT_FILE",
+    )
+    drive_shared_folder_id: str | None = Field(
+        default=None,
+        validation_alias="DRIVE_SHARED_FOLDER_ID",
+    )
+
     model_config = SettingsConfigDict(
         env_file=_ENV_FILES,
         env_file_encoding="utf-8",
