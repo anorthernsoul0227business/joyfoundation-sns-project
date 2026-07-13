@@ -23,7 +23,7 @@ jobs:
       run:
         working-directory: sns-calendar-app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -76,7 +76,7 @@ jobs:
       SUPABASE_ANON_KEY: ci-dummy-anon
       SUPABASE_SERVICE_ROLE_KEY: ci-dummy-service-role
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -111,7 +111,7 @@ jobs:
       run:
         working-directory: sns-calendar-app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
