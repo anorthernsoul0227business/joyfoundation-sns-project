@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  週次記事生成ループ（投稿はしない）
+
+  検証期間中は毎日 9:00 に実行して挙動を観察する。
+  本番運用に移す際は StartCalendarInterval を週1（Weekday=1 の月曜）に変え、
+  ProgramArguments から ‐‐test-cards を外すこと。
+
+  ⚠ プロジェクトは ~/Desktop 配下にあり、macOS の TCC により launchd から読めない
+    （Errno 1: Operation not permitted）。そのため実行は ~/joyfoundation-loop-runtime/ の
+    コピーに対して行う。コード・知識層を変えたら ./sync_loop_runtime.sh を実行すること。
+
+  インストール:
+    ./sync_loop_runtime.sh
+    cp com.joyfoundation.weekly-loop.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.joyfoundation.weekly-loop.plist
+  停止:
+    launchctl unload ~/Library/LaunchAgents/com.joyfoundation.weekly-loop.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.joyfoundation.weekly-loop</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- caffeinate: 実行中のスリープを抑止する。
+             スリープを跨ぐと claude 側が Request timed out で失敗し、
+             Python の timeout も monotonic 基準のため効かない（2026-07-31 に発生）。
+             -i 待機中スリープ抑止 / -m ディスクスリープ抑止 / -s AC接続時のシステムスリープ抑止 -->
+        <string>/usr/bin/caffeinate</string>
+        <string>-ims</string>
+        <string>/usr/bin/python3</string>
+        <string>/Users/kitakoujirou/joyfoundation-loop-runtime/run_weekly_loop.py</string>
+        <string>--test-cards</string>
+        <string>--with-news</string>
+        <string>--topics</string>
+        <string>3</string>
+    </array>
+
+    <!-- 検証中は毎日9:00。本番では <key>Weekday</key><integer>1</integer> を足して月曜のみにする -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- 読み込み時に即実行はしない（意図しないタイミングでの生成を避ける） -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- claude CLI と pdftotext を見つけるために PATH を明示する -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/kitakoujirou/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kitakoujirou/joyfoundation-loop-runtime/logs/launchd_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kitakoujirou/joyfoundation-loop-runtime/logs/launchd_stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kitakoujirou/joyfoundation-loop-runtime</string>
+</dict>
+</plist>

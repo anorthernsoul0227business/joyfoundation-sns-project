@@ -1,2 +1,12 @@
 .env
 logs/
+
+# 原本からの抽出テキスト（中間生成物）
+knowledge/_extract/
+
+# 画像のダウンロードキャッシュ（中間生成物）
+knowledge/_imgcache/
+
+# macOS
+.DS_Store
+**/.DS_Store
