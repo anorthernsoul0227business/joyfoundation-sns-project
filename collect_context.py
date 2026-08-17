@@ -27,6 +27,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import date, datetime
 from pathlib import Path
@@ -55,6 +56,15 @@ BLOCKED = {
 # 大雨警報・暴風警報は日本では頻繁に出る。時事ネタを使わないだけなので実害はない。
 KILL_SWITCH = ["特別警報", "大雨警報", "暴風警報", "津波", "噴火", "震度5", "震度6", "震度7",
                "記録的な大雨", "命を守る行動"]
+
+# 「〜の発表はなく」「〜もなし」のように、危険語が“無かったこと”の説明として
+# 現れる場合がある。根拠テキストは平常時ほどこの形で危険語を並べるため、
+# 素朴な部分一致だとキルスイッチが毎回誤作動する（2026-08-04〜17 に実際に発生）。
+NO_EVENT = re.compile(
+    r"(はなく|もなく|はなし|もなし|ありません|ございません|"
+    r"されていない|されていません|出ていない|出ていません|"
+    r"未発表|該当なし|発表なし|なし。|なし$)"
+)
 
 # --- Lv2: 投稿停止の判断を人に仰ぐ（年に数回。メール通知する） ---------------
 # 「協会として平常運転で投稿してよいか」という組織判断が要る規模に限定する。
@@ -139,23 +149,71 @@ def screen(item: dict) -> str:
     return ""
 
 
-def fetch(today: date, timeout: int = 600) -> dict:
-    prompt = FETCH_PROMPT.format(today=today.isoformat())
-    proc = subprocess.run(
-        ["claude", "-p", prompt, "--output-format", "text"],
-        capture_output=True, text=True, timeout=timeout, cwd=str(ROOT),
-    )
-    LOGDIR.mkdir(exist_ok=True)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    (LOGDIR / f"context_raw_{stamp}.txt").write_text(proc.stdout, encoding="utf-8")
-    if proc.returncode != 0:
-        raise RuntimeError(f"収集に失敗しました: {proc.stderr[:300]}")
+def kill_hits(data: dict) -> list:
+    """キルスイッチを発動させるべき検知語を返す（空なら平常）。
 
-    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", proc.stdout, re.S) \
-        or re.search(r"(\{.*\})", proc.stdout, re.S)
-    if not m:
-        raise ValueError(f"JSONを取り出せませんでした:\n{proc.stdout[:500]}")
-    return json.loads(m.group(1))
+    文脈アイテムは本文なので素朴に走査する。一方 `根拠` は「災害が無いこと」を
+    説明する文章であり、平常時ほど危険語が並ぶ。そのため句ごとに区切り、
+    否定表現を伴う句は数えない。判定に迷う場合は発動側（安全側）に倒す。
+    """
+    hits = []
+
+    # 文脈アイテム: 本文なのでそのまま見る
+    body = norm(json.dumps(data.get("文脈", []), ensure_ascii=False))
+    hits += [w for w in KILL_SWITCH if w in body]
+
+    # 根拠: 句に割り、否定されていない句だけを見る
+    for clause in re.split(r"[、。\n]", norm(data.get("根拠", ""))):
+        if NO_EVENT.search(clause):
+            continue
+        hits += [w for w in KILL_SWITCH if w in clause]
+
+    return sorted(set(hits))
+
+
+def fetch(today: date, timeout: int = 600, retries: int = 3) -> dict:
+    prompt = FETCH_PROMPT.format(today=today.isoformat())
+    LOGDIR.mkdir(exist_ok=True)
+    last = ""
+
+    for attempt in range(1, retries + 1):
+        try:
+            proc = subprocess.run(
+                ["claude", "-p", prompt, "--output-format", "text"],
+                capture_output=True, text=True, timeout=timeout, cwd=str(ROOT),
+            )
+        except subprocess.TimeoutExpired:
+            # 応答が返らないのは通信不良が原因のことが多く、再試行で回復する。
+            last = f"{timeout}秒でタイムアウトしました"
+            if attempt < retries:
+                wait = 15 * (2 ** (attempt - 1))
+                print(f"  収集に失敗（{attempt}/{retries}）: {last}", file=sys.stderr)
+                print(f"  {wait}秒待って再試行します。", file=sys.stderr)
+                time.sleep(wait)
+            continue
+
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        (LOGDIR / f"context_raw_{stamp}.txt").write_text(proc.stdout, encoding="utf-8")
+
+        # claude CLI は API エラーを stdout に書く。stderr だけ見ると原因が空になる。
+        detail = (proc.stderr.strip() or proc.stdout.strip())[:300] or "(出力なし)"
+
+        if proc.returncode == 0:
+            m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", proc.stdout, re.S) \
+                or re.search(r"(\{.*\})", proc.stdout, re.S)
+            if m:
+                return json.loads(m.group(1))
+            last = f"JSONを取り出せませんでした: {detail}"
+        else:
+            last = f"claude が異常終了しました (rc={proc.returncode}): {detail}"
+
+        if attempt < retries:
+            wait = 15 * (2 ** (attempt - 1))   # 15s → 30s → (60s)
+            print(f"  収集に失敗（{attempt}/{retries}）: {last}", file=sys.stderr)
+            print(f"  {wait}秒待って再試行します。", file=sys.stderr)
+            time.sleep(wait)
+
+    raise RuntimeError(f"収集に失敗しました（{retries}回試行）: {last}")
 
 
 def assess_severe(data: dict) -> dict:
@@ -187,8 +245,7 @@ def collect(today: date = None, verbose: bool = True) -> list:
         print(f"根拠: {data.get('根拠', '')}")
 
     # --- キルスイッチ -----------------------------------------------------
-    blob = norm(json.dumps(data, ensure_ascii=False))
-    hits = [w for w in KILL_SWITCH if w in blob]
+    hits = kill_hits(data)
     if data.get("災害警戒中") or hits:
         if verbose:
             reason = "災害警戒中の申告" if data.get("災害警戒中") else f"検知語 {hits}"
@@ -231,10 +288,11 @@ def collect_with_alert(today: date = None, verbose: bool = True):
     data = fetch(today)
     alert = assess_severe(data)
 
-    blob = norm(json.dumps(data, ensure_ascii=False))
-    if data.get("災害警戒中") or any(w in blob for w in KILL_SWITCH):
+    hits = kill_hits(data)
+    if data.get("災害警戒中") or hits:
         if verbose:
-            print("⛔ キルスイッチ作動 → 時事文脈は使用しません")
+            reason = "災害警戒中の申告" if data.get("災害警戒中") else f"検知語 {hits}"
+            print(f"⛔ キルスイッチ作動（{reason}）→ 時事文脈は使用しません")
         return [], (alert or None)
 
     safe = [i for i in data.get("文脈", []) if not screen(i)]

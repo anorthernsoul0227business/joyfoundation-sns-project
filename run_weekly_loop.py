@@ -36,7 +36,8 @@ LOGDIR = ROOT / "logs"
 SPREADSHEET_KEY = "1yv9-rnytRH6jEzzFeNHye0T1JnR4aQvr0bryZUJr7iM"
 TAB_REVIEW = "週次_レビュー"
 TAB_BREAKDOWN = "週次_内訳"
-EVENT_TABS = ["Xイベント投稿", "IGイベント投稿"]
+EVENT_MASTER_TAB = "イベント予定"          # 予定の正本
+EVENT_TABS = [EVENT_MASTER_TAB, "Xイベント投稿", "IGイベント投稿"]
 
 # このスクリプトが書き込んでよい唯一のステータス。投稿トリガーの値とは別物
 STATUS_DRAFT = "AI下書き"
@@ -176,8 +177,37 @@ def load_glossary() -> str:
     return "\n".join(out)
 
 
+def parse_event_date(raw: str, today: date):
+    """開催日セルを日付にする。読めなければ None。
+
+    `イベント予定` は 2026-09-19 形式、旧タブは 9/19(土) 形式。両方受ける。
+    月日だけの表記は年が無いので、今年→来年の順に見て未来側を採る。
+    """
+    m = re.search(r"(20\d{2})[-/](\d{1,2})[-/](\d{1,2})", raw)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            return None
+    m = re.search(r"(\d{1,2})/(\d{1,2})", raw)
+    if not m:
+        return None
+    month, day = int(m.group(1)), int(m.group(2))
+    for year in (today.year, today.year + 1):
+        try:
+            d = date(year, month, day)
+        except ValueError:
+            continue
+        if d >= today:
+            return d
+    return None
+
+
 def load_events(gc, within_days: int = 21) -> list:
-    """イベントタブから直近の予定を拾う。日付が読めないものは捨てる。"""
+    """直近の予定を拾う。日付が読めないものは捨てる。
+
+    正本は `イベント予定` タブ。旧タブも読むが、同じイベント名は正本を優先する。
+    """
     today = date.today()
     horizon = today + timedelta(days=within_days)
     found = []
@@ -195,36 +225,38 @@ def load_events(gc, within_days: int = 21) -> list:
             i_date = hdr.index("開催日")
         except ValueError:
             continue
-        i_place = hdr.index("開催場所") if "開催場所" in hdr else None
+        def col(label):
+            return hdr.index(label) if label in hdr else None
+
+        i_place, i_time = col("開催場所"), col("時間")
+        i_fee, i_apply = col("費用"), col("申込・問合せ")
+        i_memo, i_src = col("詳細メモ"), col("情報源")
+
         for r in rows[1:]:
             if len(r) <= max(i_name, i_date):
                 continue
             name, raw = r[i_name].strip(), r[i_date].strip()
             if not name or not raw:
                 continue
-            m = re.search(r"(\d{1,2})/(\d{1,2})", raw)
-            if not m:
+            d = parse_event_date(raw, today)
+            if not d or not (today <= d <= horizon):
                 continue
-            month, day = int(m.group(1)), int(m.group(2))
-            for year in (today.year, today.year + 1):
-                try:
-                    d = date(year, month, day)
-                except ValueError:
-                    continue
-                if today <= d <= horizon:
-                    found.append({
-                        "name": name, "date": d.isoformat(), "raw": raw,
-                        "place": r[i_place].strip() if i_place is not None and len(r) > i_place else "",
-                    })
-                    break
-    # 同名イベントの重複を除く
-    seen, uniq = set(), []
-    for e in sorted(found, key=lambda x: x["date"]):
-        if e["name"] in seen:
-            continue
-        seen.add(e["name"])
-        uniq.append(e)
-    return uniq
+
+            def cell(i):
+                return r[i].strip() if i is not None and len(r) > i else ""
+
+            found.append({
+                "name": name, "date": d.isoformat(), "raw": raw,
+                "place": cell(i_place), "time": cell(i_time), "fee": cell(i_fee),
+                "apply": cell(i_apply), "memo": cell(i_memo), "source": cell(i_src),
+                "canonical": tab == EVENT_MASTER_TAB,
+            })
+
+    # 同じイベント名は1件に絞る。正本タブの行を優先し、次に日付が近いものを採る。
+    best = {}
+    for e in sorted(found, key=lambda x: (not x["canonical"], x["date"])):
+        best.setdefault(e["name"], e)
+    return sorted(best.values(), key=lambda x: x["date"])
 
 
 def load_recent(gc, limit: int = 24) -> list:
@@ -379,7 +411,16 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
         recent_txt = "\n".join(lines)
     else:
         recent_txt = "（まだありません。自由に選んでください）"
-    ev_txt = "\n".join(f"- {e['date']} {e['name']}（{e['place']}）" for e in events) or "（直近3週間に予定なし）"
+    # イベントは告知記事の材料になるので、書ける事実は全部渡す。
+    # ただし空欄は空欄のまま渡す。埋まっていない項目を推測で補わせないため。
+    ev_lines = []
+    for e in events:
+        ev_lines.append(f"- {e['date']} **{e['name']}**")
+        for label, key in [("場所", "place"), ("時間", "time"),
+                           ("費用", "fee"), ("申込・問合せ", "apply"), ("補足", "memo")]:
+            if e.get(key):
+                ev_lines.append(f"    - {label}: {e[key]}")
+    ev_txt = "\n".join(ev_lines) or "（直近3週間に予定なし）"
 
     if contexts:
         ctx_txt = "\n".join(
@@ -815,10 +856,26 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
             "\n".join(res["problems"]), rv_txt,
         ])
 
-    rw.update(values=rows, range_name=f"A{start}")
+    # ネットワークエラーで生成物を捨てないよう再試行する。
+    # 2026-08-01 に Connection reset by peer で3本分（生成に15分）を失った。
+    def write(ws, values, at):
+        import time
+        last = None
+        for i in range(4):
+            try:
+                ws.update(values=values, range_name=at)
+                return
+            except Exception as e:
+                last = e
+                wait = 3 * (2 ** i)
+                logger.warning(f"シート書き込みに失敗（{i+1}/4）: {type(e).__name__}。{wait}秒後に再試行")
+                time.sleep(wait)
+        raise last
+
+    write(rw, rows, f"A{start}")
     bd_existing = bd.get_all_values()
     bd_start = len(bd_existing) + 1 if len(bd_existing) > 1 else 2
-    bd.update(values=breakdown, range_name=f"A{bd_start}")
+    write(bd, breakdown, f"A{bd_start}")
     return len(rows)
 
 
@@ -948,8 +1005,19 @@ def main() -> int:
     if args.no_write:
         logger.info("④ 投入: --no-write のため書き込みませんでした")
     else:
-        n = publish(gc, posts, results, reviews, args.test_cards)
-        logger.info(f"④ 投入: 週次_レビュー に {n}行を追加（ステータス: {STATUS_DRAFT}／{STATUS_NEEDS_CHECK}）")
+        try:
+            n = publish(gc, posts, results, reviews, args.test_cards)
+            logger.info(f"④ 投入: 週次_レビュー に {n}行を追加（ステータス: {STATUS_DRAFT}／{STATUS_NEEDS_CHECK}）")
+        except Exception as e:
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            rescue = LOGDIR / f"unpublished_{stamp}.json"
+            rescue.write_text(json.dumps(
+                {"posts": posts, "results": results, "reviews": reviews,
+                 "test_mode": args.test_cards}, ensure_ascii=False, indent=2), encoding="utf-8")
+            logger.error(f"④ 投入に失敗しました: {type(e).__name__}: {str(e)[:120]}")
+            logger.error(f"   生成物は {rescue.name} に退避しました。")
+            logger.error("   復旧: /usr/bin/python3 republish.py <ファイル>")
+            return 1
 
     logger.info("完了。投稿は行っていません。")
     logger.info("投稿するには、人が内容を確認し『X投稿キュー』へ移した上で「投稿予約」にする必要があります。")

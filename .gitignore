@@ -10,3 +10,9 @@ knowledge/_imgcache/
 # macOS
 .DS_Store
 **/.DS_Store
+
+# 被検者の感想（実名＋健康状態の記述を含む・非公開の個人情報）
+# 匿名化版を別途作成するまでコミットしない
+docs/sources/nb1_04_2024年1月_被検者の感想.md
+docs/sources/nb1_05_2024年2月_被検者の感想.md
+docs/sources/nb1_06_2025年1-2月_被検者の感想.md
