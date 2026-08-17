@@ -762,12 +762,21 @@ def verify(post: dict, cards: dict) -> dict:
     for c in used:
         if c in cards:
             allowed |= allowed_numbers(cards[c])
-    for n in NUM.findall(unicodedata.normalize("NFKC", body)):
+    # 時刻・料金はイベント予定タブ由来で、根拠カードとは無関係。数値を数える前に伏せる。
+    # 「18:00〜19:00」は 18 と 19 だけが時刻として除外され、分の 00 が取り残されて
+    # 誤検出になっていた（2026-08-17）。表記ごとまとめて伏せる方が確実。
+    scan = unicodedata.normalize("NFKC", body)
+    scan = re.sub(r"\d{1,2}\s*[:：]\s*\d{2}", "〈時刻〉", scan)
+    # 料金は「3,300円」「3000円」どちらもありうる。単位付きの額（45.4兆円 等）は
+    # 間に兆・億が挟まるのでここでは伏せず、通常どおり照合に回る。
+    scan = re.sub(r"\d{1,3}(?:,\d{3})+\s*円|\d+\s*円", "〈金額〉", scan)
+
+    for n in NUM.findall(scan):
         if len(n) <= 1:
             continue
-        # 日付・時刻は根拠カードとは無関係（イベント告知等）なので除外する。
+        # 日付は根拠カードとは無関係（イベント告知等）なので除外する。
         # 年号は除外しない（出典年の取り違えを見逃さないため、カードの published/venue と照合する）
-        if re.search(rf"{re.escape(n)}\s*(月|日|時|分|：|:)", body):
+        if re.search(rf"{re.escape(n)}\s*(月|日|時|分)", body):
             continue
         if n not in allowed:
             problems.append(f"根拠にない数値: {n}")
