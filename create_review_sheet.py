@@ -72,6 +72,8 @@ REVIEW_HEADER = [
     "AI原稿", "ステータス",
     "修正版（ここに直接お書きください）", "修正種別", "修正理由", "今後の扱い",
     "承認稿", "更新日時",
+    # 画像は末尾に足す。途中に入れると既存行と EDITABLE_COLS がずれるため。
+    "画像プレビュー", "画像ID", "画像を開く", "画像の選定理由",
 ]
 
 # 圭一郎さんが編集する列（1始まり）: H=8, I=9, J=10, K=11, L=12
@@ -246,10 +248,10 @@ def main() -> int:
         ]
         for c in cards
     ]
-    cw = tab(TAB_CARDS, max(len(card_rows) + 20, 60), len(CARD_HEADER))
-    cw.update(values=[CARD_HEADER] + card_rows, range_name="A1")
-    cw.freeze(rows=1)
-    print(f"カード一覧に {len(card_rows)} 枚を書き出しました")
+    # 2026-08-17: カード単位の事前承認をやめたため、このタブは作らない。
+    # 実行するたびに削除済みのタブが復活してしまうので、生成そのものを止める。
+    # 承認は 週次_レビュー（完成投稿）で行い、AC カードは extract_ac.py が作る。
+    print(f"カード一覧は作成しません（承認方式の変更により廃止）。{len(card_rows)}枚は生成に使用中")
 
     # --- 設定（プルダウンの元データを人が確認できるように残す） -----------
     cfg = tab(TAB_CONFIG, 40, 4)

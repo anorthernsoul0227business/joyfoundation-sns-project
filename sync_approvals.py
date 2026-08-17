@@ -1,20 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""スプレッドシートの承認結果を Evidence カードに反映する。
+"""【退役】カード単位の事前承認をシートから取り込むスクリプト。
 
-`週次_カード承認` タブで記入された承認結果を読み、`knowledge/evidence/EV-xxxx.md` の
-`approval` / `status` / レビューコメントを更新する。
+2026-08-17 に承認方式を「カードの事前承認」から「完成投稿への承認」へ変更した。
+参照していた `週次_カード承認` タブは削除済みで、このスクリプトは動かない。
 
-安全のための制約:
-  - シートに書かれた内容しか反映しない。自動で承認済みにすることはない
-  - `status: disputed` のカードは触らない（エスカレーション解決が先）
-  - コメントは上書きせず追記する（判断の履歴を残す）
-  - 変更内容を表示し、`--apply` を付けたときだけ書き込む（既定はドライラン）
+後継: extract_ac.py（圭一郎さんがOKした投稿から AC カードを切り出す）
 
-実行:
-    /usr/bin/python3 sync_approvals.py           # 差分を確認するだけ
-    /usr/bin/python3 sync_approvals.py --apply   # カードに書き込む
+残してある理由は、`detect_conflict()` の実装（原本の数値と食い違う修正、
+原文の書き換えを検出して ESC を起こす）が再利用しうるため。
+バックアップ: docs/sheet_backup_20260817/週次_カード承認.json
 """
+
+import sys
+
+print(__doc__, file=sys.stderr)
+print("このスクリプトは退役しました。extract_ac.py を使ってください。", file=sys.stderr)
+sys.exit(1)
+
+# ===== 以下、旧実装（参照用。実行されない） =====
 
 import argparse
 import re

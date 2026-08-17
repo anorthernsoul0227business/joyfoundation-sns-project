@@ -11,8 +11,8 @@
   このスクリプトは X/Instagram の API を一切呼ばない（import すらしない）。
 
 実行:
-    /usr/bin/python3 run_weekly_loop.py                 # 通常（承認済みカードのみ使用）
-    /usr/bin/python3 run_weekly_loop.py --test-cards    # 未承認カードも使う（ループ検証用）
+    /usr/bin/python3 run_weekly_loop.py                 # 通常
+    /usr/bin/python3 run_weekly_loop.py --test-cards    # 出力に検証用の印を付ける
     /usr/bin/python3 run_weekly_loop.py --no-write      # シートに書かず結果だけ表示
 """
 
@@ -68,8 +68,22 @@ def norm(s: str) -> str:
     return re.sub(r"(?<![\d.])\.(\d)", r"0.\1", s)
 
 
-def load_cards(allow_draft: bool) -> list:
-    """カードを読み込む。既定では status: active のものだけ。"""
+def load_cards(allow_draft: bool = True) -> list:
+    """カードを読み込む。
+
+    2026-08-17 に方針変更。以前は `status: active`（＝カード単位の事前承認済み）
+    だけを使い、未承認なら起動して即停止していた。承認は 0/12 のまま数週間動かず、
+    3者の壁打ちでもこの設計に反対だった。
+
+    承認の対象を**カードから完成投稿へ移した**。カードは機械検証（数値が原本にあるか、
+    有意差なしを落としていないか等）を通っていれば生成に使え、
+    人が見るのは出来上がった投稿文になる。これは圭一郎さんが3〜7月に実際にやっていた
+    作業と同じで、論文読解とは負荷が違う。
+
+    投稿は依然として人がキューへ移さない限り出ない。ここは変えていない。
+
+    `disputed`（原本と指示が食い違いエスカレーション中）は引き続き使わない。
+    """
     cards = []
     for p in sorted(EVID.glob("EV-*.md")):
         text = p.read_text(encoding="utf-8")
@@ -140,6 +154,27 @@ NEGATION = re.compile(
     r"(ではあり?ません|ではない|ではなく|とは言えま?せん|とは言えない|"
     r"書けない|書けるような話ではない|できません|できない|限りま?せん|わけではない)"
 )
+
+
+def load_claims() -> list:
+    """Approved claim（AC）カードを読む。
+
+    圭一郎さんがOKを出した投稿から切り出した「発信してよい言い回し」。
+    これを使って書けば分級が A になり、確認が軽くなる。
+    承認が進むほど AC が増え、レビュー負荷が下がっていく設計。
+    """
+    d = ROOT / "knowledge" / "claims"
+    if not d.is_dir():
+        return []
+    out = []
+    for p in sorted(d.glob("AC-*.md")):
+        t = p.read_text(encoding="utf-8")
+        f = lambda k: (re.search(rf"^{k}:\s*(.*)$", t, re.M) or [None, ""])[1].strip()
+        if f("status") != "active":
+            continue
+        out.append({"id": f("id"), "text": f("claim_text"),
+                    "qualifier": f("required_qualifier"), "based_on": f("based_on")})
+    return out
 
 
 def load_rules() -> list:
@@ -375,7 +410,8 @@ def notify_severe(gc, alert: dict) -> None:
 # --------------------------------------------------------------------------
 
 def build_prompt(cards: list, events: list, rules: list, glossary: str,
-                 contexts: list, recent: list, n_topics: int, today: date) -> str:
+                 contexts: list, recent: list, n_topics: int, today: date,
+                 claims: list = None) -> str:
     # 原文全文は渡さない（プロンプトが肥大し生成が遅くなるため）。
     # 執筆に要るのは「何が分かったか」と「何を言ってはいけないか」。
     # 原文は検証工程で使う。
@@ -413,6 +449,18 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
         recent_txt = "（まだありません。自由に選んでください）"
     # イベントは告知記事の材料になるので、書ける事実は全部渡す。
     # ただし空欄は空欄のまま渡す。埋まっていない項目を推測で補わせないため。
+    # 承認済みの言い回し。ここから書けば分級が A になり、確認が軽くなる。
+    if claims:
+        claim_txt = "\n".join(
+            f"- {c['id']}: 「{c['text']}」" + (f"\n    ※ {c['qualifier']}" if c['qualifier'] else "")
+            for c in claims)
+        claim_txt += ("\n\n上の言い回しは圭一郎さんが投稿としてOKを出したものです。"
+                      "**語尾や条件を変えずにそのまま使えば、確認が軽く済みます。**"
+                      "内容が合わないなら無理に使わないでください。")
+    else:
+        claim_txt = ("（まだありません。圭一郎さんが週次_レビューのステータスを『圭一郎OK』にすると、"
+                     "その記事の言い回しがここに溜まっていきます）")
+
     ev_lines = []
     for e in events:
         ev_lines.append(f"- {e['date']} **{e['name']}**")
@@ -455,6 +503,10 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
 # 使ってよい根拠（これ以外の事実・数値を書いてはいけない）
 
 {card_txt}
+
+# 承認済みの言い回し（そのまま使ってよい）
+
+{claim_txt}
 
 # 直近のイベント
 
@@ -747,7 +799,7 @@ def revise(posts: list, reviews: list, base_prompt: str, timeout: int = 900) -> 
 # ③ 検証（執筆とは別工程。自己採点にしない）
 # --------------------------------------------------------------------------
 
-def verify(post: dict, cards: dict) -> dict:
+def verify(post: dict, cards: dict, claims: list = None) -> dict:
     """機械チェック。問題を列挙し、分級を決める。"""
     body = post.get("本文", "")
     problems = []
@@ -808,6 +860,24 @@ def verify(post: dict, cards: dict) -> dict:
     else:
         grade = "A: 確認済みカードの言い換えのみ"
 
+    # A は「承認済みの言い回しをそのまま使った」場合に限る。
+    #
+    # AC をプロンプトに渡しても、LLM は言い換える。渡したことを根拠に A を出すと
+    # **A分級＝検証なしの通過**になってしまう（Fable 5 の指摘）。
+    # 実際に逐語で使われているかを照合し、使われていなければ A を出さない。
+    if grade.startswith("A") and claims:
+        body_n = norm(body)
+        used_ac = [c["id"] for c in claims if c["text"] and norm(c["text"]) in body_n]
+        if not used_ac:
+            grade = "B: 新しい組み合わせ・解釈を含む"
+            problems.append(
+                "承認済みの言い回しが逐語では使われていないため、A ではなく B にしました")
+        else:
+            post["使用ACカードID"] = used_ac
+    elif grade.startswith("A") and not claims:
+        # AC が1枚もない段階では、A の根拠になるものが存在しない
+        grade = "B: 新しい組み合わせ・解釈を含む"
+
     # 時事文脈を使った記事に集客導線を混ぜない（便乗に見えるため機械で弾く）
     if post.get("使った時事文脈", "").strip():
         for pat in (r"体験会", r"お申[しこ]み", r"申込", r"プロフィールのリンク",
@@ -848,10 +918,16 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
         body = post.get("本文", "")
         if test_mode:
             body = "【ループ検証テスト・投稿しないでください】\n\n" + body
+        imgs = post.get("画像", [])
         rows.append([
             aid, week, post.get("媒体", ""), "", res["grade"],
             ", ".join(post.get("使用カードID", [])),
             body, status, "", "", "", "", "", stamp,
+            # 1枚目だけを =IMAGE で出す。複数枚は「画像ID」に並べる
+            f'=IMAGE("{imgs[0]["preview"]}")' if imgs else "",
+            " / ".join(i["id"] for i in imgs),
+            imgs[0]["open"] if imgs else "",
+            " ／ ".join(f'{i["id"]}: {i["why"]}' for i in imgs),
         ])
         rv = next((r for r in reviews if r.get("記事番号") == i + 1), {})
         rv_txt = ""
@@ -867,12 +943,13 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
 
     # ネットワークエラーで生成物を捨てないよう再試行する。
     # 2026-08-01 に Connection reset by peer で3本分（生成に15分）を失った。
-    def write(ws, values, at):
+    def write(ws, values, at, raw=True):
         import time
         last = None
         for i in range(4):
             try:
-                ws.update(values=values, range_name=at)
+                ws.update(values=values, range_name=at,
+                          value_input_option="RAW" if raw else "USER_ENTERED")
                 return
             except Exception as e:
                 last = e
@@ -882,6 +959,12 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
         raise last
 
     write(rw, rows, f"A{start}")
+    # 画像プレビュー列（O）だけは数式として解釈させる。
+    # 本文まで USER_ENTERED にすると、先頭が = や + の行が数式扱いされてしまう。
+    previews = [[r[14]] for r in rows]
+    if any(p[0] for p in previews):
+        write(rw, previews, f"O{start}:O{start + len(rows) - 1}", raw=False)
+
     bd_existing = bd.get_all_values()
     bd_start = len(bd_existing) + 1 if len(bd_existing) > 1 else 2
     write(bd, breakdown, f"A{bd_start}")
@@ -893,8 +976,11 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--test-cards", action="store_true",
-                    help="未承認カードも使う（ループ検証用。出力にテスト表示が付く）")
+                    help="出力を検証用として印を付ける（記事IDに TEST-、本文に注意書き）。"
+                         "2026-08-17 の方針変更でカードの事前承認は不要になったため、"
+                         "このフラグは『投稿候補にしない』という意思表示だけを意味する")
     ap.add_argument("--no-write", action="store_true", help="シートに書き込まない")
+    ap.add_argument("--no-images", action="store_true", help="画像を選ばない")
     ap.add_argument("--with-news", action="store_true",
                     help="時事文脈を収集して記事の入り口に使う（実験）")
     ap.add_argument("--news-file",
@@ -934,13 +1020,12 @@ def main() -> int:
     gc = gspread.service_account()
 
     # ① 収集
-    cards = load_cards(allow_draft=args.test_cards)
+    cards = load_cards()
     if not cards:
         logger.error("使用できるカードが0枚です。")
-        logger.error("承認済み(status: active)のカードがありません。")
-        logger.error("スプレッドシートの『週次_カード承認』で承認し、")
-        logger.error("  /usr/bin/python3 sync_approvals.py --apply")
-        logger.error("を実行してください。ループ検証だけしたい場合は --test-cards を付けてください。")
+        logger.error("knowledge/evidence/ に EV-*.md があるか、")
+        logger.error("すべて status: disputed になっていないかを確認してください。")
+        logger.error("  /usr/bin/python3 knowledge/verify_cards.py")
         return 1
 
     contexts = []
@@ -970,7 +1055,7 @@ def main() -> int:
     n_terms = glossary.count("### GL-")
     logger.info(
         f"① 収集: カード{len(cards)}枚 / イベント{len(events)}件 / "
-        f"ルール{len(rules)}件 / 用語{n_terms}件"
+        f"ルール{len(rules)}件 / 用語{n_terms}件 / 承認済み言い回し{len(load_claims())}件"
     )
     if args.test_cards:
         logger.warning("!! --test-cards: 未承認カードを使用しています。生成物は本番利用不可です")
@@ -979,8 +1064,9 @@ def main() -> int:
     recent = load_recent(gc)
     if recent:
         logger.info(f"①-c 直近の記事 {len(recent)}件を重複回避のため参照")
+    claims = load_claims()
     prompt = build_prompt(cards, events, rules, glossary, contexts, recent,
-                          args.topics, date.today())
+                          args.topics, date.today(), claims)
     posts = generate(prompt)
     logger.info(f"② 執筆: {len(posts)}本を生成")
 
@@ -998,7 +1084,7 @@ def main() -> int:
 
     # ③ 検証
     cmap = {c["id"]: c for c in cards}
-    results = [verify(p, cmap) for p in posts]
+    results = [verify(p, cmap, claims) for p in posts]
     ng = sum(1 for r in results if r["problems"])
     logger.info(f"③ 検証: 問題あり {ng}本 / 問題なし {len(results) - ng}本")
     for p, r in zip(posts, results):
@@ -1009,6 +1095,38 @@ def main() -> int:
                 logger.warning(f"      - {x}")
         else:
             logger.info(f"  ○ {head}")
+
+    # ③-b 画像の選定
+    # Instagram は画像が主・文が従なので、画像が付かないと投稿として成立しない。
+    # 選定は決め打ちの点数計算。生成が既に十数分かかっており、
+    # ここに LLM 呼び出しを足すと待ち時間が伸びすぎる。
+    if args.no_images:
+        logger.info("③-b 画像: --no-images のため選定しません")
+    else:
+        try:
+            import image_picker as IP
+            pool = IP.load_cards()
+            chosen_ids = set()
+            for p in posts:
+                cand = [c for c in pool if c["id"] not in chosen_ids]
+                picks = IP.pick(p.get("本文", ""), p.get("媒体", ""), cand)
+                p["画像"] = [{
+                    "id": c["id"], "preview": IP.preview_url(c),
+                    "open": IP.open_url(c), "why": c["why"],
+                } for c in picks]
+                for c in picks:
+                    chosen_ids.add(c["id"])
+                    if not args.no_write:
+                        IP.record_use(c)      # 次回以降この画像は選ばれにくくなる
+            total = sum(len(p.get("画像", [])) for p in posts)
+            logger.info(f"③-b 画像: 候補{len(pool)}枚から {total}枚を選定")
+            for p in posts:
+                ids = ", ".join(i["id"] for i in p.get("画像", [])) or "なし"
+                logger.info(f"      {p.get('媒体', '?')}: {ids}")
+        except Exception as e:
+            logger.warning(f"③-b 画像の選定に失敗しました: {type(e).__name__}: {e}")
+            for p in posts:
+                p.setdefault("画像", [])
 
     # ④ 投入
     if args.no_write:
