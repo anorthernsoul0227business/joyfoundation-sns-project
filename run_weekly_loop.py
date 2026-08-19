@@ -206,6 +206,35 @@ def load_voice() -> list:
     return out
 
 
+def load_testimonials(limit: int = 8) -> list:
+    """Testimonial（体験された方の声）を読む。
+
+    数値は「何が起きたか」を示すが、参加された方がどう感じたかは残らない。
+    その層をここから供給する。**効果の証拠ではない。**引用するときは
+    「個人の感想です」を添える（薬機法・景品表示法）。
+
+    枚数が多いのでプロンプトが膨らまないよう、渡す数を絞る。
+    """
+    d = ROOT / "knowledge" / "testimonial"
+    if not d.is_dir():
+        return []
+    out = []
+    for p in sorted(d.glob("TM-*.md")):
+        t = p.read_text(encoding="utf-8")
+        f = lambda k: (re.search(rf"^{k}:\s*(.*)$", t, re.M) or [None, ""])[1].strip()
+        if f("usable") != "可":
+            continue
+        m = re.search(r"^verbatim:\s*\|\s*$(.*?)^\w", t, re.S | re.M)
+        vb = " ".join(l.strip() for l in m.group(1).splitlines() if l.strip()) if m else ""
+        out.append({"id": f("id"), "label": f("subject_label"),
+                    "condition": f("condition"), "text": vb})
+    # 自然音・都会音がかたよらないよう交互に採る
+    nat = [x for x in out if x["condition"] == "自然音"]
+    urb = [x for x in out if x["condition"] == "都会音"]
+    mixed = [x for pair in zip(nat, urb) for x in pair]
+    return mixed[:limit]
+
+
 def load_rules() -> list:
     if not RULES.is_dir():
         return []
@@ -440,7 +469,8 @@ def notify_severe(gc, alert: dict) -> None:
 
 def build_prompt(cards: list, events: list, rules: list, glossary: str,
                  contexts: list, recent: list, n_topics: int, today: date,
-                 claims: list = None, voice: list = None) -> str:
+                 claims: list = None, voice: list = None,
+                 tms: list = None) -> str:
     # 原文全文は渡さない（プロンプトが肥大し生成が遅くなるため）。
     # 執筆に要るのは「何が分かったか」と「何を言ってはいけないか」。
     # 原文は検証工程で使う。
@@ -505,6 +535,17 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
     else:
         voice_txt = "（まだありません）"
 
+    # 体験された方の声。数値では出てこない実感を書くための材料。
+    if tms:
+        ts = [f"- {x['id']}（{x['label']}／{x['condition']}のとき）「{x['text']}」" for x in tms]
+        tm_txt = "\n".join(ts)
+        tm_txt += ("\n\n**これは個人の感想であり、効果の証拠ではありません。**"
+                   "\n引用するときは「個人の感想です」と添えてください。"
+                   "\n氏名は原本にありますがカードには入れていません。**個人を特定できる形にしないでください。**"
+                   "\n※ この声は EV-0013 / EV-0014 と同じ試験の参加者のものです。")
+    else:
+        tm_txt = "（まだありません）"
+
     ev_lines = []
     for e in events:
         ev_lines.append(f"- {e['date']} **{e['name']}**")
@@ -551,6 +592,10 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
 # 協会の言葉・思想（研究とは別の材料）
 
 {voice_txt}
+
+# 体験された方の声（効果の証拠ではない）
+
+{tm_txt}
 
 # 承認済みの言い回し（そのまま使ってよい）
 
@@ -1223,7 +1268,8 @@ def main() -> int:
     logger.info(
         f"① 収集: カード{len(cards)}枚 / イベント{len(events)}件 / "
         f"ルール{len(rules)}件 / 用語{n_terms}件 / "
-        f"協会の言葉{len(load_voice())}件 / 承認済み言い回し{len(load_claims())}件"
+        f"協会の言葉{len(load_voice())}件 / 体験者の声{len(load_testimonials())}件 / "
+        f"承認済み言い回し{len(load_claims())}件"
     )
     if args.test_cards:
         logger.warning("!! --test-cards: 未承認カードを使用しています。生成物は本番利用不可です")
@@ -1234,7 +1280,7 @@ def main() -> int:
         logger.info(f"①-c 直近の記事 {len(recent)}件を重複回避のため参照")
     claims = load_claims()
     prompt = build_prompt(cards, events, rules, glossary, contexts, recent,
-                          args.topics, date.today(), claims, load_voice())
+                          args.topics, date.today(), claims, load_voice(), load_testimonials())
     posts = generate(prompt)
     logger.info(f"② 執筆: {len(posts)}本を生成")
 
