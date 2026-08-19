@@ -65,16 +65,37 @@ def main() -> int:
         print("PDFから抽出してください: pdftotext -layout <pdf> knowledge/_extract/<name>.txt")
         return 1
 
+    # PDF から抽出した原文。従来はこれだけを照合対象にしていた
     corpus = norm(
         "".join(
             p.read_text(encoding="utf-8", errors="replace") for p in EXTRACT.glob("*.txt")
         )
     )
 
+    # 2026-08-19: 出典が docs/sources/ のカード（NotebookLM や公式サイトから
+    # 逐語で起こしたもの）が増えた。それらは _extract に無いため、
+    # カードごとに source_file と related_sources も照合対象へ加える。
+    ROOT = EVID.parent.parent
+
+    def corpus_for(text: str) -> str:
+        extra = []
+        for key in ("source_file",):
+            v = field(text, key)
+            f = ROOT / v
+            if v and f.is_file():
+                extra.append(f.read_text(encoding="utf-8", errors="replace"))
+        for m in re.finditer(r"^  - (\S+\.md)", text, re.M):
+            f = ROOT / m.group(1)
+            if f.is_file():
+                extra.append(f.read_text(encoding="utf-8", errors="replace"))
+        return corpus + norm("".join(extra)) if extra else corpus
+
     failed = False
     for card in sorted(EVID.glob("EV-*.md")):
         text = card.read_text(encoding="utf-8")
         problems = []
+
+        card_corpus = corpus_for(text)
 
         # --- 1. verbatim 内の数値が原文に実在するか ---
         vb = block(text, "verbatim")
@@ -82,7 +103,7 @@ def main() -> int:
             problems.append("verbatim が空")
         else:
             ghosts = sorted(
-                {n for n in NUM.findall(norm(vb)) if n not in TRIVIAL and not in_corpus(n, corpus)}
+                {n for n in NUM.findall(norm(vb)) if n not in TRIVIAL and not in_corpus(n, card_corpus)}
             )
             if ghosts:
                 problems.append(f"原文にない数値: {', '.join(ghosts)}")
@@ -90,7 +111,7 @@ def main() -> int:
         # --- 2. findings 内の value も同様に照合 ---
         for val in re.findall(r'^\s*value:\s*"(.+)"\s*$', text, re.M):
             ghosts = sorted(
-                {n for n in NUM.findall(norm(val)) if n not in TRIVIAL and not in_corpus(n, corpus)}
+                {n for n in NUM.findall(norm(val)) if n not in TRIVIAL and not in_corpus(n, card_corpus)}
             )
             if ghosts:
                 problems.append(f"findings.value に原文にない数値: {', '.join(ghosts)}")
