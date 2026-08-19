@@ -457,7 +457,14 @@ def _build_ig_post_url(post_id):
 def run_scheduled(dry_run=False):
     """予約投稿を実行"""
     logger.info("=" * 50)
-    logger.info(f"IG自動投稿チェック開始 {'(ドライラン)' if dry_run else ''}")
+    logger.info(f"Instagram自動投稿チェック開始 {'(ドライラン)' if dry_run else ''}")
+
+    # 緊急停止スイッチ。X 側と同じ仕組み。
+    if not dry_run:
+        from posting_switch import is_posting_enabled
+        if not is_posting_enabled(logger):
+            logger.info("投稿スイッチにより中止しました")
+            return
 
     token, account_id = get_ig_credentials()
     if not token:

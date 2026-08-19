@@ -28,6 +28,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -116,6 +117,31 @@ def list_images(sess, folder_id: str) -> list:
         "fields": "files(id,name,mimeType,size,imageMediaMetadata(width,height))",
         "pageSize": 300, "orderBy": "name"})
     return r.json().get("files", [])
+
+
+def with_retry(fn, what: str, tries: int = 4):
+    """通信断で落ちないようにする。
+
+    この環境では名前解決ごと失敗することがあり（[Errno 8]）、
+    1回の失敗で全フォルダが巻き添えになっていた（2026-08-19 に2度発生）。
+    """
+    last = None
+    for i in range(1, tries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            last = e
+            if i == tries:
+                break
+            wait = 10 * (2 ** (i - 1))     # 10 → 20 → 40秒
+            print(f"    {what} に失敗（{i}/{tries}）: {type(e).__name__}。{wait}秒待って再試行",
+                  file=sys.stderr)
+            time.sleep(wait)
+    raise last
+
+
+def list_images_retry(sess, folder_id: str) -> list:
+    return with_retry(lambda: list_images(sess, folder_id), "一覧の取得")
 
 
 def download(sess, f: dict, dest: Path) -> Path:
@@ -257,7 +283,7 @@ def main() -> int:
             print("--folder-id でIDを直接指定できます（--list で一覧）")
             return 1
 
-    imgs = list_images(sess, fid)
+    imgs = list_images_retry(sess, fid)
     if args.limit:
         imgs = imgs[:args.limit]
     print(f"{args.folder}: {len(imgs)}枚を処理します\n")
@@ -277,8 +303,8 @@ def main() -> int:
             skipped += 1
             continue
         try:
-            path = download(sess, f, CACHE)
-            d = describe(path, f["name"], args.folder)
+            path = with_retry(lambda: download(sess, f, CACHE), "画像の取得")
+            d = with_retry(lambda: describe(path, f["name"], args.folder), "内容の読み取り")
             card = write_card(n, f, args.folder, d)
             # フィールド名「要確認の理由」に誤ヒットしないよう、値だけを見る
             m = re.search(r"^使用可否:\s*(\S+)", card.read_text(encoding="utf-8"), re.M)

@@ -281,6 +281,14 @@ def run_scheduled(dry_run=False):
     logger.info("=" * 50)
     logger.info(f"X自動投稿チェック開始 {'(ドライラン)' if dry_run else ''}")
 
+    # 緊急停止スイッチ。シートの『運用スイッチ』B2 が『停止』なら1件も投稿しない。
+    # 読めなかった場合も停止側に倒す（投稿は取り消せないため）。
+    if not dry_run:
+        from posting_switch import is_posting_enabled
+        if not is_posting_enabled(logger):
+            logger.info("投稿スイッチにより中止しました")
+            return
+
     ws = get_sheet()
     posts = get_scheduled_posts(ws)
     notifier = build_default_notifier()

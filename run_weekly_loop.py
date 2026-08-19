@@ -352,6 +352,66 @@ def load_events(gc, within_days: int = 21) -> list:
     return sorted(best.values(), key=lambda x: x["date"])
 
 
+# --------------------------------------------------------------------------
+# 重複の検出（生成後にかける）
+# --------------------------------------------------------------------------
+
+# 冒頭がこれ以上似ていたら書き直させる。実測で 0.77 の組が存在した
+# （TEST-ART-0004 と 0007。どちらも「寝苦しい夜が続きます」で始まる）
+HEAD_LIMIT = 0.62
+WHOLE_LIMIT = 0.55
+HEAD_CHARS = 60
+
+
+def similarity(a: str, b: str) -> tuple:
+    """冒頭と全体の似ぐあいを返す。"""
+    from difflib import SequenceMatcher
+    na, nb = norm(a), norm(b)
+    head = SequenceMatcher(None, na[:HEAD_CHARS], nb[:HEAD_CHARS]).ratio()
+    whole = SequenceMatcher(None, na, nb).ratio()
+    return head, whole
+
+
+def find_duplicates(posts: list, recent: list) -> list:
+    """生成物が過去記事や互いと似すぎていないかを見る。
+
+    プロンプトで「使い回さないでください」と伝えるだけでは防げなかった
+    （2026-07-31 と 08-01 の X が同一の書き出しになった）。
+    出力を機械で見て、超えていたら書き直させる。
+    """
+    hits = []
+    for i, p in enumerate(posts):
+        body = p.get("本文", "")
+        if not body:
+            continue
+        media = p.get("媒体", "")
+
+        # 過去の記事と
+        for r in recent:
+            if r.get("媒体") != media:
+                continue
+            past = r.get("書き出し", "")
+            if not past:
+                continue
+            head, _ = similarity(body[:HEAD_CHARS], past)
+            if head >= HEAD_LIMIT:
+                hits.append({"index": i, "媒体": media, "相手": "過去の記事",
+                             "冒頭": past, "類似度": round(head, 2)})
+                break
+
+        # 同じ回の別の記事と（同一媒体でなくても、内容が同じなら困る）
+        for j, q in enumerate(posts):
+            if j <= i or not q.get("本文"):
+                continue
+            head, whole = similarity(body, q["本文"])
+            if head >= HEAD_LIMIT or whole >= WHOLE_LIMIT:
+                hits.append({"index": i, "媒体": media,
+                             "相手": f"同じ回の {q.get('媒体', '?')}",
+                             "冒頭": q["本文"][:40], "類似度": round(max(head, whole), 2)})
+                break
+    return hits
+
+
 def load_recent(gc, limit: int = 24) -> list:
     """直近に生成した記事の「媒体・切り口・使用カード」を取り出す。
 
@@ -1000,17 +1060,67 @@ def revise(posts: list, reviews: list, base_prompt: str, timeout: int = 900) -> 
 # ③ 検証（執筆とは別工程。自己採点にしない）
 # --------------------------------------------------------------------------
 
+def rewrite_duplicates(posts: list, dups: list, base_prompt: str,
+                       timeout: int = 900) -> list:
+    """似すぎている記事だけを書き直させる。
+
+    全部を作り直すと通っていた記事まで変わるので、対象を絞って渡す。
+    """
+    targets = sorted({d["index"] for d in dups})
+    lines = []
+    for d in dups:
+        lines.append(f"- {d['index'] + 1}本目（{d['媒体']}）は{d['相手']}と"
+                     f"似すぎています（類似度 {d['類似度']}）。"
+                     f"似ている相手の冒頭:「{d['冒頭']}」")
+
+    req = (base_prompt + "\n\n# 書き直しの依頼\n\n"
+           + "先ほど次の記事を作りましたが、重複が見つかりました。\n\n"
+           + json.dumps([posts[i] for i in targets], ensure_ascii=False, indent=1)
+           + "\n\n## 指摘\n\n" + "\n".join(lines)
+           + "\n\n**書き出しを変えるだけでは足りません。**"
+             "\n切り口そのものを変えてください。別のカードを使う、別の場面を描く、"
+             "別の問いから始める、のいずれかで作り直してください。"
+             "\n\n上と同じ形式のJSONで、"
+           f"{len(targets)}本だけを出力してください。")
+
+    proc = run_llm(["claude", "-p", req, "--output-format", "text"],
+                   "重複の書き直し", timeout, timeout + 300)
+    fixed = _extract_json(proc.stdout, "書き直し")
+    out = list(posts)
+    for k, i in enumerate(targets):
+        if k < len(fixed):
+            out[i] = fixed[k]
+    return out
+
+
+def known_card_ids() -> set:
+    """knowledge/ 配下に実在するカードIDを全部集める。
+
+    層（evidence / voice / testimonial / claims / images / editorial）が
+    増えても書き足さずに済むよう、ファイル名から拾う。
+    """
+    ids = set()
+    base = ROOT / "knowledge"
+    if not base.is_dir():
+        return ids
+    for d in base.iterdir():
+        if not d.is_dir() or d.name.startswith("_"):
+            continue
+        for f in d.glob("*.md"):
+            if re.fullmatch(r"[A-Z]{2}-\d{4}", f.stem):
+                ids.add(f.stem)
+    return ids
+
+
 def verify(post: dict, cards: dict, claims: list = None) -> dict:
     """機械チェック。問題を列挙し、分級を決める。"""
     body = post.get("本文", "")
     problems = []
 
-    # 参照先は Evidence だけではない。Voice（VO-）と Approved claim（AC-）もある。
-    # 2026-08-18: Voice を追加した際、ここが EV- しか見ておらず、
-    # 思想を素材にした記事がすべて「存在しないカードID」と誤検出された。
-    known = set(cards)
-    known |= {v["id"] for v in load_voice()}
-    known |= {c["id"] for c in (claims or [])}
+    # 参照先は Evidence だけではない。層を足すたびにここへ書き足す方式にしていたら
+    # 2度続けて忘れた（2026-08-18 に VO-、翌日 TM-）。
+    # 層の一覧から自動で集める形にして、次に層が増えても漏れないようにする。
+    known = set(cards) | {c["id"] for c in (claims or [])} | known_card_ids()
 
     used = [i for i in post.get("使用カードID", []) if i]
     for cid in used:
@@ -1052,6 +1162,10 @@ def verify(post: dict, cards: dict, claims: list = None) -> dict:
                 continue
             problems.append(f"NG表現（{label}）: {m.group(0)}")
             break
+
+    # 書き直しても解消しなかった重複は、人の目に留まるようにする
+    if post.get("重複の疑い"):
+        problems.append(f"重複の疑い: {post['重複の疑い']}")
 
     media = post.get("媒体", "")
     lo, hi = LIMITS.get(media, (0, 10**9))
@@ -1295,6 +1409,34 @@ def main() -> int:
             logger.warning("初稿をそのまま使います。")
     else:
         logger.info("②-b/②-c: --no-review のためスキップ")
+
+    # ②-d 重複の棄却
+    #
+    # プロンプトで「使い回さないでください」と伝えるだけでは防げなかった。
+    # 出力を機械で見て、似すぎているものは書き直させる。
+    dups = find_duplicates(posts, recent)
+    if dups:
+        logger.warning(f"②-d 重複: {len(dups)}本が過去または互いと似ています")
+        for d in dups:
+            logger.warning(f"      {d['媒体']} が{d['相手']}と類似{d['類似度']}"
+                           f"「{d['冒頭'][:34]}」")
+        try:
+            posts = rewrite_duplicates(posts, dups, prompt)
+            again = find_duplicates(posts, recent)
+            if again:
+                logger.warning(f"②-d 書き直し後もまだ {len(again)}本が類似しています。"
+                               f"人が確認してください")
+                for d in again:
+                    posts[d["index"]]["重複の疑い"] = (
+                        f"{d['相手']}と類似{d['類似度']}")
+            else:
+                logger.info("②-d 書き直しで重複が解消しました")
+        except Exception as e:
+            logger.warning(f"②-d 書き直しに失敗しました: {type(e).__name__}: {e}")
+            for d in dups:
+                posts[d["index"]]["重複の疑い"] = f"{d['相手']}と類似{d['類似度']}"
+    else:
+        logger.info("②-d 重複: なし")
 
     # ③ 検証
     cmap = {c["id"]: c for c in cards}
