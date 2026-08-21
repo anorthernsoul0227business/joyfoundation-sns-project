@@ -22,6 +22,7 @@ import logging
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -907,35 +908,71 @@ def generate(prompt: str, timeout: int = 900) -> list:
 # レビュアーには事実を足す権限を与えない（根拠カードの外に出ないため）。
 # --------------------------------------------------------------------------
 
-def run_llm(cmd: list, label: str, timeout: int, wall_limit: int = None) -> str:
-    """LLM CLI を呼び、実時間（wall clock）でも打ち切る。
+# スリープ・通信断でよく出る文言。これらは待てば直るので再試行する
+TRANSIENT = (
+    "went to sleep", "Request timed out", "Connection closed",
+    "Unable to connect", "ENOTFOUND", "ECONNRESET", "socket hang up",
+    "Execution error", "network", "Overloaded",
+)
+
+
+def _is_transient(msg: str) -> bool:
+    low = msg.lower()
+    return any(w.lower() in low for w in TRANSIENT)
+
+
+def run_llm(cmd: list, label: str, timeout: int, wall_limit: int = None,
+            tries: int = 3) -> str:
+    """LLM CLI を呼ぶ。実時間で打ち切り、一時的な失敗は再試行する。
 
     subprocess の timeout は time.monotonic() で計られ、macOS ではスリープ中に
     進まない。launchd で無人実行するとスリープを跨ぐことがあり、実時間で数時間
     経過してしまう（2026-07-31 に実際に 9,168秒かかって失敗した）。
     そのため実時間でも上限を設ける。
+
+    2026-08-20 追記: 蓋を閉じて運用する場合、スリープを跨ぐのが前提になる。
+    実際に「Your computer went to sleep mid-response」で工程ごと落ちた。
+    スリープ・通信断は待てば直るので、再試行を入れる。
     """
     wall_limit = wall_limit or timeout * 2
-    started = datetime.now()
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        raise RuntimeError(f"{label}: {timeout}秒でタイムアウトしました")
+    last = ""
 
-    elapsed = (datetime.now() - started).total_seconds()
-    if elapsed > wall_limit:
-        logger.warning(
-            f"{label}: 実時間で {elapsed:.0f}秒かかりました"
-            f"（上限 {wall_limit}秒）。スリープを跨いだ可能性があります"
-        )
-    if proc.returncode != 0:
-        raise RuntimeError(f"{label}: 実行に失敗しました（{elapsed:.0f}秒）: {proc.stderr[:300]}")
+    for attempt in range(1, tries + 1):
+        started = datetime.now()
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            elapsed = (datetime.now() - started).total_seconds()
+        except subprocess.TimeoutExpired:
+            elapsed = (datetime.now() - started).total_seconds()
+            last = f"{timeout}秒でタイムアウトしました"
+            proc = None
 
-    out = proc.stdout.strip()
-    # claude -p は失敗時にも returncode 0 で短いメッセージだけ返すことがある
-    if len(out) < 80 or out in ("Request timed out", "Execution error"):
-        raise RuntimeError(f"{label}: 応答が不正です（{elapsed:.0f}秒）: {out[:120]!r}")
-    return out
+        if proc is not None:
+            if elapsed > wall_limit:
+                logger.warning(
+                    f"{label}: 実時間で {elapsed:.0f}秒かかりました"
+                    f"（上限 {wall_limit}秒）。スリープを跨いだ可能性があります"
+                )
+            out = proc.stdout.strip()
+            if proc.returncode != 0:
+                # claude CLI は API エラーを stdout に書くため、両方を見る
+                last = (proc.stderr.strip() or out)[:300] or "(出力なし)"
+            elif len(out) < 80 or out in ("Request timed out", "Execution error"):
+                last = f"応答が不正です: {out[:160]!r}"
+            else:
+                if attempt > 1:
+                    logger.info(f"{label}: {attempt}回目で成功しました")
+                return out
+
+        if attempt < tries and _is_transient(last):
+            wait = 60 * attempt          # 60 → 120秒
+            logger.warning(f"{label}: 失敗（{attempt}/{tries}）: {last[:160]}")
+            logger.warning(f"{label}: 一時的な障害とみて {wait}秒待って再試行します")
+            time.sleep(wait)
+            continue
+        break
+
+    raise RuntimeError(f"{label}: 実行に失敗しました（{tries}回試行）: {last[:300]}")
 
 
 def _extract_json(text: str, what: str):
@@ -993,16 +1030,14 @@ def review_with_codex(posts: list, timeout: int = 900) -> list:
     started = datetime.now()
     # 実行用コピー（~/joyfoundation-loop-runtime）は git リポジトリではないため
     # --skip-git-repo-check が要る。付けないと codex が起動を拒否する
-    proc = subprocess.run(
-        ["codex", "exec", "--skip-git-repo-check", prompt],
-        capture_output=True, text=True, timeout=timeout, cwd=str(ROOT),
-    )
+    # 2026-08-20: ここも subprocess を直接呼んでおり再試行が無かった。
+    # スリープや通信断で落ちるとレビューごと飛ぶので run_llm に統一する。
+    out = run_llm(["codex", "exec", "--skip-git-repo-check", prompt],
+                  "Codexレビュー", timeout, timeout + 300)
     elapsed = (datetime.now() - started).total_seconds()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    (LOGDIR / f"review_codex_{stamp}.txt").write_text(proc.stdout, encoding="utf-8")
-    if proc.returncode != 0:
-        raise RuntimeError(f"codex の実行に失敗しました: {proc.stderr[:400]}")
-    reviews = _extract_json(proc.stdout, "Codexレビュー")
+    (LOGDIR / f"review_codex_{stamp}.txt").write_text(out, encoding="utf-8")
+    reviews = _extract_json(out, "Codexレビュー")
     logger.info(f"②-b レビュー取得（{elapsed:.0f}秒 / {len(reviews)}件）")
     return reviews
 
@@ -1044,14 +1079,15 @@ def revise(posts: list, reviews: list, base_prompt: str, timeout: int = 900) -> 
 
     logger.info("②-c 指摘を反映して改稿します")
     started = datetime.now()
-    proc = subprocess.run(["claude", "-p", prompt, "--output-format", "text"],
-                          capture_output=True, text=True, timeout=timeout, cwd=str(ROOT))
+    # 2026-08-20: ここだけ subprocess を直接呼んでおり、再試行も stdout の確認も
+    # 無かった。スリープを跨いで失敗し、理由が空のまま改稿ごとスキップされた。
+    # 他の工程と同じ run_llm に統一する。
+    out = run_llm(["claude", "-p", prompt, "--output-format", "text"],
+                  "改稿", timeout, timeout + 300)
     elapsed = (datetime.now() - started).total_seconds()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    (LOGDIR / f"revised_{stamp}.txt").write_text(proc.stdout, encoding="utf-8")
-    if proc.returncode != 0:
-        raise RuntimeError(f"改稿に失敗しました: {proc.stderr[:400]}")
-    revised = _extract_json(proc.stdout, "改稿")
+    (LOGDIR / f"revised_{stamp}.txt").write_text(out, encoding="utf-8")
+    revised = _extract_json(out, "改稿")
     logger.info(f"②-c 改稿完了（{elapsed:.0f}秒 / {len(revised)}本）")
     return revised
 
