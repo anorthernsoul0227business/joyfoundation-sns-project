@@ -63,7 +63,16 @@ KILL_SWITCH = ["特別警報", "大雨警報", "暴風警報", "津波", "噴火
 NO_EVENT = re.compile(
     r"(はなく|もなく|はなし|もなし|ありません|ございません|"
     r"されていない|されていません|出ていない|出ていません|"
-    r"未発表|該当なし|発表なし|なし。|なし$)"
+    r"未発表|該当なし|発表なし|なし。|なし$|"
+    r"警報級ゼロ|ゼロ|0件|いずれも注意報|注意報のみ)"
+)
+
+# 「気象特別警報・警報・注意報」は気象庁の**文書名**であって、
+# 発表されたという意味ではない。2026-08-24 にこれを災害と誤読して
+# 通知メールを送った。判定前にこうした定型句を伏せる。
+DOC_NAMES = re.compile(
+    r"気象特別警報・警報・注意報|特別警報・警報・注意報|"
+    r"警報・注意報(?:一覧|情報|文書)?|噴火警戒レベル(?=は)"
 )
 
 # --- Lv2: 投稿停止の判断を人に仰ぐ（年に数回。メール通知する） ---------------
@@ -163,10 +172,17 @@ def kill_hits(data: dict) -> list:
     hits += [w for w in KILL_SWITCH if w in body]
 
     # 根拠: 句に割り、否定されていない句だけを見る
-    for clause in re.split(r"[、。\n]", norm(data.get("根拠", ""))):
+    reason = DOC_NAMES.sub("〈文書名〉", norm(data.get("根拠", "")))
+    for clause in re.split(r"[、。\n]", reason):
         if NO_EVENT.search(clause):
             continue
         hits += [w for w in KILL_SWITCH if w in clause]
+
+    # LLM が重大災害を申告している場合は、根拠文の言い回しに関わらず止める。
+    # Lv2（通知）が鳴るのに Lv1（時事枠の停止）が鳴らない状態を作らないため。
+    declared = data.get("重大災害", {}) or {}
+    if declared.get("該当"):
+        hits.append(declared.get("種別") or "重大災害の申告")
 
     return sorted(set(hits))
 
@@ -216,14 +232,42 @@ def fetch(today: date, timeout: int = 600, retries: int = 3) -> dict:
     raise RuntimeError(f"収集に失敗しました（{retries}回試行）: {last}")
 
 
+def severe_hits(data: dict) -> list:
+    """Lv2 の検知語のうち、否定されていないものを返す。
+
+    kill_hits と同じ考え方。文脈アイテムは本文なので素朴に走査し、
+    `根拠` は「災害が無いこと」の説明であることが多いので句ごとに見る。
+    """
+    hits = []
+    body = norm(json.dumps(data.get("文脈", []), ensure_ascii=False))
+    hits += [w for w in SEVERE if w in body]
+
+    reason = DOC_NAMES.sub("〈文書名〉", norm(data.get("根拠", "")))
+    for clause in re.split(r"[、。\n]", reason):
+        if NO_EVENT.search(clause):
+            continue
+        hits += [w for w in SEVERE if w in clause]
+
+    # 「重大災害」欄の概要は、該当と申告された場合だけ見る
+    declared = data.get("重大災害", {}) or {}
+    if declared.get("該当"):
+        summary = norm(str(declared.get("概要", "")))
+        hits += [w for w in SEVERE if w in summary]
+
+    return sorted(set(hits))
+
+
 def assess_severe(data: dict) -> dict:
     """Lv2（投稿停止の判断が要る規模）に該当するか判定する。
 
     LLMの自己申告と機械的な語句検知の両方を見る。
     どちらか一方でも該当すれば人に判断を仰ぐ（見落としより空振りを選ぶ）。
     """
-    blob = norm(json.dumps(data, ensure_ascii=False))
-    hits = [w for w in SEVERE if w in blob]
+    # 2026-08-24: ここが JSON 全体を素朴に走査しており、
+    # 「特別警報・津波情報なし」という**災害が無いことの説明**を検知して
+    # 誤って通知メールを送った。kill_hits と同じく否定表現を除外する。
+    # 空振りは許すが、毎回空振りすると本当の災害時に無視されるようになる。
+    hits = severe_hits(data)
     declared = data.get("重大災害", {}) or {}
     if not (declared.get("該当") or hits):
         return {}
