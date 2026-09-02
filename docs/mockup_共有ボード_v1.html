@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ジョイファンデーション 共有ボード（画面イメージ v1）</title>
+<style>
+:root{
+  --ground:#F6F7F4; --panel:#FFFFFF; --ink:#171C19; --ink-2:#4A544D; --ink-3:#7C867E;
+  --rule:#DDE2DB; --accent:#2E6A5F; --accent-soft:#E4EDE9; --warn:#9B6B2F; --warn-soft:#F6EDDF;
+  --shadow:0 1px 2px rgba(23,28,25,.05),0 6px 18px rgba(23,28,25,.05);
+  --fs:17px;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs)}
+body{margin:0;background:var(--ground);color:var(--ink);line-height:1.85;
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden}
+
+/* ── ヘッダー ───────────────────────────── */
+.top{background:var(--panel);border-bottom:1px solid var(--rule);padding:.9rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;position:sticky;top:0;z-index:20}
+.brand{font-weight:600;font-size:1.05rem;letter-spacing:.01em}
+.brand small{display:block;color:var(--ink-3);font-size:.72rem;font-weight:400;letter-spacing:.08em}
+.spacer{flex:1}
+.fs-ctrl{display:flex;gap:.4rem;align-items:center;color:var(--ink-3);font-size:.8rem}
+.fs-ctrl button{font:inherit;padding:.35rem .8rem;border:1px solid var(--rule);background:var(--panel);
+  border-radius:999px;cursor:pointer;color:var(--ink-2)}
+.fs-ctrl button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.who{display:flex;align-items:center;gap:.5rem;font-size:.85rem;color:var(--ink-2)}
+.avatar{width:2rem;height:2rem;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+  display:grid;place-items:center;font-weight:600;font-size:.8rem}
+
+/* ── 今日おねがい ───────────────────────── */
+.today{background:var(--accent-soft);border-bottom:1px solid var(--rule);padding:1.1rem 1.5rem;
+  display:flex;align-items:baseline;gap:.9rem;flex-wrap:wrap}
+.today .n{font-size:2rem;font-weight:600;color:var(--accent);line-height:1}
+.today .t{font-size:1.05rem;color:var(--ink)}
+.today .s{color:var(--ink-2);font-size:.85rem}
+
+/* ── 2ペイン ───────────────────────────── */
+.shell{display:grid;grid-template-columns:19rem minmax(0,1fr);gap:0;
+  height:calc(100vh - 8.4rem);min-height:34rem}
+@media(max-width:60rem){.shell{grid-template-columns:1fr;height:auto}}
+
+/* 左：ナビ＋一覧 */
+.side{border-right:1px solid var(--rule);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.nav{padding:.7rem;border-bottom:1px solid var(--rule);display:flex;flex-direction:column;gap:.2rem}
+.nav a{display:flex;align-items:center;gap:.6rem;padding:.65rem .8rem;border-radius:6px;
+  text-decoration:none;color:var(--ink-2);font-size:.95rem}
+.nav a:hover{background:var(--ground)}
+.nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav .ic{width:1.4rem;text-align:center;font-size:1.05rem}
+.nav .cnt{margin-left:auto;background:var(--accent);color:#fff;border-radius:999px;
+  padding:.05rem .55rem;font-size:.75rem;font-weight:600}
+.filters{padding:.7rem .8rem;border-bottom:1px solid var(--rule);display:flex;gap:.35rem;flex-wrap:wrap}
+.chip{font:inherit;font-size:.78rem;padding:.3rem .7rem;border:1px solid var(--rule);background:var(--panel);
+  border-radius:999px;cursor:pointer;color:var(--ink-2)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.list{overflow-y:auto;flex:1;min-height:0}
+.item{padding:.85rem 1rem;border-bottom:1px solid var(--rule);cursor:pointer;display:block;min-width:0}
+.item:hover{background:var(--ground)}
+.item.on{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.item .meta{display:flex;align-items:center;gap:.45rem;font-size:.75rem;color:var(--ink-3);margin-bottom:.25rem}
+.item .ttl{font-size:.92rem;line-height:1.55;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{font-size:.68rem;padding:.1rem .5rem;border-radius:3px;font-weight:600;white-space:nowrap}
+.b-new{background:var(--warn-soft);color:var(--warn)}
+.b-ok{background:var(--accent-soft);color:var(--accent)}
+.b-done{background:#EEF0ED;color:var(--ink-3)}
+.pf{font-weight:600;color:var(--ink-2)}
+
+/* 右：本文 */
+.main{overflow-y:auto;padding:2rem 2.2rem 5rem;min-width:0}
+.doc{max-width:44rem;margin:0 auto}
+.doc h1{font-size:1.35rem;font-weight:600;line-height:1.6;margin:.2rem 0 .6rem;text-wrap:balance}
+.doc .sub{color:var(--ink-3);font-size:.85rem;margin:0 0 1.6rem;display:flex;gap:.8rem;flex-wrap:wrap}
+.body{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:1.8rem 2rem;
+  box-shadow:var(--shadow);white-space:pre-wrap;word-break:break-word;font-size:1.02rem;line-height:2.05}
+.shot{margin:1.2rem 0 0;background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  padding:1rem 1.2rem;box-shadow:var(--shadow)}
+.shot .cap{font-size:.78rem;color:var(--ink-3);margin-bottom:.6rem;letter-spacing:.06em}
+.ph{aspect-ratio:1/1;max-width:15rem;border-radius:3px;
+  background:repeating-linear-gradient(45deg,#E8EDE9,#E8EDE9 12px,#DDE2DB 12px,#DDE2DB 24px);
+  display:grid;place-items:center;color:var(--ink-3);font-size:.8rem}
+
+/* 折りたたみ */
+details.more{margin-top:1.2rem;border:1px solid var(--rule);border-radius:4px;background:var(--panel)}
+details.more summary{cursor:pointer;padding:.8rem 1.2rem;color:var(--ink-2);font-size:.88rem;list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"▸ ";color:var(--ink-3)}
+details.more[open] summary::before{content:"▾ "}
+.kv{padding:.2rem 1.2rem 1.2rem;display:grid;grid-template-columns:8.5rem minmax(0,1fr);gap:.5rem 1rem;font-size:.88rem}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0;color:var(--ink-2);word-break:break-word}
+
+/* 決めるところ */
+.decide{margin-top:1.8rem;background:var(--panel);border:1px solid var(--rule);border-radius:4px;
+  padding:1.5rem 1.8rem;box-shadow:var(--shadow)}
+.decide h2{font-size:.72rem;letter-spacing:.14em;color:var(--ink-3);margin:0 0 1rem;font-weight:600}
+.btns{display:flex;gap:1rem;flex-wrap:wrap}
+.btn{font:inherit;font-size:1.05rem;font-weight:600;padding:1rem 2rem;border-radius:6px;cursor:pointer;
+  border:1px solid transparent;min-width:13rem}
+.btn-go{background:var(--accent);color:#fff}
+.btn-go:hover{filter:brightness(1.08)}
+.btn-fix{background:var(--panel);color:var(--warn);border-color:var(--warn)}
+.btn-fix:hover{background:var(--warn-soft)}
+.fixbox{margin-top:1.1rem;display:none}
+.fixbox.open{display:block}
+.fixbox textarea{width:100%;min-height:8rem;font:inherit;font-size:.98rem;line-height:1.9;padding:.9rem 1rem;
+  border:1px solid var(--rule);border-radius:4px;background:var(--ground);color:var(--ink);resize:vertical}
+.fixbox .hint{font-size:.82rem;color:var(--ink-3);margin:.5rem 0 .8rem}
+.send{font:inherit;font-weight:600;padding:.7rem 1.6rem;border-radius:6px;border:none;
+  background:var(--ink);color:#fff;cursor:pointer}
+
+/* メモ入口 */
+.memo{position:fixed;right:1.6rem;bottom:1.6rem;z-index:30}
+.memo button{font:inherit;font-size:1rem;font-weight:600;padding:.95rem 1.6rem;border-radius:999px;border:none;
+  background:var(--ink);color:#fff;cursor:pointer;box-shadow:0 6px 20px rgba(23,28,25,.22)}
+.note{position:fixed;inset:auto 1.6rem 1.6rem auto;width:min(26rem,calc(100vw - 3rem));background:var(--panel);
+  border:1px solid var(--rule);border-radius:8px;box-shadow:0 12px 40px rgba(23,28,25,.2);padding:1.2rem;display:none;z-index:31}
+.note.open{display:block}
+.note h3{margin:0 0 .3rem;font-size:1rem;font-weight:600}
+.note p{margin:0 0 .8rem;font-size:.82rem;color:var(--ink-3)}
+.note textarea{width:100%;min-height:6.5rem;font:inherit;padding:.8rem;border:1px solid var(--rule);
+  border-radius:4px;background:var(--ground);resize:vertical}
+.note .row{display:flex;gap:.6rem;margin-top:.8rem;align-items:center}
+.note .row button{font:inherit;padding:.6rem 1.2rem;border-radius:6px;border:none;cursor:pointer}
+.note .primary{background:var(--accent);color:#fff;font-weight:600}
+.note .ghost{background:transparent;color:var(--ink-3);border:1px solid var(--rule)}
+
+/* 注釈 */
+.note-bar{background:#FFF9E8;border-bottom:1px solid #EADFBC;color:#6B5626;padding:.6rem 1.5rem;font-size:.82rem}
+</style></head><body>
+
+<div class="note-bar">これは<strong>画面イメージ（モック）</strong>です。データはすべてサンプルで、ボタンを押しても実際には何も起きません。</div>
+
+<div class="top">
+  <div class="brand">ジョイファンデーション 共有ボード<small>SOUND HEALING / JOY FOUNDATION</small></div>
+  <div class="spacer"></div>
+  <div class="fs-ctrl">文字の大きさ
+    <button onclick="fs('17px',this)" class="on">標準</button>
+    <button onclick="fs('19px',this)">大きく</button>
+    <button onclick="fs('22px',this)">もっと大きく</button>
+  </div>
+  <div class="who"><span class="avatar">喜</span>喜田 圭一郎 さん</div>
+</div>
+
+<div class="today">
+  <span class="n">3</span>
+  <span class="t">件、確認をおねがいします</span>
+  <span class="s">（前回の確認 8月28日 / 投稿予定 9月3日・5日）</span>
+</div>
+
+<div class="shell">
+  <!-- 左 -->
+  <nav class="side">
+    <div class="nav">
+      <a href="#" class="on"><span class="ic">📄</span>記事の確認<span class="cnt">3</span></a>
+      <a href="#"><span class="ic">💡</span>思いつきメモ</a>
+      <a href="#"><span class="ic">📅</span>イベント</a>
+      <a href="#"><span class="ic">📚</span>資料・お知らせ</a>
+    </div>
+    <div class="filters">
+      <button class="chip on">未対応だけ</button>
+      <button class="chip">今週</button>
+      <button class="chip">すべて</button>
+    </div>
+    <div class="list">
+      <div class="item on" onclick="pick(this,0)">
+        <div class="meta"><span class="pf">Instagram</span>・9月3日<span class="badge b-new">未確認</span></div>
+        <div class="ttl">【眠れない夜に、音がしてくれること】</div>
+      </div>
+      <div class="item" onclick="pick(this,1)">
+        <div class="meta"><span class="pf">Instagram</span>・9月5日<span class="badge b-new">未確認</span></div>
+        <div class="ttl">【骨は、振動を覚えている】70代・80代の6か月</div>
+      </div>
+      <div class="item" onclick="pick(this,2)">
+        <div class="meta"><span class="pf">X</span>・9月5日<span class="badge b-new">未確認</span></div>
+        <div class="ttl">ここちよい音の日／9月20日（土）無料体験のご案内</div>
+      </div>
+      <div class="item" onclick="pick(this,3)">
+        <div class="meta"><span class="pf">Instagram</span>・8月29日<span class="badge b-ok">直しました</span></div>
+        <div class="ttl">【虫の声を「聴く」のは、日本人だけ？】</div>
+      </div>
+      <div class="item" onclick="pick(this,3)">
+        <div class="meta"><span class="pf">X</span>・8月27日<span class="badge b-done">投稿済</span></div>
+        <div class="ttl">ファシリテーター認定研修 第89期 受付開始</div>
+      </div>
+      <div class="item" onclick="pick(this,3)">
+        <div class="meta"><span class="pf">Instagram</span>・8月25日<span class="badge b-done">投稿済</span></div>
+        <div class="ttl">【水は、音を映す】400倍で見た60分</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 右 -->
+  <main class="main">
+    <div class="doc">
+      <h1 id="h">Instagram ／ 9月3日（水）に投稿予定</h1>
+      <p class="sub"><span>記事番号 IG-2609-03</span><span>ふりがな付きで読む</span><span>印刷する</span></p>
+
+      <div class="body" id="body">【眠れない夜に、音がしてくれること】
+
+布団に入ってからも、
+頭の中だけが動き続ける。
+
+そんな夜はありませんか。
+
+━━━━━━━━━━━━━━
+
+私たちは、自然音が
+自律神経にどう働くかを
+調べてきました。
+
+2016年、12歳から48歳までの
+9名の方にご協力いただいた
+測定です。
+
+━━━━━━━━━━━━━━
+
+わかったのは、
+交感神経と副交感神経の
+両方の働きが上がったこと。
+
+眠るために片方を
+抑えこむのではなく、
+どちらも整っていく。
+
+体が本来もっている
+切り替えの力が、
+戻ってくるような変化でした。
+
+━━━━━━━━━━━━━━
+
+音は、何かを治すものでは
+ありません。
+
+ただ、自分の体の声に
+耳がすむようになる。
+
+そのきっかけには
+なれると思っています。
+
+━━━━━━━━━━━━━━
+
+毎月第3土曜日「ここちよい音の日」で
+実際に体験していただけます。
+無料です。プロフィールのリンクから。
+
+#サウンドヒーリング #自然音 #自律神経
+#睡眠 #ここちよい音の日 #ヒーリング
+#音のちから #セルフケア #呼吸
+#自由が丘 #体感音響 #harmonicrevolution</div>
+
+      <div class="shot">
+        <div class="cap">いっしょに出す写真</div>
+        <div class="ph">森の朝もや<br>（2019年 協会誌 p.4）</div>
+      </div>
+
+      <details class="more">
+        <summary>くわしい情報（ふだんは見なくて大丈夫です）</summary>
+        <dl class="kv">
+          <dt>もとにした資料</dt><dd>自律神経機能への影響（2016年・被験者9名）／EV-0042</dd>
+          <dt>この写真を選んだ理由</dt><dd>夜の話だが暗い写真は沈むため、明け方の光を選んだ。人物なしで肖像権の確認が不要</dd>
+          <dt>分級</dt><dd>A：確認済みカードの言いかえのみ</dd>
+          <dt>文字数</dt><dd>487文字（決めた範囲 400〜600文字）</dd>
+          <dt>作成</dt><dd>2026年9月1日 9:08 ／ 康二郎さん確認ずみ</dd>
+        </dl>
+      </details>
+
+      <div class="decide">
+        <h2>どうしますか</h2>
+        <div class="btns">
+          <button class="btn btn-go" onclick="alert('（モックです）承認され、9月3日に自動投稿されます。')">このまま出す</button>
+          <button class="btn btn-fix" onclick="document.getElementById('fx').classList.toggle('open')">直したいところがある</button>
+        </div>
+        <div class="fixbox" id="fx">
+          <p class="hint">気になったところだけ、ふつうの言葉でお書きください。分類や記号は不要です。</p>
+          <textarea placeholder="例：「治すものではありません」は、もう少しやわらかく言いたい。&#10;例：9名だと少なく見えるので、人数は書かないでほしい。"></textarea>
+          <div style="margin-top:.8rem"><button class="send" onclick="alert('（モックです）康二郎さんに届きます。')">これで送る</button></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="memo"><button onclick="document.getElementById('nt').classList.toggle('open')">💡 思いついたことを書く</button></div>
+<div class="note" id="nt">
+  <h3>思いつきメモ</h3>
+  <p>一行でも大丈夫です。あとで康二郎さんが形にします。</p>
+  <textarea placeholder="例：ハワイの話、そろそろ出してもいい頃かもしれない"></textarea>
+  <div class="row">
+    <button class="primary" onclick="alert('（モックです）メモが共有されます。')">送る</button>
+    <button class="ghost" onclick="document.getElementById('nt').classList.remove('open')">閉じる</button>
+    <span style="margin-left:auto;color:var(--ink-3);font-size:.8rem">🎤 声で書くことも検討中</span>
+  </div>
+</div>
+
+<script>
+function fs(v,b){document.documentElement.style.setProperty('--fs',v);
+  document.querySelectorAll('.fs-ctrl button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+const D=[
+ {h:'Instagram ／ 9月3日（水）に投稿予定'},
+ {h:'Instagram ／ 9月5日（金）に投稿予定'},
+ {h:'X ／ 9月5日（金）に投稿予定'},
+ {h:'（モックのため、この記事の本文は用意していません）'}
+];
+function pick(el,i){document.querySelectorAll('.item').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');document.getElementById('h').textContent=D[i].h;
+  document.querySelector('.main').scrollTop=0;}
+</script>
+</body></html>
