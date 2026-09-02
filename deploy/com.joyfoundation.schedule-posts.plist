@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.joyfoundation.schedule-posts</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/kitakoujirou/agent/loop/run_schedule.sh</string>
+    </array>
+
+    <!-- 毎日 8:00。投稿は 12:00 なので、その4時間前までに枠を決めておく。
+         圭一郎さんが夜に承認しても、翌朝には予定が入る -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <!-- 承認済みが無ければ何もしないので、起動時に走っても害はない。
+         Mac mini の再起動後に予定が止まったままにならないよう付けておく -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kitakoujirou/agent/loop</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/schedule_out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/schedule_err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/kitakoujirou/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/kitakoujirou</string>
+    </dict>
+</dict>
+</plist>

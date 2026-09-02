@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.joyfoundation.weekly-loop</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/kitakoujirou/agent/loop/run_loop.sh</string>
+    </array>
+
+    <!-- 月・水・金の朝9時。MacBook 時代の設定をそのまま引き継ぐ -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <!-- 投稿ジョブと違い RunAtLoad は付けない。
+         登録しただけで記事3本が走り出すと、意図しない生成になるため -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kitakoujirou/agent/loop</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/launchd_out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/launchd_err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/kitakoujirou/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/kitakoujirou</string>
+    </dict>
+</dict>
+</plist>
