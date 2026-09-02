@@ -13,6 +13,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.body.classList.toggle("help-off", !helpModeEnabled);
   }, [helpModeEnabled]);
 
+  // 共有ボードは圭一郎さん向けの独自ヘッダーを持つので、共通ヘッダーは出さない
+  if (pathname === "/board" || pathname.startsWith("/board/")) {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <AppHeader />

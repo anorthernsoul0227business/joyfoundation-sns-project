@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { HelpModeToggle } from "./HelpModeToggle";
 import { NotificationBell } from "./NotificationBell";
-import { logout } from "../lib/api-client";
+import { signOut } from "../lib/auth";
 import { useAuthStore } from "../stores/auth";
 
 const navItems = [
@@ -35,7 +35,7 @@ export function AppHeader() {
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   async function handleLogout() {
-    await logout();
+    await signOut();
     router.replace("/login");
   }
 

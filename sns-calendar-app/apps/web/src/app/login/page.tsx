@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { AuthCard } from "../../components/AuthCard";
 import { AuthField } from "../../components/AuthField";
-import { ApiError, login } from "../../lib/api-client";
+import { AuthError, signIn } from "../../lib/auth";
 import { useAuthStore } from "../../stores/auth";
 
 const loginSchema = z.object({
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setRedirect(searchParams.get("redirect") || "/");
+    setRedirect(searchParams.get("redirect") || "/board");
   }, []);
 
   useEffect(() => {
@@ -48,10 +48,10 @@ export default function LoginPage() {
 
   async function onSubmit(values: LoginFormValues) {
     try {
-      await login(values);
+      await signIn(values);
       router.replace(redirect);
     } catch (error) {
-      if (error instanceof ApiError) {
+      if (error instanceof AuthError) {
         setError("password", {
           message: error.message,
           type: "server",
