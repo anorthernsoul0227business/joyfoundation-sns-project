@@ -29,6 +29,8 @@ from pathlib import Path
 
 import gspread
 
+import supabase_store
+
 ROOT = Path(__file__).resolve().parent
 EVID = ROOT / "knowledge" / "evidence"
 RULES = ROOT / "knowledge" / "editorial"
@@ -40,9 +42,9 @@ TAB_BREAKDOWN = "週次_内訳"
 EVENT_MASTER_TAB = "イベント予定"          # 予定の正本
 EVENT_TABS = [EVENT_MASTER_TAB, "Xイベント投稿", "IGイベント投稿"]
 
-# このスクリプトが書き込んでよい唯一のステータス。投稿トリガーの値とは別物
-STATUS_DRAFT = "AI下書き"
-STATUS_NEEDS_CHECK = "要確認あり"
+# 2026-09-02: 記事の保存先を Supabase の articles に移したため、シート用の
+# ステータス文字列は使わなくなった（DB 側は ai_draft / needs_check）。
+# 投稿キューのステータス（「投稿予約」など）はシートのままなので別物。
 
 # 媒体ごとの文字数の目安（CLAUDE.md の投稿ルールに準拠）
 # 2026-08-18 変更。実績のある過去のIG投稿は120〜150字だったが、
@@ -419,6 +421,14 @@ def load_recent(gc, limit: int = 24) -> list:
     同じカードと同じ季節ヒントから毎回生成するため、渡さないと切り口が収束する
     （2026-07-29〜31 の4回で X の導入が「寝苦しい夜」系に3回重複した）。
     """
+    if supabase_store.enabled():
+        try:
+            return supabase_store.load_recent(limit)
+        except Exception as e:
+            # 切り口の重複を避けるための補助情報。取れなくても生成は続けられる
+            logger.warning(f"直近記事の取得に失敗（Supabase）: {type(e).__name__}: {e}")
+            return []
+
     try:
         rows = gc.open_by_key(SPREADSHEET_KEY).worksheet(TAB_REVIEW).get_all_values()
     except Exception:
@@ -1261,36 +1271,27 @@ def verify(post: dict, cards: dict, claims: list = None) -> dict:
 # --------------------------------------------------------------------------
 
 def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> int:
-    sh = gc.open_by_key(SPREADSHEET_KEY)
-    rw = sh.worksheet(TAB_REVIEW)
-    bd = sh.worksheet(TAB_BREAKDOWN)
+    """記事を共有ボード（Supabase）へ、内訳をスプレッドシートへ書く。
 
-    existing = rw.get_all_values()
-    start = len(existing) + 1 if len(existing) > 1 else 2
-    seq = sum(1 for r in existing[1:] if r and r[0].strip())
+    2026-09-02: 記事の保存先を 週次_レビュー から Supabase の articles に移した。
+    圭一郎さんの確認はブラウザの共有ボードで行う。内訳（生成の内訳・レビュー指摘）は
+    康二郎さんが見る診断情報なので、当面シートに残す。
+    """
+    sh = gc.open_by_key(SPREADSHEET_KEY)
+    bd = sh.worksheet(TAB_BREAKDOWN)
 
     today = date.today()
     week = f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
-    stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    rows, breakdown = [], []
-    for i, (post, res) in enumerate(zip(posts, results)):
-        aid = f"{'TEST-' if test_mode else ''}ART-{seq + i + 1:04d}"
-        status = STATUS_NEEDS_CHECK if res["problems"] else STATUS_DRAFT
-        body = post.get("本文", "")
-        if test_mode:
-            body = "【ループ検証テスト・投稿しないでください】\n\n" + body
-        imgs = post.get("画像", [])
-        rows.append([
-            aid, week, post.get("媒体", ""), "", res["grade"],
-            ", ".join(post.get("使用カードID", [])),
-            body, status, "", "", "", "", "", stamp,
-            # 1枚目だけを =IMAGE で出す。複数枚は「画像ID」に並べる
-            f'=IMAGE("{imgs[0]["preview"]}")' if imgs else "",
-            " / ".join(i["id"] for i in imgs),
-            imgs[0]["open"] if imgs else "",
-            " ／ ".join(f'{i["id"]}: {i["why"]}' for i in imgs),
-        ])
+    # 記事番号は DB のシーケンスが採る。行数から数えると、行を消したときに
+    # 同じ番号が再発行される（2026-09-02 に ART-0040 が重複していた）
+    inserted = supabase_store.insert_articles(posts, results, week, test_mode)
+    for art in inserted:
+        logger.info(f"      {art['article_no']}: {art['platform']} / {art['status']}")
+
+    breakdown = []
+    for i, (post, res, art) in enumerate(zip(posts, results, inserted)):
+        aid = art["article_no"]
         rv = next((r for r in reviews if r.get("記事番号") == i + 1), {})
         rv_txt = ""
         if rv:
@@ -1320,17 +1321,10 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
                 time.sleep(wait)
         raise last
 
-    write(rw, rows, f"A{start}")
-    # 画像プレビュー列（O）だけは数式として解釈させる。
-    # 本文まで USER_ENTERED にすると、先頭が = や + の行が数式扱いされてしまう。
-    previews = [[r[14]] for r in rows]
-    if any(p[0] for p in previews):
-        write(rw, previews, f"O{start}:O{start + len(rows) - 1}", raw=False)
-
     bd_existing = bd.get_all_values()
     bd_start = len(bd_existing) + 1 if len(bd_existing) > 1 else 2
     write(bd, breakdown, f"A{bd_start}")
-    return len(rows)
+    return len(inserted)
 
 
 # --------------------------------------------------------------------------
@@ -1378,6 +1372,17 @@ def main() -> int:
                 )
         except ValueError:
             pass
+
+    # Supabase の接続情報は .env にある。publish() より前に読んでおく
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(ROOT / ".env")
+    except ImportError:
+        logger.warning("python-dotenv が無いため .env を読めません（環境変数が直接あれば動きます）")
+    if not supabase_store.enabled():
+        logger.error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY が設定されていません。")
+        logger.error("記事の保存先は共有ボード（Supabase）です。.env を確認してください。")
+        return 1
 
     gc = gspread.service_account()
 
@@ -1526,7 +1531,7 @@ def main() -> int:
     else:
         try:
             n = publish(gc, posts, results, reviews, args.test_cards)
-            logger.info(f"④ 投入: 週次_レビュー に {n}行を追加（ステータス: {STATUS_DRAFT}／{STATUS_NEEDS_CHECK}）")
+            logger.info(f"④ 投入: 共有ボードに {n}件の記事を追加（内訳は 週次_内訳 に記録）")
         except Exception as e:
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             rescue = LOGDIR / f"unpublished_{stamp}.json"
@@ -1539,6 +1544,7 @@ def main() -> int:
             return 1
 
     logger.info("完了。投稿は行っていません。")
+    logger.info("圭一郎さんの確認は共有ボード（/board）で行います。")
     logger.info("投稿するには、人が内容を確認し『X投稿キュー』へ移した上で「投稿予約」にする必要があります。")
     return 0
 
