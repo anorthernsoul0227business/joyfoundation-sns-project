@@ -28,6 +28,7 @@ import logging
 import os
 import sys
 import urllib.error
+import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -88,6 +89,47 @@ def normalize(t: str) -> str:
     for a, b in [("ェ", "エ"), ("ォ", "オ"), ("ァ", "ア"), ("ィ", "イ"), ("ゥ", "ウ")]:
         t = t.replace(a, b)
     return t.lower()
+
+
+def series_key(title: str) -> str:
+    """同じ催しをまとめる鍵。
+
+    「スターライトヒーリングマラマハワイ」と「スターライトヒーリングマラマハワイ追加公演」、
+    「食X音 太陽食品…」と「食ｘ音 太陽食品…」のような揺れを同じ催しとして束ねる。
+    1公演ごとに告知すると、9月だけで毎日3〜4回投稿になってしまう。
+    """
+    t = normalize(title)
+    # 回次や「追加公演」は同じ催しの区別なので落とす
+    t = re.sub(r"第?\d+期|追加公演|前半|後半|\d+月\d+日|\d+日|[（(].*?[）)]|[月火水木金土日]曜日", "", t)
+    return t[:24]
+
+
+# 同じ催しでも、これ以上離れていれば別の告知として扱う。
+# 「音のウェルビーイング体験講座」は月1回あり、9月と12月を1つの告知にはできない
+RUN_GAP_DAYS = 21
+
+
+def assign_runs(rows: list[dict]) -> None:
+    """同じ催しを、日程の近さで塊に分ける（series_run_key を埋める）。
+
+    連続公演（スターライトヒーリングの9/12〜9/27）は1つの告知にまとめ、
+    月をまたぐ定例講座は別々の告知にする。
+    """
+    from collections import defaultdict
+    by_series: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        by_series[r["series_key"]].append(r)
+
+    for key, items in by_series.items():
+        items.sort(key=lambda x: x["starts_at"])
+        run_start = None
+        prev = None
+        for r in items:
+            day = dt.date.fromisoformat(r["starts_at"][:10])
+            if prev is None or (day - prev).days > RUN_GAP_DAYS:
+                run_start = day
+            r["series_run_key"] = f"{key}@{run_start}"
+            prev = day
 
 
 def sheet_extras() -> dict[str, list[dict]]:
@@ -171,6 +213,7 @@ def to_row(ev: dict, org_id: str, extras: dict) -> dict | None:
     return {
         "org_id": org_id,
         "google_event_id": ev["id"],
+        "series_key": series_key(title),
         "title": title,
         "starts_at": starts_at,
         "ends_at": ends_at,
@@ -212,6 +255,7 @@ def main() -> int:
         extras = {}
 
     rows = [r for r in (to_row(e, org_id, extras) for e in events) if r]
+    assign_runs(rows)
     with_price = sum(1 for r in rows if r["price_text"])
     logger.info(f"取り込む {len(rows)}件（うち費用あり {with_price}件）")
 
