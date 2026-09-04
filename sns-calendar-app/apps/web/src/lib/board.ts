@@ -84,6 +84,23 @@ export interface Idea {
   created_at: string;
 }
 
+/** 告知の単位（同じ催しの連続開催をまとめたもの） */
+export interface EventRun {
+  runKey: string;
+  title: string;
+  dates: string[];
+  venue: string | null;
+  priceText: string | null;
+  announceFrom: string | null;
+  announceSkip: boolean;
+  announceNote: string | null;
+  generatedAt: string | null;
+  ids: string[];
+  /** この催しの告知記事 */
+  articles: { id: string; platform: Platform; status: ArticleStatus; scheduled_date: string | null;
+              announce_role: string | null; hasImage: boolean }[];
+}
+
 export interface EventItem {
   id: string;
   title: string;
@@ -404,4 +421,120 @@ export function formatDateTimeJa(value: string): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${formatDateJa(value)} ${hh}:${mm}`;
+}
+
+
+// ---- イベントの告知管理 ---------------------------------------------------
+
+interface EventRow {
+  id: string;
+  title: string;
+  starts_at: string;
+  venue: string | null;
+  price_text: string | null;
+  series_run_key: string | null;
+  announce_from: string | null;
+  announce_skip: boolean;
+  announce_note: string | null;
+  articles_generated_at: string | null;
+}
+
+/**
+ * 告知の単位ごとにまとめて返す。
+ *
+ * 同じ催しが複数回開かれる場合（スターライトヒーリングの10公演など）は
+ * 1件として扱う。1公演ずつ告知すると投稿が多くなりすぎるため。
+ */
+export async function listEventRuns(): Promise<EventRun[]> {
+  const supabase = requireSupabaseClient();
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+
+  const [events, articles] = await Promise.all([
+    supabase
+      .from("events")
+      .select(
+        "id, title, starts_at, venue, price_text, series_run_key, announce_from, " +
+          "announce_skip, announce_note, articles_generated_at",
+      )
+      .gte("starts_at", since.toISOString())
+      .order("starts_at", { ascending: true }),
+    supabase
+      .from("articles")
+      .select("id, platform, status, scheduled_date, announce_role, event_run_key")
+      .not("event_run_key", "is", null),
+  ]);
+  if (events.error) throw new Error(events.error.message);
+  if (articles.error) throw new Error(articles.error.message);
+
+  const articleIds = (articles.data ?? []).map((a) => a.id);
+  const withImage = new Set<string>();
+  if (articleIds.length > 0) {
+    const { data: atts } = await supabase
+      .from("attachments")
+      .select("owner_id")
+      .eq("owner_type", "article")
+      .in("owner_id", articleIds);
+    for (const a of atts ?? []) withImage.add(a.owner_id as string);
+  }
+
+  const runs = new Map<string, EventRun>();
+  for (const e of (events.data ?? []) as unknown as EventRow[]) {
+    const key = e.series_run_key ?? e.id;
+    const cur = runs.get(key);
+    if (cur) {
+      cur.dates.push(e.starts_at);
+      cur.ids.push(e.id);
+      continue;
+    }
+    runs.set(key, {
+      runKey: key,
+      title: e.title,
+      dates: [e.starts_at],
+      venue: e.venue,
+      priceText: e.price_text,
+      announceFrom: e.announce_from,
+      announceSkip: e.announce_skip,
+      announceNote: e.announce_note,
+      generatedAt: e.articles_generated_at,
+      ids: [e.id],
+      articles: [],
+    });
+  }
+
+  for (const a of articles.data ?? []) {
+    const run = runs.get(a.event_run_key as string);
+    if (!run) continue;
+    run.articles.push({
+      id: a.id as string,
+      platform: a.platform as Platform,
+      status: a.status as ArticleStatus,
+      scheduled_date: a.scheduled_date as string | null,
+      announce_role: a.announce_role as string | null,
+      hasImage: withImage.has(a.id as string),
+    });
+  }
+  for (const run of runs.values()) {
+    run.articles.sort((x, y) => (x.scheduled_date ?? "").localeCompare(y.scheduled_date ?? ""));
+  }
+  return [...runs.values()];
+}
+
+/** 告知開始日・告知しない設定を保存する。同じ催しの全ての回に反映する */
+export async function saveAnnouncePlan(params: {
+  run: EventRun;
+  announceFrom: string | null;
+  announceSkip: boolean;
+  announceNote: string | null;
+}): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase
+    .from("events")
+    .update({
+      announce_from: params.announceFrom,
+      announce_skip: params.announceSkip,
+      announce_note: params.announceNote,
+    })
+    .in("id", params.run.ids);
+  if (error) throw new Error(error.message);
 }

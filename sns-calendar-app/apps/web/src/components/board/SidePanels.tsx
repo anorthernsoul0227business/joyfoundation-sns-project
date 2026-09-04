@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import {
-  formatDateJa,
   formatDateTimeJa,
-  listEvents,
   listIdeas,
   listShares,
-  type EventItem,
   type Idea,
   type Share,
 } from "../../lib/board";
@@ -60,38 +57,6 @@ export function IdeasPanel({ reloadKey }: { reloadKey: number }) {
           <p className="mt-2 text-[0.78em] text-slate-500">
             {formatDateTimeJa(i.created_at)} ・ {IDEA_STATUS[i.status]}
           </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export function EventsPanel({ reloadKey }: { reloadKey: number }) {
-  const { items, error } = useList<EventItem>(listEvents, reloadKey);
-  if (error) return <Err text={error} />;
-  if (items.length === 0) return <Empty text="これからのイベントは登録されていません。" />;
-  return (
-    <ul className="mx-auto max-w-[44rem] space-y-3">
-      {items.map((ev) => (
-        <li key={ev.id} className="rounded border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2 text-[0.8em] text-slate-500">
-            <span className="font-semibold text-slate-700">{formatDateJa(ev.starts_at)}</span>
-            {!ev.all_day && <span>{formatDateTimeJa(ev.starts_at).split(" ")[1]}〜</span>}
-            {ev.confirmed_by_owner ? (
-              <span className="rounded bg-brand-ocean/10 px-2 py-0.5 text-[0.85em] font-semibold text-brand-ocean">確認ずみ</span>
-            ) : (
-              <span className="rounded bg-amber-50 px-2 py-0.5 text-[0.85em] font-semibold text-amber-800">未確認</span>
-            )}
-          </div>
-          <p className="mt-1 text-[1.02em] font-semibold text-brand-ink">{ev.title}</p>
-          {(ev.venue || ev.price_text) && (
-            <p className="mt-1 text-[0.88em] text-slate-600">
-              {[ev.venue, ev.price_text].filter(Boolean).join(" ／ ")}
-            </p>
-          )}
-          {ev.description && (
-            <p className="mt-2 whitespace-pre-wrap text-[0.9em] leading-relaxed text-slate-700">{ev.description}</p>
-          )}
         </li>
       ))}
     </ul>

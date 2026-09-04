@@ -11,7 +11,8 @@ import {
   type FontScale,
 } from "../../components/board/FontSizeControl";
 import { IdeaDock } from "../../components/board/IdeaDock";
-import { EventsPanel, IdeasPanel, SharesPanel } from "../../components/board/SidePanels";
+import { EventsPanel } from "../../components/board/EventsPanel";
+import { IdeasPanel, SharesPanel } from "../../components/board/SidePanels";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import { signOut, syncSessionFromSupabase } from "../../lib/auth";
