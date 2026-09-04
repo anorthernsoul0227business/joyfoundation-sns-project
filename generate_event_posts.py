@@ -175,6 +175,12 @@ def write_body(events: list[dict], platform: str, timeout: int) -> str:
             return text
         logger.warning(f"   {PLATFORM_JA[platform]}: 作り直します（{' / '.join(p[:34] for p in problems)}）")
         prompt = base + "\n\n## 追加の指示\n\n" + "\n".join(f"- {p}" for p in problems)
+
+    # 4回試しても直らなかった。X の字数超過だけは投稿できないので落とす。
+    # それ以外（目安からの逸脱）は、圭一郎さんが「自分で直す」で調整できる
+    if limit is not None and len(text) > limit:
+        raise RuntimeError(f"{PLATFORM_JA[platform]}: {limit}字に収まりませんでした")
+    logger.warning(f"   {PLATFORM_JA[platform]}: 目安から外れたまま採用します（{len(text)}字）")
     return text
 
 

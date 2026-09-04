@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnnounceRuleTable } from "./GuidePanel";
+import { ANNOUNCE_NOTES } from "../../lib/rules";
 import {
   formatDateJa,
   listEventRuns,
@@ -189,6 +191,26 @@ export function EventsPanel({ reloadKey }: { reloadKey: number }) {
 
   return (
     <div className="mx-auto max-w-[46rem]">
+      {/* 何も指定しなかったらどうなるかを、毎回目に入る場所に置く */}
+      <details className="mb-4 rounded border border-slate-200 bg-white px-5 py-3 shadow-sm">
+        <summary className="cursor-pointer list-none text-[0.95em] font-semibold text-brand-ink">
+          ▸ 告知の決まり（とくにご指定がなければ、この回数で告知します）
+        </summary>
+        <div className="pt-3">
+          <AnnounceRuleTable />
+          <ul className="mt-3 space-y-1.5 text-[0.9em] leading-relaxed text-slate-700">
+            {ANNOUNCE_NOTES.map((n) => (
+              <li key={n} className="flex gap-2">
+                <span aria-hidden className="text-slate-400">
+                  ・
+                </span>
+                <span>{n}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
+
       {needDecision.length > 0 && (
         <p className="mb-4 rounded border border-amber-300 bg-amber-50 px-5 py-3 text-[0.95em] text-amber-900">
           <strong>{needDecision.length}件</strong>
