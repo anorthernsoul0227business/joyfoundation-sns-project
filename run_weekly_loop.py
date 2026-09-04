@@ -39,6 +39,10 @@ LOGDIR = ROOT / "logs"
 SPREADSHEET_KEY = "1yv9-rnytRH6jEzzFeNHye0T1JnR4aQvr0bryZUJr7iM"
 TAB_REVIEW = "週次_レビュー"
 TAB_BREAKDOWN = "週次_内訳"
+# 本文が具体的な日付に触れていれば告知記事とみなす（「9/8」「9月8日」）。
+# 画像選びで、催しの写真を優先するかどうかの判断に使う
+EVENT_DATE_PAT = re.compile(r"\d{1,2}\s*/\s*\d{1,2}|\d{1,2}\s*月\s*\d{1,2}\s*日")
+
 EVENT_MASTER_TAB = "イベント予定"          # 予定の正本
 EVENT_TABS = [EVENT_MASTER_TAB, "Xイベント投稿", "IGイベント投稿"]
 
@@ -1504,9 +1508,20 @@ def main() -> int:
             import image_picker as IP
             pool = IP.load_cards()
             chosen_ids = set()
+            # 直近に使った種別を渡し、同じような写真が続くのを避ける。
+            # 2026-09-04: 研修・講座と特定イベントの写真が一度も使われず、
+            # 風景と施術の2種類に偏っていた（採用率 0% / 8.6% / 40%）
+            recent = IP.recent_kinds()
+            if recent:
+                logger.info(f"③-b 直近に使った画像の種別: {' → '.join(recent)}")
             for p in posts:
                 cand = [c for c in pool if c["id"] not in chosen_ids]
-                picks = IP.pick(p.get("本文", ""), p.get("媒体", ""), cand)
+                # 告知記事なら催しの写真こそふさわしい。汎用性の低さを減点しない
+                for_event = bool(EVENT_DATE_PAT.search(p.get("本文", "")))
+                picks = IP.pick(p.get("本文", ""), p.get("媒体", ""), cand,
+                                for_event=for_event, recent_kinds=recent)
+                if picks:
+                    recent = [picks[0].get("場面種別") or ""] + recent[:2]
                 p["画像"] = [{
                     "id": c["id"], "preview": IP.preview_url(c),
                     "open": IP.open_url(c), "why": c["why"],

@@ -5,7 +5,10 @@ import { PENDING_STATUSES, STATUS_LABEL, type ArticleStatus } from "../../lib/bo
 export function StatusBadge({ status }: { status: ArticleStatus }) {
   const pending = PENDING_STATUSES.includes(status);
   // 「直しました」は確認を促したいので、他の未対応より目立たせる
-  const tone = status === "revised"
+  // 聞き返しは返事が要る。放っておくと止まるので一番目立たせる
+  const tone = status === "needs_owner_input"
+    ? "bg-amber-200 text-amber-900"
+    : status === "revised"
     ? "bg-emerald-100 text-emerald-800"
     : pending
     ? "bg-amber-50 text-amber-800"

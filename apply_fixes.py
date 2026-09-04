@@ -76,6 +76,7 @@ PROMPT = """あなたは、ある団体のSNS記事を編集する担当者で�
   "revised": "直した後の本文の全文",
   "applied": ["適用した指示を一つずつ短く"],
   "held": ["直さずに保留した指示と、その理由"],
+  "ask": "保留があるとき、理事長に宛てて『◯◯が分からないため直せませんでした。△△を教えていただけますか。』のように、何を教えてほしいかを一文で書く。保留が無ければ空文字",
   "proposal": "字数のために指示以外の箇所を変えた場合、理事長に宛てて『字数が◯字超えたため、△△を□□にしました。これでよろしいですか。』のように書く。変えていなければ空文字"
 }}
 
@@ -186,6 +187,7 @@ def main() -> int:
         revised = (got.get("revised") or "").strip()
         applied, holds = got.get("applied") or [], got.get("held") or []
         proposal = (got.get("proposal") or "").strip()
+        ask = (got.get("ask") or "").strip()
         for x in applied:
             logger.info(f"  適用: {x}")
         for x in holds:
@@ -198,7 +200,11 @@ def main() -> int:
             failed += 1
             continue
         if revised == a["body_ai"]:
-            logger.warning("  本文が変わっていません。とばします")
+            question = ask or ("いただいたご指示を本文に反映できませんでした。"
+                               "もう少し詳しく教えていただけますか。")
+            sb("PATCH", f"articles?article_no=eq.{ano}",
+               {"status": "needs_owner_input", "revision_note": question})
+            logger.warning("  本文が変わりませんでした → 「確認させてください」にしました")
             held += 1
             continue
 
@@ -219,9 +225,16 @@ def main() -> int:
             print(revised + "\n")
             continue
 
-        # 保留があるうちは圭一郎さんに戻さない（指示が伝わっていないため）
+        # 保留があるときは、黙って止めずに圭一郎さんへ聞き返す。
+        # 2026-09-02 まで needs_fix のまま放置しており、圭一郎さんの画面には
+        # 「直しています。しばらくお待ちください」と出たきりで、
+        # AI が何を尋ねているのかが見えなかった
         if holds:
-            logger.warning("  保留があるので needs_fix のままにします")
+            question = ask or "いただいたご指示について、確認させてください。\n\n" + "\n".join(
+                f"・{h}" for h in holds)
+            sb("PATCH", f"articles?article_no=eq.{ano}",
+               {"status": "needs_owner_input", "revision_note": question})
+            logger.warning("  → 「確認させてください」にしました（圭一郎さんに聞き返し）")
             held += 1
             continue
 

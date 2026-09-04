@@ -137,8 +137,16 @@ def words(text: str) -> set:
     return {w for w in got if w not in STOP}
 
 
-def score(card: dict, topic: set, today: date) -> tuple:
-    """点数と、その内訳（人に見せる理由）を返す。"""
+def score(card: dict, topic: set, today: date,
+          for_event: bool = False, recent_kinds: list = None) -> tuple:
+    """点数と、その内訳（人に見せる理由）を返す。
+
+    for_event:
+        イベント告知の記事かどうか。告知なら、研修や催しの写真こそ適切なので
+        「汎用性が低い」ことを減点しない。
+    recent_kinds:
+        直近の記事で使った場面種別。同じ種別が続かないよう軽く減点する。
+    """
     reasons = []
     s = 0.0
 
@@ -170,9 +178,30 @@ def score(card: dict, topic: set, today: date) -> tuple:
 
     # 汎用性。特定の催しの写真を平常の投稿に使うと、過去の催しを今のことのように
     # 見せてしまう。イベント告知記事なら別だが、それは呼び出し側で判断する。
-    s += {"高": 3.0, "中": 0.5, "低": -6.0}.get(card["汎用性"], 0.0)
-    if card["汎用性"] == "低":
-        reasons.append(f"特定の場面に限られる（{card['場面種別'] or '?'}）")
+    # 2026-09-04: 「同じような写真ばかり」の原因がここだった。
+    # 汎用性=低 の -6.0 が効きすぎて、研修・講座（27枚）と特定イベント（15枚）が
+    # 一度も選ばれていなかった。一方 日常・風景 は 適性=高・汎用性=高 で
+    # 素点 8.0 を取り、上位を占め続けていた。
+    # 2026-08-17 に人物の減点をやめたのと同じ問題が、別の経路で再発していた。
+    kind = card["場面種別"] or ""
+    if for_event:
+        # 告知記事では、その催しの様子が写っている方がふさわしい
+        s += {"高": 1.0, "中": 1.0, "低": 1.5}.get(card["汎用性"], 0.0)
+        if kind in ("研修・講座", "特定イベント", "施術・体験"):
+            s += 3.0
+            reasons.append(f"催しの様子が伝わる（{kind}）")
+    else:
+        s += {"高": 3.0, "中": 0.5, "低": -2.5}.get(card["汎用性"], 0.0)
+        if card["汎用性"] == "低":
+            reasons.append(f"特定の場面に限られる（{kind or '?'}）")
+
+    # 直近で使った種別が続くと「同じような写真」に見える。
+    # 直近ほど強く避ける（1つ前 -3.0、2つ前 -2.0、3つ前 -1.0）
+    for i, k in enumerate(recent_kinds or []):
+        if k and k == kind:
+            s -= max(0.0, 3.0 - i)
+            reasons.append(f"直前に同じ種別を使用（{kind}）")
+            break
     if card["場面"]:
         reasons.append(f"場面: {card['場面'][:34]}")
 
@@ -184,7 +213,8 @@ def score(card: dict, topic: set, today: date) -> tuple:
     return s, reasons
 
 
-def pick(text: str, media: str, cards: list, today: date = None, k: int = None) -> list:
+def pick(text: str, media: str, cards: list, today: date = None, k: int = None,
+         for_event: bool = False, recent_kinds: list = None) -> list:
     """記事に合う画像を選ぶ。色調をばらけさせて、並べたときの統一感を崩さない。"""
     today = today or date.today()
     k = k or COUNT.get(media, 1)
@@ -192,21 +222,23 @@ def pick(text: str, media: str, cards: list, today: date = None, k: int = None) 
 
     ranked = []
     for c in cards:
-        s, why = score(c, topic, today)
+        s, why = score(c, topic, today, for_event, recent_kinds)
         if s <= -50:                  # クールダウン中は候補にしない
             continue
         ranked.append((s, why, c))
     ranked.sort(key=lambda x: -x[0])
 
-    chosen, seen_tone = [], set()
+    chosen, seen_tone, seen_kind = [], set(), set()
     for s, why, c in ranked:
         if len(chosen) >= k:
             break
-        # 同じ色調ばかりにならないよう、2枚目以降は一度ずらす
+        # 同じ色調・同じ種別ばかりにならないよう、2枚目以降は一度ずらす
         tone = (c["色調"] or "")[:6]
-        if len(chosen) and tone in seen_tone and len(ranked) > k * 2:
+        kind = c["場面種別"] or ""
+        if len(chosen) and len(ranked) > k * 2 and (tone in seen_tone or kind in seen_kind):
             continue
         seen_tone.add(tone)
+        seen_kind.add(kind)
         chosen.append({**c, "score": round(s, 1), "why": "／".join(why) or "候補内で最上位"})
     # ずらした結果 k 枚に満たない場合は素直に上から埋める
     for s, why, c in ranked:
@@ -291,6 +323,29 @@ def ensure_public_url(card: dict, sess=None, client=None) -> str:
     url = os.getenv("R2_PUBLIC_URL").rstrip("/") + "/" + key
     save_field(card, "r2_url", url)
     return url
+
+
+def recent_kinds(limit: int = 3) -> list:
+    """直近に使った場面種別を新しい順に返す。同じ種別が続くのを避けるために使う。
+
+    最終使用日が記録されているカードを新しい順に並べる。厳密な投稿順ではないが、
+    「最近この種別ばかり出している」を判定するには十分。
+    """
+    used = []
+    for c in load_cards():
+        if c.get("最終使用日"):
+            try:
+                used.append((date.fromisoformat(c["最終使用日"]), c["場面種別"] or ""))
+            except ValueError:
+                pass
+    used.sort(key=lambda x: -x[0].toordinal())
+    out = []
+    for _, kind in used:
+        if kind and kind not in out:
+            out.append(kind)
+        if len(out) >= limit:
+            break
+    return out
 
 
 def record_use(card: dict, when: date = None) -> None:

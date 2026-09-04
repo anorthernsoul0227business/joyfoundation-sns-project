@@ -18,6 +18,7 @@ export type ArticleStatus =
   | "staff_ok"
   | "approved"
   | "needs_fix"
+  | "needs_owner_input"
   | "revised"
   | "scheduled"
   | "published"
@@ -122,6 +123,7 @@ export const STATUS_LABEL: Record<ArticleStatus, string> = {
   staff_ok: "未確認",
   approved: "OKしました",
   needs_fix: "直してもらっています",
+  needs_owner_input: "確認させてください",
   revised: "直しました",
   scheduled: "投稿予約",
   published: "投稿済",
@@ -134,6 +136,7 @@ export const PENDING_STATUSES: ArticleStatus[] = [
   "needs_check",
   "staff_ok",
   "revised", // AI が直したものの確認も、圭一郎さんの「未対応」に含める
+  "needs_owner_input", // AI が聞き返している。返事がないと先に進まない
 ];
 
 export type ArticleFilter = "pending" | "week" | "all";
@@ -262,6 +265,58 @@ export async function decideArticle(params: {
   const { data, error } = await supabase
     .from("articles")
     .update(patch)
+    .eq("id", article.id)
+    .select(ARTICLE_COLUMNS)
+    .single();
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data as unknown as Article;
+}
+
+/**
+ * 圭一郎さんが本文を自分で直す。
+ *
+ * 2026-09-04: 短い記事は AI に指示を出すより直接直す方が速い、という要望。
+ * 直した本文は body_final に入れ、そのまま承認済みにする。
+ * 判断したご本人が書いた文なので、あらためて確認を求める必要はない。
+ */
+export async function editArticleBody(params: {
+  article: Article;
+  body: string;
+  userId: string;
+}): Promise<Article> {
+  const { article, userId } = params;
+  const body = params.body.trim();
+  if (!body) {
+    throw new Error("本文が空です。");
+  }
+  const supabase = requireSupabaseClient();
+  const now = new Date().toISOString();
+
+  // 誰がどう直したかを履歴に残す。body_snapshot は直す前の本文
+  const { error: reviewError } = await supabase.from("article_reviews").insert({
+    org_id: article.org_id,
+    article_id: article.id,
+    reviewer_user_id: userId,
+    decision: "approve",
+    note: "ご自身で本文を直されました",
+    body_snapshot: article.body_final ?? article.body_ai,
+  });
+  if (reviewError) {
+    throw new Error(reviewError.message);
+  }
+
+  const { data, error } = await supabase
+    .from("articles")
+    .update({
+      body_final: body,
+      status: "approved",
+      fix_note: null,
+      revision_note: null,
+      reviewed_by: userId,
+      reviewed_at: now,
+    })
     .eq("id", article.id)
     .select(ARTICLE_COLUMNS)
     .single();

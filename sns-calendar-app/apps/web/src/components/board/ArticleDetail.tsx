@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   decideArticle,
+  editArticleBody,
   formatDateJa,
   formatDateTimeJa,
   loadArticleDetail,
@@ -37,7 +38,9 @@ export function ArticleDetail({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fixOpen, setFixOpen] = useState(false);
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState<"approve" | "request_fix" | null>(null);
+  const [busy, setBusy] = useState<"approve" | "request_fix" | "edit" | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
@@ -45,6 +48,7 @@ export function ArticleDetail({
     let cancelled = false;
     setFixOpen(false);
     setNote("");
+    setEditOpen(false);
     setError(null);
     setDone(null);
     loadArticleDetail(article.id)
@@ -87,6 +91,24 @@ export function ArticleDetail({
     }
   }
 
+  async function saveEdit() {
+    setBusy("edit");
+    setError(null);
+    try {
+      const next = await editArticleBody({ article, body: draft, userId });
+      onUpdated(next);
+      setDone("直した内容で承ります。ありがとうございます。");
+      setEditOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const overLimit =
+    article.platform === "x" && draft.replace(/\s/g, "").length > 140;
+
   return (
     <div className="mx-auto max-w-[44rem]">
       {onBack && (
@@ -127,6 +149,21 @@ export function ArticleDetail({
             {article.event_date ? `${formatDateJa(article.event_date)}の` : ""}
             開催日までに投稿できる日が取れませんでした。
             日が過ぎてからの告知は出さないようにしています。
+          </p>
+        </div>
+      )}
+
+      {article.status === "needs_owner_input" && article.revision_note && (
+        <div className="mb-4 rounded border-2 border-amber-400 bg-amber-50 px-5 py-4">
+          <div className="mb-1 text-[0.8em] font-semibold tracking-wider text-amber-900">
+            確認させてください
+          </div>
+          <p className="whitespace-pre-wrap text-[1em] leading-relaxed text-amber-900">
+            {article.revision_note}
+          </p>
+          <p className="mt-2 text-[0.85em] text-amber-800">
+            下の「直したいところがある」に、あらためてお書きいただけますか。
+            そのままでよければ「このまま出す」でも大丈夫です。
           </p>
         </div>
       )}
@@ -296,7 +333,54 @@ export function ArticleDetail({
               >
                 直したいところがある
               </button>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => {
+                  setDraft(body);
+                  setEditOpen((v) => !v);
+                  setFixOpen(false);
+                }}
+                aria-expanded={editOpen}
+                className="w-full rounded-md border border-slate-300 bg-white px-8 py-4 text-[1.05em] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60 md:w-auto md:min-w-[13rem]"
+              >
+                自分で直す
+              </button>
             </div>
+
+            {editOpen && (
+              <div className="mt-4">
+                <p className="mb-2 text-[0.82em] text-slate-500">
+                  本文をそのまま書き換えてください。直したら「これで出す」を押すと、
+                  その文で投稿します。
+                </p>
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={16}
+                  className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-[0.98em] leading-[1.9] text-brand-ink outline-none focus:border-brand-ocean"
+                />
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.82em]">
+                  <span className={overLimit ? "font-semibold text-rose-700" : "text-slate-500"}>
+                    {draft.replace(/\s/g, "").length}文字
+                    {article.platform === "x" && "（Xは140文字まで）"}
+                  </span>
+                  {overLimit && (
+                    <span className="text-rose-700">
+                      140文字を超えています。このままでは投稿できません。
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={busy !== null || draft.trim() === "" || overLimit}
+                  onClick={saveEdit}
+                  className="mt-3 w-full rounded-md bg-brand-ocean px-6 py-3 font-semibold text-white transition hover:brightness-110 disabled:opacity-50 md:w-auto"
+                >
+                  {busy === "edit" ? "送っています…" : "これで出す"}
+                </button>
+              </div>
+            )}
 
             {fixOpen && (
               <div className="mt-4">
