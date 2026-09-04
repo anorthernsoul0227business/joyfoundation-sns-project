@@ -46,6 +46,8 @@ SCRIPTS=(
   apply_fixes.py        # 圭一郎さんの修正依頼を AI が反映する
   schedule_posts.py     # 承認された記事の投稿日を決め、キューへ渡す
   sync_events.py        # 圭一郎さんのGoogleカレンダーを events に取り込む
+  announce_plan.py      # イベント告知の日取りを決める
+  generate_event_posts.py  # イベントの告知記事を作る
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }

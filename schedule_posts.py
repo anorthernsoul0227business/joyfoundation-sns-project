@@ -151,6 +151,21 @@ def main() -> int:
         ev = find_event_date(body, today, known)
         plat = a["platform"]
 
+        # 告知記事は generate_event_posts.py が投稿日を決めてある。
+        # 特に「前日」は他の予定と重なっても動かさない（2026-09-04 の方針）
+        if a.get("announce_role") and a.get("scheduled_date"):
+            slot = dt.date.fromisoformat(a["scheduled_date"])
+            if slot <= today:
+                missed.append((a, ev or slot))
+                continue
+            if a["announce_role"] != "day_before":
+                # 前日以外は、同じ媒体が同じ日に重なるなら1日ずつ前へずらす
+                while (plat, slot) in taken and slot > today + dt.timedelta(days=1):
+                    slot -= dt.timedelta(days=1)
+            taken.add((plat, slot))
+            plan.append((a, dt.datetime.combine(slot, dt.time(POST_HOUR, POST_MINUTE), tzinfo=JST), ev))
+            continue
+
         if ev:
             # 開催日から逆算し、埋まっていたら1日ずつ前に詰める。
             # イベントごとに lead_days が設定されていればそれを使う

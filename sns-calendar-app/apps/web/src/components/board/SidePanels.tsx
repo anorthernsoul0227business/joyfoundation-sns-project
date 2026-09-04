@@ -41,6 +41,7 @@ function Err({ text }: { text: string }) {
 const IDEA_STATUS: Record<Idea["status"], string> = {
   new: "届いています",
   read: "読みました",
+  reflected: "記事の作り方に反映しました",
   used: "記事にしました",
   holding: "あたためています",
 };
@@ -57,6 +58,21 @@ export function IdeasPanel({ reloadKey }: { reloadKey: number }) {
           <p className="mt-2 text-[0.78em] text-slate-500">
             {formatDateTimeJa(i.created_at)} ・ {IDEA_STATUS[i.status]}
           </p>
+          {i.reply && (
+            <div className="mt-3 rounded border border-brand-ocean/30 bg-brand-ocean/5 px-4 py-3">
+              <div className="mb-1 text-[0.78em] font-semibold tracking-wider text-brand-ocean">
+                お返事
+              </div>
+              <p className="whitespace-pre-wrap text-[0.92em] leading-relaxed text-brand-ink">
+                {i.reply}
+              </p>
+              {i.replied_at && (
+                <p className="mt-1 text-[0.76em] text-slate-500">
+                  {formatDateTimeJa(i.replied_at)}
+                </p>
+              )}
+            </div>
+          )}
         </li>
       ))}
     </ul>

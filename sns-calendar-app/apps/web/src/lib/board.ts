@@ -79,7 +79,10 @@ export interface Idea {
   id: string;
   body: string;
   source: "web" | "voice" | "mail" | "line";
-  status: "new" | "read" | "used" | "holding";
+  status: "new" | "read" | "reflected" | "used" | "holding";
+  /** 読んだこと・どう反映したかの返事 */
+  reply: string | null;
+  replied_at: string | null;
   linked_article_id: string | null;
   created_at: string;
 }
@@ -354,7 +357,7 @@ export async function listIdeas(): Promise<Idea[]> {
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase
     .from("ideas")
-    .select("id, body, source, status, linked_article_id, created_at")
+    .select("id, body, source, status, reply, replied_at, linked_article_id, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
   if (error) throw new Error(error.message);
@@ -370,7 +373,7 @@ export async function createIdea(params: { orgId: string; userId: string; body: 
   const { data, error } = await supabase
     .from("ideas")
     .insert({ org_id: params.orgId, author_user_id: params.userId, body, source: "web" })
-    .select("id, body, source, status, linked_article_id, created_at")
+    .select("id, body, source, status, reply, replied_at, linked_article_id, created_at")
     .single();
   if (error) throw new Error(error.message);
   return data as Idea;

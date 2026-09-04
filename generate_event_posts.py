@@ -28,6 +28,8 @@ import json
 import logging
 import os
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -61,6 +63,10 @@ SNS担当者です。下のイベントの告知文を書いてください。
 - 効果を断言しないでください（「治る」「改善する」は使わない）。
 - 数値や研究の話を新しく持ち出さないでください。この記事は告知です。
 - 参加を急かす表現（「今すぐ」「残りわずか」）は使わないでください。
+- **言い切ってください。** 「なのかも知れません」のような推量の語尾が続くと、
+  やさしさではなく自信のなさに聞こえます（2026-09-04 圭一郎さんのご指摘）。
+  日時・場所・費用・催しの案内は言い切る。推量の語尾は1記事に1回まで。
+  やわらげてよいのは、読み手の体験を推し量る部分だけです。
 - 日付は「9月17日」の形で書いてください。複数日ある場合はすべて挙げてください。
 - 最後に申し込み方法への導線を一言入れてください。
   X と Instagram は「詳しくはプロフィールへ。」、note は「お申し込みはリンクから。」
@@ -82,9 +88,20 @@ def sb(method: str, path: str, body=None):
     for h, v in [("apikey", key), ("Authorization", f"Bearer {key}"),
                  ("Content-Type", "application/json"), ("Prefer", "return=representation")]:
         req.add_header(h, v)
-    with urllib.request.urlopen(req, timeout=30) as r:
-        raw = r.read().decode()
-        return json.loads(raw) if raw.strip() else None
+    # 通信が一時的に切れることがあるので少し粘る
+    import time
+    last = None
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                raw = r.read().decode()
+                return json.loads(raw) if raw.strip() else None
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"HTTP {e.code}: {e.read().decode()[:200]}") from e
+        except Exception as e:
+            last = e
+            time.sleep(3 * (2 ** attempt))
+    raise RuntimeError(f"Supabase に繋がりません: {last}")
 
 
 def jst_date(iso: str) -> dt.date:
@@ -113,8 +130,15 @@ def describe_event(events: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# 圭一郎さんのご指摘（2026-09-04）に該当する語尾
+HEDGES = ["かも知れ", "かもしれ", "のではないでしょうか", "ように思います", "でしょうか"]
+
 # X の140字は投稿できるかどうかの絶対条件。超えたら作り直させる
 HARD_LIMIT = {"x": 140}
+# 媒体ごとの下限。note が短くなりすぎると読み物として成立しない
+MIN_LEN = {"ig": 400, "note": 1500}
+# 推量の語尾は1記事に1回まで（2026-09-04 圭一郎さんのご指摘）
+MAX_HEDGES = 1
 
 
 def write_body(events: list[dict], platform: str, timeout: int) -> str:
@@ -123,25 +147,82 @@ def write_body(events: list[dict], platform: str, timeout: int) -> str:
                            platform=PLATFORM_JA[platform], limit=LIMITS[platform])
     limit = HARD_LIMIT.get(platform)
 
+    base = prompt
     text = ""
-    for attempt in range(3):
+    for attempt in range(4):
         out = run_llm(["claude", "-p", prompt, "--output-format", "text"],
                       f"告知文（{platform}）", timeout, timeout + 300)
         raw = out.stdout if hasattr(out, "stdout") else str(out)
         text = raw.strip().strip("`").strip()
-        if limit is None:
-            return text
+
+        problems = []
         n = len(text)
-        if n <= limit:
+        if limit is not None and n > limit:
+            problems.append(f"{n}字になり、{n - limit}字超えました。必ず{limit}字以内に"
+                            "収めてください。日時・場所・申し込み導線・ハッシュタグは残し、"
+                            "説明の部分を削ってください。")
+        lo = MIN_LEN.get(platform)
+        if lo and n < lo:
+            problems.append(f"{n}字と短すぎます。{lo}字以上にしてください。"
+                            "催しの様子や、どんな方に来てほしいかを足してください。")
+        hedges = sum(text.count(h) for h in HEDGES)
+        if hedges > MAX_HEDGES:
+            problems.append(f"推量の言い方（かもしれません・でしょうか など）が{hedges}箇所"
+                            f"あります。{MAX_HEDGES}箇所までにしてください。"
+                            "事実と催しの案内は言い切ってください。")
+
+        if not problems:
             return text
-        logger.warning(f"   {PLATFORM_JA[platform]}: {n}字で上限{limit}字を超えました。作り直します")
-        # 何字削ればよいかを具体的に伝える。曖昧に「短く」と言うと効きにくい
-        prompt = (PROMPT.format(event=describe_event(events),
-                                platform=PLATFORM_JA[platform], limit=LIMITS[platform])
-                  + f"\n\n## 追加の指示\n\n前回は{n}字になり、{n - limit}字超えました。"
-                    f"必ず{limit}字以内に収めてください。日時・場所・申し込み導線・"
-                    f"ハッシュタグは残し、説明の部分を削ってください。")
+        logger.warning(f"   {PLATFORM_JA[platform]}: 作り直します（{' / '.join(p[:34] for p in problems)}）")
+        prompt = base + "\n\n## 追加の指示\n\n" + "\n".join(f"- {p}" for p in problems)
     return text
+
+
+
+
+def rewrite_hedged(today: dt.date, timeout: int, dry_run: bool) -> int:
+    """推量の語尾が多い告知記事だけを書き直す。
+
+    圭一郎さんの「頼りなさそうに聞こえる」という指摘を受けてプロンプトを直したので、
+    生成済みの記事のうち該当するものだけを作り直す。全部やり直すと時間がかかりすぎる。
+    """
+    arts = sb("GET", "articles?select=*&announce_role=not.is.null&status=eq.ai_draft") or []
+    targets = [a for a in arts if sum(a["body_ai"].count(h) for h in HEDGES) > 0]
+    logger.info(f"告知記事 {len(arts)}本中、書き直す対象は {len(targets)}本")
+
+    # 同じ本文が複数の記事に使われている（同じ催しの複数回投稿）。
+    # 本文ごとにまとめて1回だけ生成し、同じものを配る
+    by_body: dict[str, list[dict]] = collections.defaultdict(list)
+    for a in targets:
+        by_body[a["body_ai"]].append(a)
+    logger.info(f"本文の種類は {len(by_body)}通り。生成はこの回数で済む")
+
+    fixed = 0
+    for body, group in by_body.items():
+        a = group[0]
+        run_key = a.get("event_run_key")
+        events = sb("GET", f"events?select=*&series_run_key=eq.{urllib.parse.quote(run_key)}"
+                           "&order=starts_at") if run_key else None
+        if not events:
+            logger.warning(f"  {a['article_no']}: 元のイベントが見つからず、とばします")
+            continue
+        try:
+            new_body = write_body(events, a["platform"], timeout)
+        except Exception as e:
+            logger.error(f"  {a['article_no']}: 生成に失敗 {type(e).__name__}")
+            continue
+        before = sum(body.count(h) for h in HEDGES)
+        after = sum(new_body.count(h) for h in HEDGES)
+        logger.info(f"  {PLATFORM_JA[a['platform']]} {len(group)}本: "
+                    f"推量 {before} → {after}箇所 / {len(body)}字 → {len(new_body)}字")
+        if dry_run:
+            continue
+        for art in group:
+            sb("PATCH", f"articles?id=eq.{art['id']}", {"body_ai": new_body})
+        fixed += len(group)
+
+    logger.info(f"完了: {fixed}本を書き直しました")
+    return 0
 
 
 def main() -> int:
@@ -150,6 +231,8 @@ def main() -> int:
     ap.add_argument("--only", help="series_run_key を指定して1件だけ")
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--today", help="YYYY-MM-DD（検証用）")
+    ap.add_argument("--rewrite-hedged", action="store_true",
+                    help="推量の語尾が多い既存の告知記事だけを書き直す")
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -160,6 +243,9 @@ def main() -> int:
         pass
 
     today = dt.date.fromisoformat(args.today) if args.today else dt.date.today()
+
+    if args.rewrite_hedged:
+        return rewrite_hedged(today, args.timeout, args.dry_run)
 
     rows = sb("GET", "events?select=*&order=starts_at") or []
     runs: dict[str, list[dict]] = collections.defaultdict(list)
