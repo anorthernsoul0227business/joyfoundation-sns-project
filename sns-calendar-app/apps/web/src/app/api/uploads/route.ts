@@ -42,6 +42,15 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
+    // 2026-09-04: 画面を開いたままにしていると、古い版（JSONを送る作り）が
+    // 動き続けて解析に失敗する。原因が分かる案内にする
+    const ct = request.headers.get("content-type") ?? "";
+    if (ct.includes("application/json")) {
+      return NextResponse.json(
+        { error: "画面が古いままです。ページを再読み込みしてから、もう一度お試しください。" },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: "画像を読めませんでした。" }, { status: 400 });
   }
 
