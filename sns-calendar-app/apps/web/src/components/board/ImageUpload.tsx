@@ -60,21 +60,19 @@ export function ImageUpload({
       const blob = await shrink(file);
       const contentType = blob.type || file.type;
 
+      // 同じサイトの API に送り、そこから R2 へ渡す。
+      // R2 へ直接送る方式は R2 側の CORS 設定が要るため採らない（2026-09-04）
+      const form = new FormData();
+      form.append("orgId", orgId);
+      form.append("file", new File([blob], file.name, { type: contentType }));
+
       const res = await fetch("/api/uploads", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ orgId, contentType, size: blob.size }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
       });
-      const info = await res.json();
-      if (!res.ok) throw new Error(info.error ?? "アップロードの準備に失敗しました。");
-
-      // R2 へ直接送る。ここは Vercel を通らない
-      const put = await fetch(info.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: blob,
-      });
-      if (!put.ok) throw new Error(`画像を送れませんでした（${put.status}）。`);
+      const info = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(info.error ?? "写真を追加できませんでした。");
 
       // 既存の写真の後ろに並べる
       const { count } = await supabase
