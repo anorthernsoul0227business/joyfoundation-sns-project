@@ -56,6 +56,21 @@ export function presignPut(
   contentType: string,
   expiresInSeconds = 600,
 ): string {
+  return presign(cfg, "PUT", key, contentType, expiresInSeconds);
+}
+
+/** 保管した画像を消す。記事から外した写真を残しておく理由がないため */
+export function presignDelete(cfg: R2Config, key: string, expiresInSeconds = 600): string {
+  return presign(cfg, "DELETE", key, null, expiresInSeconds);
+}
+
+function presign(
+  cfg: R2Config,
+  method: "PUT" | "DELETE",
+  key: string,
+  contentType: string | null,
+  expiresInSeconds: number,
+): string {
   const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");   // 20260904T091500Z
@@ -65,26 +80,29 @@ export function presignPut(
   const canonicalUri =
     "/" + encodeSegment(cfg.bucket) + "/" + key.split("/").map(encodeSegment).join("/");
 
+  const signedHeaders = contentType ? "content-type;host" : "host";
   // クエリはキー名で昇順に並べる必要がある
   const query: [string, string][] = [
     ["X-Amz-Algorithm", "AWS4-HMAC-SHA256"],
     ["X-Amz-Credential", `${cfg.accessKeyId}/${scope}`],
     ["X-Amz-Date", amzDate],
     ["X-Amz-Expires", String(expiresInSeconds)],
-    ["X-Amz-SignedHeaders", "content-type;host"],
+    ["X-Amz-SignedHeaders", signedHeaders],
   ];
   const canonicalQuery = query
     .map(([k, v]) => `${encodeSegment(k)}=${encodeSegment(v)}`)
     .sort()
     .join("&");
 
-  const canonicalHeaders = `content-type:${contentType}\nhost:${host}\n`;
+  const canonicalHeaders = contentType
+    ? `content-type:${contentType}\nhost:${host}\n`
+    : `host:${host}\n`;
   const canonicalRequest = [
-    "PUT",
+    method,
     canonicalUri,
     canonicalQuery,
     canonicalHeaders,
-    "content-type;host",
+    signedHeaders,
     "UNSIGNED-PAYLOAD",
   ].join("\n");
 

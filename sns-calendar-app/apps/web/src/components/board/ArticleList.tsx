@@ -5,6 +5,7 @@ import { StatusBadge } from "./StatusBadge";
 
 const FILTERS: { value: ArticleFilter; label: string }[] = [
   { value: "pending", label: "未対応だけ" },
+  { value: "approved", label: "OKした記事" },
   { value: "week", label: "今週" },
   { value: "all", label: "すべて" },
 ];
@@ -55,6 +56,8 @@ export function ArticleList({
                 <p className="text-[1.4em]">✓</p>
                 <p className="mt-1">確認をお願いする記事はありません。</p>
               </>
+            ) : filter === "approved" ? (
+              <p>OKした記事はまだありません。</p>
             ) : (
               <p>記事がありません。</p>
             )}

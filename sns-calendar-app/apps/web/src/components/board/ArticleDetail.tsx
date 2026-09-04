@@ -13,6 +13,7 @@ import {
   type ArticleReview,
   type Attachment,
 } from "../../lib/board";
+import { requireSupabaseClient } from "../../lib/supabase";
 import { BodyDiff } from "./BodyDiff";
 import { ImageUpload } from "./ImageUpload";
 import { StatusBadge } from "./StatusBadge";
@@ -42,6 +43,7 @@ export function ArticleDetail({
   const [fixOpen, setFixOpen] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"approve" | "request_fix" | "edit" | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +93,32 @@ export function ArticleDetail({
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(null);
+    }
+  }
+
+  /** 写真を記事から外す。保管してある実体も一緒に消える */
+  async function removeImage(at: Attachment) {
+    if (!window.confirm("この写真を消しますか。")) return;
+    setRemoving(at.id);
+    setError(null);
+    try {
+      const supabase = requireSupabaseClient();
+      const { data: sess } = await supabase.auth.getSession();
+      const res = await fetch("/api/uploads", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sess.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({ attachmentId: at.id }),
+      });
+      const info = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(info.error ?? "写真を消せませんでした。");
+      setAttachments((prev) => prev.filter((x) => x.id !== at.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRemoving(null);
     }
   }
 
@@ -234,14 +262,24 @@ export function ArticleDetail({
         {attachments.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {attachments.map((at) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={at.id}
-                src={at.public_url}
-                alt={at.caption ?? ""}
-                className="max-h-60 max-w-full rounded object-contain"
-                loading="lazy"
-              />
+              <figure key={at.id} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={at.public_url}
+                  alt={at.caption ?? ""}
+                  className="max-h-60 max-w-full rounded object-contain"
+                  loading="lazy"
+                />
+                <button
+                  type="button"
+                  disabled={removing !== null}
+                  onClick={() => void removeImage(at)}
+                  aria-label="この写真を消す"
+                  className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[0.8em] font-semibold text-rose-700 shadow transition hover:bg-white disabled:opacity-50"
+                >
+                  {removing === at.id ? "消しています…" : "消す"}
+                </button>
+              </figure>
             ))}
           </div>
         ) : (

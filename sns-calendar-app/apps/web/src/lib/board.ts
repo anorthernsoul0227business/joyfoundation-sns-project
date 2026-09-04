@@ -139,7 +139,10 @@ export const PENDING_STATUSES: ArticleStatus[] = [
   "needs_owner_input", // AI が聞き返している。返事がないと先に進まない
 ];
 
-export type ArticleFilter = "pending" | "week" | "all";
+export type ArticleFilter = "pending" | "approved" | "week" | "all";
+
+/** 圭一郎さんが OK を出したあと、投稿されるまでの状態 */
+export const APPROVED_STATUSES: ArticleStatus[] = ["approved", "scheduled", "published"];
 
 // ---- 記事 ------------------------------------------------------------------
 
@@ -168,6 +171,8 @@ export async function listArticles(filter: ArticleFilter): Promise<Article[]> {
 
   if (filter === "pending") {
     query = query.in("status", PENDING_STATUSES);
+  } else if (filter === "approved") {
+    query = query.in("status", APPROVED_STATUSES);
   } else if (filter === "week") {
     query = query.eq("week", isoWeek(new Date()));
   } else {

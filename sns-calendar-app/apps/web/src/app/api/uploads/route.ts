@@ -12,7 +12,13 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { buildImageKey, presignPut, publicUrlFor, readR2Config } from "../../../lib/r2";
+import {
+  buildImageKey,
+  presignDelete,
+  presignPut,
+  publicUrlFor,
+  readR2Config,
+} from "../../../lib/r2";
 
 export const runtime = "nodejs";
 
@@ -109,4 +115,64 @@ export async function POST(request: Request) {
     publicUrl: publicUrlFor(cfg, key),
     contentType: file.type,
   });
+}
+
+
+/**
+ * 記事から写真を外し、保管してある実体も消す。
+ *
+ * 2026-09-04: 試しに上げた写真を消せないと使いづらい、という要望。
+ * DB の行だけ消すと R2 に実体が残り続けるので、両方を消す。
+ */
+export async function DELETE(request: Request) {
+  const cfg = readR2Config();
+  if (!cfg) {
+    return NextResponse.json({ error: "画像の保管先が設定されていません。" }, { status: 503 });
+  }
+  const token = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return NextResponse.json({ error: "ログインし直してください。" }, { status: 401 });
+  }
+
+  let body: { attachmentId?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "リクエストを読めませんでした。" }, { status: 400 });
+  }
+  if (!body.attachmentId) {
+    return NextResponse.json({ error: "どの写真かが分かりません。" }, { status: 400 });
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    { global: { headers: { Authorization: `Bearer ${token}` } }, auth: { persistSession: false } },
+  );
+
+  // RLS が効くので、権限のない写真はそもそも見えず、消せない
+  const { data: row, error: findError } = await supabase
+    .from("attachments")
+    .select("id, storage_path")
+    .eq("id", body.attachmentId)
+    .maybeSingle();
+  if (findError || !row) {
+    return NextResponse.json({ error: "この写真は消せません。" }, { status: 403 });
+  }
+
+  const { error: delError } = await supabase.from("attachments").delete().eq("id", row.id);
+  if (delError) {
+    return NextResponse.json({ error: delError.message }, { status: 400 });
+  }
+
+  // Drive から取り込んだ古い写真は R2 に実体が無い。消せなくても構わない
+  if (row.storage_path && !row.storage_path.startsWith("drive/")) {
+    const res = await fetch(presignDelete(cfg, row.storage_path), { method: "DELETE" });
+    if (!res.ok && res.status !== 404) {
+      // 一覧からは外れているので、利用者には成功として返す
+      console.warn("R2 の削除に失敗", row.storage_path, res.status);
+    }
+  }
+
+  return NextResponse.json({ ok: true });
 }
