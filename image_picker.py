@@ -257,8 +257,13 @@ def pick(text: str, media: str, cards: list, today: date = None, k: int = None,
 def preview_url(card: dict) -> str:
     """シートのプレビュー用URL。
 
-    Drive のサムネイルは認証なしで画像本体を返すため、=IMAGE() で表示できる
-    （2026-08-17 確認）。R2 の公開URLは現在 403 を返すので、そちらは使わない。
+    Drive のサムネイルは認証なしで画像本体を返すため、=IMAGE() で表示できる。
+
+    2026-09-04 追記: 「R2 の公開URLは 403 を返す」としてここで Drive を使ってきたが、
+    誤診だった。403 の中身は Cloudflare のエラーコード 1010 で、公開設定ではなく
+    Python の User-Agent をボットとみなした遮断。ブラウザの UA を付けると 200 が返る。
+    ブラウザ表示は R2 でも問題ないため、今後は R2 の公開URLへ寄せていく。
+    ただし過去の記事の画像は Drive を指しているので、この関数はそのまま残す。
     """
     return f"https://drive.google.com/thumbnail?id={card['drive_id']}&sz=w800"
 
@@ -290,6 +295,8 @@ def ensure_public_url(card: dict, sess=None, client=None) -> str:
 
     投稿側（X/IG）が http URL を前提にしているため、実際に投稿する段では要る。
 
+    2026-09-04: 下の「403で使えない」は誤診だった（実体は UA によるボット遮断）。
+    ブラウザからは 200 で取得できる。以下は当時の記録として残す。
     ⚠ 2026-08-17 時点で R2 の公開URL（r2.dev）は 403 を返す。今回上げた画像も、
       以前から置かれている画像も同様なので、バケット側の公開設定の問題と思われる。
       そのため週次ループはこれを呼ばず、プレビューには preview_url() を使う。

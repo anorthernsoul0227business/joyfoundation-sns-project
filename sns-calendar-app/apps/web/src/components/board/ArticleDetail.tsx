@@ -14,6 +14,7 @@ import {
   type Attachment,
 } from "../../lib/board";
 import { BodyDiff } from "./BodyDiff";
+import { ImageUpload } from "./ImageUpload";
 import { StatusBadge } from "./StatusBadge";
 
 const GRADE_LABEL: Record<"A" | "B" | "C", string> = {
@@ -25,11 +26,13 @@ const GRADE_LABEL: Record<"A" | "B" | "C", string> = {
 export function ArticleDetail({
   article,
   userId,
+  orgId,
   onUpdated,
   onBack,
 }: {
   article: Article;
   userId: string;
+  orgId: string | null;
   onUpdated: (next: Article) => void;
   /** 狭い画面のときだけ渡す。一覧に戻る */
   onBack?: () => void;
@@ -226,9 +229,9 @@ export function ArticleDetail({
         </div>
       )}
 
-      {attachments.length > 0 && (
-        <div className="mt-5 rounded border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <div className="mb-2 text-[0.78em] tracking-wider text-slate-500">いっしょに出す写真</div>
+      <div className="mt-5 rounded border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="mb-2 text-[0.78em] tracking-wider text-slate-500">いっしょに出す写真</div>
+        {attachments.length > 0 ? (
           <div className="flex flex-wrap gap-3">
             {attachments.map((at) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -241,8 +244,17 @@ export function ArticleDetail({
               />
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-[0.9em] text-slate-500">まだ写真はありません。</p>
+        )}
+        {orgId && (
+          <ImageUpload
+            orgId={orgId}
+            articleId={article.id}
+            onUploaded={(added) => setAttachments((prev) => [...prev, added])}
+          />
+        )}
+      </div>
 
       {isRevised && (
         <p className="mt-4 text-[0.85em] text-slate-500">

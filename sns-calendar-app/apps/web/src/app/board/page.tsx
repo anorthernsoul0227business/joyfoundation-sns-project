@@ -234,6 +234,7 @@ export default function BoardPage() {
                   <ArticleDetail
                     article={selected}
                     userId={user.id}
+                    orgId={orgId}
                     onUpdated={handleUpdated}
                     onBack={narrow ? () => setSelected(null) : undefined}
                   />
