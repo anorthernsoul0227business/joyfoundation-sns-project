@@ -28,6 +28,7 @@ X と Instagram の自動投稿は launchd で15分ごとに動いている。
 import argparse
 import os
 import sys
+import time
 from datetime import datetime
 
 import gspread
@@ -57,15 +58,29 @@ def is_posting_enabled(logger=None) -> bool:
         else:
             print(msg, file=sys.stderr)
 
-    try:
-        ws = _sheet().worksheet(TAB)
-        val = (ws.acell(CELL).value or "").strip()
-    except gspread.WorksheetNotFound:
-        say(f"『{TAB}』タブがありません。安全のため投稿を行いません。"
-            f"  /usr/bin/python3 posting_switch.py --setup で作成してください")
-        return False
-    except Exception as e:
-        say(f"投稿スイッチを読めませんでした（{type(e).__name__}）。安全のため投稿を行いません")
+    # 一時的な通信エラーで丸ごと見送るのはもったいない。
+    # 2026-09-06 に実測したところ、15分おきの実行のうち5%ほどが
+    # APIError で読めずに投稿を見送っていた。数回は粘る。
+    # ただし粘っても読めなければ、これまでどおり停止側に倒す
+    val = None
+    last = None
+    for attempt in range(3):
+        try:
+            ws = _sheet().worksheet(TAB)
+            val = (ws.acell(CELL).value or "").strip()
+            break
+        except gspread.WorksheetNotFound:
+            say(f"『{TAB}』タブがありません。安全のため投稿を行いません。"
+                f"  /usr/bin/python3 posting_switch.py --setup で作成してください")
+            return False
+        except Exception as e:
+            last = e
+            if attempt < 2:
+                time.sleep(3 * (2 ** attempt))
+
+    if val is None:
+        say(f"投稿スイッチを読めませんでした（{type(last).__name__}、3回試行）。"
+            "安全のため投稿を行いません")
         return False
 
     if val == RUNNING:
