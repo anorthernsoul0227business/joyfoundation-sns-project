@@ -15,6 +15,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    date: "2026-09-06",
+    title: "投稿予定をカレンダーで見られるようにしました",
+    body:
+      "「📆 投稿予定」で、いつ何が投稿されるかを月ごとにご覧いただけます。" +
+      "色は媒体（黒がX、赤がInstagram、緑がnote）で、薄い色は投稿ずみです。" +
+      "帯を押すと、その記事が開きます。",
+  },
+  {
     date: "2026-09-04",
     title: "イベントの告知を自動で用意するようにしました",
     body:

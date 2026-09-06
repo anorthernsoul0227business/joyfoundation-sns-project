@@ -541,3 +541,47 @@ export async function saveAnnouncePlan(params: {
     .in("id", params.run.ids);
   if (error) throw new Error(error.message);
 }
+
+
+// ---- 投稿予定カレンダー -----------------------------------------------------
+
+/**
+ * 指定した期間に投稿する（した）記事を返す。
+ *
+ * 予定が決まっているもの（scheduled_at）と、投稿し終えたもの（published_at）の
+ * 両方を拾う。カレンダーでは「これから出るもの」と「もう出たもの」を並べて見せる。
+ */
+export async function listCalendarArticles(from: Date, to: Date): Promise<Article[]> {
+  const supabase = requireSupabaseClient();
+  const [scheduled, published] = await Promise.all([
+    supabase
+      .from("articles")
+      .select(ARTICLE_COLUMNS)
+      .gte("scheduled_at", from.toISOString())
+      .lt("scheduled_at", to.toISOString()),
+    supabase
+      .from("articles")
+      .select(ARTICLE_COLUMNS)
+      .gte("published_at", from.toISOString())
+      .lt("published_at", to.toISOString()),
+  ]);
+  if (scheduled.error) throw new Error(scheduled.error.message);
+  if (published.error) throw new Error(published.error.message);
+
+  // 投稿済みは両方に出てくることがあるので、id で重複を除く
+  const seen = new Map<string, Article>();
+  for (const a of [...(scheduled.data ?? []), ...(published.data ?? [])]) {
+    const art = a as unknown as Article;
+    seen.set(art.id, art);
+  }
+  return [...seen.values()];
+}
+
+/** カレンダーで日ごとに並べるための日付。投稿済みは実際に出た日を使う */
+export function calendarDate(a: Article): string | null {
+  const iso = a.published_at ?? a.scheduled_at;
+  if (!iso) return null;
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}

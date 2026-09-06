@@ -225,7 +225,14 @@ def main() -> int:
                 row += ["", urls[i] if i < len(urls) else ""]
             row += ["投稿予約", f"共有ボード {a['article_no']}"]
             ws = sh.worksheet(QUEUE_TAB[a["platform"]])
-            ws.append_row(row, value_input_option="RAW")
+
+            # append_row は使わない。IG投稿キューには A列が空で C・D列にだけ値がある
+            # 古い行が残っており、gspread が末尾を誤判定して2列ずれた位置に
+            # 書き込んでいた（2026-09-06 に発覚。IGの予約が1件も入っていなかった）。
+            # A列に値がある最後の行を自分で数えて、位置を明示する
+            col_a = ws.col_values(1)
+            at = len(col_a) + 1
+            ws.update(values=[row], range_name=f"A{at}", value_input_option="RAW")
             queued += 1
 
         sb("PATCH", f"articles?article_no=eq.{a['article_no']}", patch)
