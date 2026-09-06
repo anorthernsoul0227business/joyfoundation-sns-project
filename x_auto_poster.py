@@ -85,6 +85,17 @@ def get_sheet():
     return sh.worksheet(SHEET_NAME)
 
 
+def _sync_board(memo, post_id=""):
+    """投稿できたことを共有ボードに記録する。失敗しても投稿処理は止めない。"""
+    try:
+        import board_sync
+        no = board_sync.article_no_from_memo(memo)
+        if no:
+            board_sync.mark_published(no, post_id, logger)
+    except Exception as e:
+        logger.warning(f"共有ボードへの記録をとばしました: {type(e).__name__}: {e}")
+
+
 def upload_image_to_x(image_url, auth):
     """Google Drive画像をダウンロードしてX APIにアップロード"""
     try:
@@ -271,6 +282,8 @@ def get_scheduled_posts(ws):
             'image_urls': image_urls,
             'post_time': post_time_str,
             'reply_text': row[COL_REPLY].strip() if len(row) > COL_REPLY and row[COL_REPLY] else '',
+            # どの記事の投稿かを控える。投稿後に共有ボードへ伝えるために使う
+            'memo': row[COL_MEMO].strip() if len(row) > COL_MEMO and row[COL_MEMO] else '',
         })
 
     return posts
@@ -338,6 +351,10 @@ def run_scheduled(dry_run=False):
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_POSTED)
             ws.update_cell(post['row'], COL_MEMO + 1, memo)
             logger.info(f"  ステータス更新完了")
+
+            # 共有ボードにも伝える。ここが無いと圭一郎さんの画面は
+            # 「投稿予約」のままで、出たのかどうか分からない（2026-09-06）
+            _sync_board(post.get('memo', ''), str(tweet_id))
 
             # 通知
             post_url = _build_x_post_url(tweet_id)

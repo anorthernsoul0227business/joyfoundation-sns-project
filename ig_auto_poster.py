@@ -141,6 +141,17 @@ def resize_for_ig(img):
     return result
 
 
+def _sync_board(memo, post_id=""):
+    """投稿できたことを共有ボードに記録する。失敗しても投稿処理は止めない。"""
+    try:
+        import board_sync
+        no = board_sync.article_no_from_memo(memo)
+        if no:
+            board_sync.mark_published(no, post_id, logger)
+    except Exception as e:
+        logger.warning(f"共有ボードへの記録をとばしました: {type(e).__name__}: {e}")
+
+
 def upload_to_r2(img):
     """PIL ImageをCloudflare R2へアップロードして公開URLとオブジェクトキーを返す"""
     account_id = os.getenv('R2_ACCOUNT_ID')
@@ -430,6 +441,8 @@ def get_scheduled_posts(ws):
             'text': row[COL_TEXT],
             'image_urls': image_urls,
             'post_time': post_time_str,
+            # どの記事の投稿かを控える。投稿後に共有ボードへ伝えるために使う
+            'memo': row[COL_MEMO].strip() if len(row) > COL_MEMO and row[COL_MEMO] else '',
         })
 
     return posts
@@ -503,8 +516,13 @@ def run_scheduled(dry_run=False):
         if post_id:
             ws.update_cell(post['row'], COL_STATUS + 1, STATUS_POSTED)
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+            # メモを上書きする前に、どの記事だったかを控えておく
+            prev_memo = post.get('memo', '')
             ws.update_cell(post['row'], COL_MEMO + 1, f"投稿済 {timestamp} ID:{post_id}")
             logger.info(f"  ステータス更新完了")
+
+            # 共有ボードにも伝える（2026-09-06）
+            _sync_board(prev_memo, str(post_id))
 
             # 通知
             post_url = _build_ig_post_url(post_id)
