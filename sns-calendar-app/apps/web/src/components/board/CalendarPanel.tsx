@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useIsNarrow } from "../../hooks/useIsNarrow";
 import {
   calendarDate,
   listCalendarArticles,
@@ -36,6 +37,7 @@ export function CalendarPanel({
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+  const narrow = useIsNarrow();
   const [articles, setArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,9 +101,9 @@ export function CalendarPanel({
         <button
           type="button"
           onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-[0.9em] transition hover:bg-slate-50"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-[0.9em] transition hover:bg-slate-50 md:px-4"
         >
-          ← 前の月
+          ←<span className="hidden md:inline"> 前の月</span>
         </button>
         <span className="text-[1.15em] font-semibold text-brand-ink">
           {month.getFullYear()}年{month.getMonth() + 1}月
@@ -109,9 +111,9 @@ export function CalendarPanel({
         <button
           type="button"
           onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-[0.9em] transition hover:bg-slate-50"
+          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-[0.9em] transition hover:bg-slate-50 md:px-4"
         >
-          次の月 →
+          <span className="hidden md:inline">次の月 </span>→
         </button>
         <button
           type="button"
@@ -146,8 +148,71 @@ export function CalendarPanel({
         <span>薄い色は投稿ずみ</span>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[34rem] grid-cols-7 gap-px rounded border border-slate-200 bg-slate-200">
+      {narrow ? (
+        /* 携帯では7列の表が入りきらず横スクロールになる。
+           もともと横スクロールをなくすために作った画面なので、
+           狭いときは日付順の一覧にする（2026-09-06） */
+        <ul className="space-y-2">
+          {cells
+            .filter((d) => d.getMonth() === thisMonth && (byDay.get(ymd(d)) ?? []).length > 0)
+            .map((d) => {
+              const key = ymd(d);
+              const items = byDay.get(key) ?? [];
+              return (
+                <li
+                  key={key}
+                  className={
+                    "rounded border bg-white px-4 py-3 shadow-sm " +
+                    (key === today ? "border-brand-ocean" : "border-slate-200")
+                  }
+                >
+                  <p
+                    className={
+                      "mb-2 text-[0.9em] font-semibold " +
+                      (key === today ? "text-brand-ocean" : "text-slate-700")
+                    }
+                  >
+                    {d.getMonth() + 1}月{d.getDate()}日（{WEEKDAYS[d.getDay()]}）
+                    {key === today && " 今日"}
+                  </p>
+                  <div className="space-y-1.5">
+                    {items.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => onSelectArticle(a)}
+                        className="flex w-full items-center gap-2 rounded border border-slate-200 px-3 py-2.5 text-left transition hover:bg-slate-50"
+                      >
+                        <span
+                          className={
+                            "shrink-0 rounded px-2 py-0.5 text-[0.75em] font-semibold " +
+                            PLATFORM_TONE[a.platform] +
+                            (a.status === "published" ? " opacity-50" : "")
+                          }
+                        >
+                          {PLATFORM_LABEL[a.platform]}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[0.9em] text-brand-ink">
+                          {a.title || "（題なし）"}
+                        </span>
+                        {a.status === "published" && (
+                          <span className="shrink-0 text-[0.75em] text-slate-400">投稿ずみ</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          {cells.filter((d) => d.getMonth() === thisMonth && (byDay.get(ymd(d)) ?? []).length > 0)
+            .length === 0 && (
+            <li className="rounded border border-slate-200 bg-white px-5 py-8 text-center text-[0.92em] text-slate-500">
+              この月の投稿予定はありません。
+            </li>
+          )}
+        </ul>
+      ) : (
+        <div className="grid grid-cols-7 gap-px rounded border border-slate-200 bg-slate-200">
           {WEEKDAYS.map((w, i) => (
             <div
               key={w}
@@ -205,10 +270,10 @@ export function CalendarPanel({
             );
           })}
         </div>
-      </div>
+      )}
 
       <p className="mt-3 text-[0.85em] text-slate-500">
-        帯を押すと、その記事を開きます。投稿はお昼の12時です。
+        押すと、その記事を開きます。投稿はお昼の12時です。
       </p>
     </div>
   );
