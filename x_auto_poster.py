@@ -88,11 +88,19 @@ def get_sheet():
 def upload_image_to_x(image_url, auth):
     """Google Drive画像をダウンロードしてX APIにアップロード"""
     try:
-        # Drive URLからファイルIDを抽出
+        # Drive URLからファイルIDを抽出。
+        # 2026-09-06: 共有ボードは thumbnail?id=... 形式を渡すが、
+        # /d/ 形式しか見ておらず画像なしで投稿していた（ART-0049）。
+        # Instagram側は両方に対応していたので、Xだけが取りこぼしていた
         if 'drive.google.com' in image_url:
+            file_id = None
             if '/d/' in image_url:
                 file_id = image_url.split('/d/')[1].split('/')[0].split('?')[0]
             else:
+                m = re.search(r'[?&]id=([A-Za-z0-9_-]{10,})', image_url)
+                if m:
+                    file_id = m.group(1)
+            if not file_id:
                 logger.warning(f"Drive URLからファイルIDを抽出できません: {image_url}")
                 return None
             download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
