@@ -155,9 +155,27 @@ def main() -> int:
         # 特に「前日」は他の予定と重なっても動かさない（2026-09-04 の方針）
         if a.get("announce_role") and a.get("scheduled_date"):
             slot = dt.date.fromisoformat(a["scheduled_date"])
+
+            # 予定日が過ぎていても、開催日まで間があるなら出し直す。
+            # 2026-09-08 に発覚: 圭一郎さんの承認が予定日を過ぎてからだと、
+            # 開催まで11日あるのに「間に合いません」になっていた（ART-0077）。
+            # 承認が遅れただけで告知を捨ててしまうのは、明らかにやりすぎだった
             if slot <= today:
-                missed.append((a, ev or slot))
-                continue
+                ev_day = dt.date.fromisoformat(a["event_date"]) if a.get("event_date") else None
+                if ev_day is None or ev_day <= today + dt.timedelta(days=1):
+                    # 開催が明日以前。前日にも間に合わないので見送る
+                    missed.append((a, ev or slot))
+                    continue
+                # 空いている日へ寄せる。前日より後には置かない
+                slot = today + dt.timedelta(days=1)
+                limit = ev_day - dt.timedelta(days=1)
+                while (plat, slot) in taken and slot < limit:
+                    slot += dt.timedelta(days=1)
+                if slot > limit:
+                    missed.append((a, ev or ev_day))
+                    continue
+                logger.info(f"  {a['article_no']}: 予定日 {a['scheduled_date']} は過ぎていましたが、"
+                            f"開催まで日があるので {slot} に出し直します")
             if a["announce_role"] != "day_before":
                 # 前日以外は、同じ媒体が同じ日に重なるなら1日ずつ前へずらす
                 while (plat, slot) in taken and slot > today + dt.timedelta(days=1):

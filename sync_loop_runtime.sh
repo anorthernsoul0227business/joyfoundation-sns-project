@@ -48,6 +48,7 @@ SCRIPTS=(
   sync_events.py        # 圭一郎さんのGoogleカレンダーを events に取り込む
   announce_plan.py      # イベント告知の日取りを決める
   generate_event_posts.py  # イベントの告知記事を作る
+  check_ideas.py        # 返事をしていない思いつきメモを知らせる
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }

@@ -7,3 +7,6 @@ cd "$(dirname "$0")"
 # 新しい催しが入っていれば告知記事を作る。生成に時間がかかるので投稿日決定より前に置く
 /usr/bin/python3 generate_event_posts.py || echo "[warn] 告知記事の生成に失敗。次回に持ち越します"
 /usr/bin/python3 schedule_posts.py
+# 圭一郎さんのメモに返事がないものを知らせる。
+# 書き込まれるだけで誰も見に行っていなかった（2026-09-08 に発覚）
+/usr/bin/python3 check_ideas.py         || echo "[warn] メモの確認に失敗しました"
