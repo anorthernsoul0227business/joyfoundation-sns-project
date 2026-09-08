@@ -22,7 +22,8 @@ export type ArticleStatus =
   | "revised"
   | "scheduled"
   | "published"
-  | "missed";
+  | "missed"
+  | "discarded";
 
 export interface Article {
   id: string;
@@ -48,6 +49,7 @@ export interface Article {
   published_at: string | null;
   /** 本文が触れているイベント開催日。過ぎたら投稿しない */
   event_date: string | null;
+  discard_reason: string | null;
   /** 投稿予定の日時 */
   scheduled_at: string | null;
   created_at: string;
@@ -148,6 +150,7 @@ export const STATUS_LABEL: Record<ArticleStatus, string> = {
   scheduled: "投稿予約",
   published: "投稿済",
   missed: "間に合いませんでした",
+  discarded: "出さないことにしました",
 };
 
 /** 圭一郎さんの判断を待っている状態 */
@@ -159,7 +162,7 @@ export const PENDING_STATUSES: ArticleStatus[] = [
   "needs_owner_input", // AI が聞き返している。返事がないと先に進まない
 ];
 
-export type ArticleFilter = "pending" | "approved" | "week" | "all";
+export type ArticleFilter = "pending" | "approved" | "week" | "all" | "discarded";
 
 /** 圭一郎さんが OK を出したあと、投稿されるまでの状態 */
 export const APPROVED_STATUSES: ArticleStatus[] = ["approved", "scheduled", "published"];
@@ -169,7 +172,7 @@ export const APPROVED_STATUSES: ArticleStatus[] = ["approved", "scheduled", "pub
 const ARTICLE_COLUMNS =
   "id, org_id, article_no, week, platform, scheduled_date, grade, source_card_ids, title, " +
   "body_ai, body_final, status, fix_note, revision_note, fix_type, fix_apply, image_reason, reviewed_by, " +
-  "reviewed_at, published_at, event_date, scheduled_at, created_at, updated_at";
+  "reviewed_at, published_at, event_date, scheduled_at, discard_reason, created_at, updated_at";
 
 function isoWeek(d: Date): string {
   // 週次ループと同じ ISO 週表記（例: 2026-W36）
@@ -193,10 +196,14 @@ export async function listArticles(filter: ArticleFilter): Promise<Article[]> {
     query = query.in("status", PENDING_STATUSES);
   } else if (filter === "approved") {
     query = query.in("status", APPROVED_STATUSES);
+  } else if (filter === "discarded") {
+    // 破棄したものは1週間だけ見せる。それを過ぎたら一覧から外す
+    query = query.eq("status", "discarded").is("archived_at", null);
   } else if (filter === "week") {
     query = query.eq("week", isoWeek(new Date()));
   } else {
-    query = query.limit(200);
+    // 「すべて」にも破棄したものは出さない。専用の絞り込みで見る
+    query = query.neq("status", "discarded").limit(200);
   }
 
   const { data, error } = await query;
@@ -348,6 +355,65 @@ export async function editArticleBody(params: {
   if (error) {
     throw new Error(error.message);
   }
+  return data as unknown as Article;
+}
+
+/**
+ * 記事を破棄する。出さないと決めたもの。
+ *
+ * 2026-09-08: 元データは残す。週次ループは直近の記事を読んで同じ切り口が
+ * 続かないようにしているので、消すと同じ角度の記事をまた作ってしまう。
+ * 「出さないと判断された」は、承認された記事と同じくらい価値がある情報。
+ */
+export async function discardArticle(params: {
+  article: Article;
+  reason: string;
+  userId: string;
+}): Promise<Article> {
+  const reason = params.reason.trim();
+  if (!reason) {
+    throw new Error("なぜ出さないのか、一言お書きください。");
+  }
+  const supabase = requireSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { error: reviewError } = await supabase.from("article_reviews").insert({
+    org_id: params.article.org_id,
+    article_id: params.article.id,
+    reviewer_user_id: params.userId,
+    decision: "request_fix",
+    note: `出さないことにしました：${reason}`,
+    body_snapshot: params.article.body_final ?? params.article.body_ai,
+  });
+  if (reviewError) throw new Error(reviewError.message);
+
+  const { data, error } = await supabase
+    .from("articles")
+    .update({
+      status: "discarded",
+      discarded_at: now,
+      discard_reason: reason,
+      scheduled_at: null,
+      reviewed_by: params.userId,
+      reviewed_at: now,
+    })
+    .eq("id", params.article.id)
+    .select(ARTICLE_COLUMNS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as unknown as Article;
+}
+
+/** 破棄を取り消す。1週間以内なら戻せる */
+export async function undiscardArticle(article: Article): Promise<Article> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .update({ status: "ai_draft", discarded_at: null, discard_reason: null })
+    .eq("id", article.id)
+    .select(ARTICLE_COLUMNS)
+    .single();
+  if (error) throw new Error(error.message);
   return data as unknown as Article;
 }
 

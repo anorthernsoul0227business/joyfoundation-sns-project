@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import {
   decideArticle,
+  discardArticle,
   editArticleBody,
+  undiscardArticle,
   formatDateJa,
   formatDateTimeJa,
   loadArticleDetail,
@@ -42,7 +44,9 @@ export function ArticleDetail({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [fixOpen, setFixOpen] = useState(false);
   const [note, setNote] = useState("");
-  const [busy, setBusy] = useState<"approve" | "request_fix" | "edit" | null>(null);
+  const [busy, setBusy] = useState<"approve" | "request_fix" | "edit" | "discard" | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [discardReason, setDiscardReason] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -54,6 +58,8 @@ export function ArticleDetail({
     setFixOpen(false);
     setNote("");
     setEditOpen(false);
+    setDiscardOpen(false);
+    setDiscardReason("");
     setError(null);
     setDone(null);
     loadArticleDetail(article.id)
@@ -122,6 +128,34 @@ export function ArticleDetail({
     }
   }
 
+  async function discard() {
+    setBusy("discard");
+    setError(null);
+    try {
+      const next = await discardArticle({ article, reason: discardReason, userId });
+      onUpdated(next);
+      setDone("この記事は出さないことにしました。1週間は「出さないもの」から戻せます。");
+      setDiscardOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function undiscard() {
+    setBusy("discard");
+    setError(null);
+    try {
+      onUpdated(await undiscardArticle(article));
+      setDone("戻しました。もう一度ご確認ください。");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function saveEdit() {
     setBusy("edit");
     setError(null);
@@ -170,6 +204,21 @@ export function ArticleDetail({
           {article.scheduled_at
             ? "開催日より前に投稿されます。"
             : "開催日に間に合うように投稿日を決めます。"}
+        </div>
+      )}
+
+      {article.status === "discarded" && (
+        <div className="mb-4 rounded border border-slate-300 bg-slate-100 px-5 py-4 text-[0.95em] text-slate-700">
+          <div className="mb-1 font-semibold">この記事は出さないことにしました</div>
+          {article.discard_reason && <p>理由：{article.discard_reason}</p>}
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={() => void undiscard()}
+            className="mt-3 rounded-md border border-slate-400 bg-white px-5 py-2.5 text-[0.95em] font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            {busy === "discard" ? "戻しています…" : "やっぱり出す（戻す）"}
+          </button>
         </div>
       )}
 
@@ -397,6 +446,54 @@ export function ArticleDetail({
                 自分で直す
               </button>
             </div>
+
+            {!discardOpen && (
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => {
+                  setDiscardOpen(true);
+                  setFixOpen(false);
+                  setEditOpen(false);
+                }}
+                className="mt-4 text-[0.9em] text-slate-500 underline transition hover:text-slate-700 disabled:opacity-50"
+              >
+                この記事は出さない
+              </button>
+            )}
+
+            {discardOpen && (
+              <div className="mt-4 rounded border border-slate-300 bg-slate-50 px-4 py-3">
+                <p className="mb-2 text-[0.88em] text-slate-600">
+                  なぜ出さないのかを一言お書きください。
+                  同じような記事をまた作らないように、AIに伝えます。
+                </p>
+                <input
+                  type="text"
+                  value={discardReason}
+                  onChange={(e) => setDiscardReason(e.target.value)}
+                  placeholder="例：日にちが過ぎてしまった／この切り口は使わない"
+                  className="w-full rounded border border-slate-300 px-3 py-2.5 text-[0.98em] outline-none focus:border-brand-ocean"
+                />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={busy !== null || discardReason.trim() === ""}
+                    onClick={() => void discard()}
+                    className="rounded-md bg-slate-700 px-6 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  >
+                    {busy === "discard" ? "送っています…" : "出さないことにする"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiscardOpen(false)}
+                    className="rounded-md border border-slate-300 px-5 py-2.5 text-slate-600 transition hover:bg-white"
+                  >
+                    やめる
+                  </button>
+                </div>
+              </div>
+            )}
 
             {editOpen && (
               <div className="mt-4">

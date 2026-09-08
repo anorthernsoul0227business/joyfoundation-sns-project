@@ -165,19 +165,27 @@ def _drive_id(url: str) -> str | None:
 
 
 def load_recent(limit: int = 24) -> list:
-    """直近の記事の「媒体・使用カード・書き出し」。切り口の重複を避けるために使う。"""
+    """直近の記事の「媒体・使用カード・書き出し」。切り口の重複を避けるために使う。
+
+    破棄した記事も含める。2026-09-08: 出さないと判断された記事を外すと、
+    AI はそれを知らないまま同じ角度の記事をまた作ってしまう。
+    「出さないと判断された」は、承認された記事と同じくらい大事な情報。
+    """
     rows = _request(
         "GET",
-        "articles?select=platform,source_card_ids,body_ai"
+        "articles?select=platform,source_card_ids,body_ai,status,discard_reason"
         f"&order=created_at.desc&limit={limit}",
     )
     out = []
     for r in rows or []:
         body = (r.get("body_ai") or "").replace(TEST_BANNER, "").strip()
-        out.append({
+        item = {
             "媒体": PLATFORM_BACK.get(r.get("platform", ""), r.get("platform", "")),
             "使用カード": ", ".join(r.get("source_card_ids") or []),
             "書き出し": body.split("\n")[0][:46] if body else "",
-        })
+        }
+        if r.get("status") == "discarded":
+            item["出さないと判断"] = r.get("discard_reason") or "理由の記載なし"
+        out.append(item)
     out.reverse()  # 呼び出し側は「古い→新しい」の順を期待している
     return out

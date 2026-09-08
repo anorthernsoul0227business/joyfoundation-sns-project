@@ -52,6 +52,7 @@ SCRIPTS=(
   patrol.py             # 1日2回の見回り。やることを見つけて案を添える
   apply_tasks.py        # 承認されたやることを実行する
   writing_rules.py      # 書き方の決まりを DB から読む
+  archive_discarded.py  # 破棄して1週間たった記事を一覧から外す
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }

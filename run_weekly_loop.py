@@ -574,7 +574,12 @@ def build_prompt(cards: list, events: list, rules: list, glossary: str,
                 cid = cid.strip()
                 if cid:
                     used[cid] = used.get(cid, 0) + 1
-        lines = [f"- [{r['媒体']}] {r['書き出し']}" for r in recent[-12:]]
+        # 出さないと判断された記事は、その旨を添える。
+        # 同じ角度をまた作らないために、承認された記事と同じくらい大事な情報
+        lines = []
+        for r in recent[-12:]:
+            mark = f"  ← 出さないと判断されました（{r['出さないと判断']}）" if r.get("出さないと判断") else ""
+            lines.append(f"- [{r['媒体']}] {r['書き出し']}{mark}")
         if used:
             hot = ", ".join(f"{k}({v}回)" for k, v in sorted(used.items(), key=lambda x: -x[1])[:5])
             lines.append(f"\n直近で多く使われたカード: {hot} ← これ以外を優先してください")

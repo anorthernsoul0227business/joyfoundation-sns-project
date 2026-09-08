@@ -16,7 +16,7 @@ export function StatusBadge({ status }: { status: ArticleStatus }) {
       ? "bg-brand-ocean/10 text-brand-ocean"
       : status === "needs_fix"
         ? "bg-rose-50 text-rose-700"
-        : status === "missed"
+        : status === "missed" || status === "discarded"
           ? "bg-slate-200 text-slate-600"
         : "bg-slate-100 text-slate-500";
   return (

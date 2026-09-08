@@ -8,6 +8,7 @@ const FILTERS: { value: ArticleFilter; label: string }[] = [
   { value: "approved", label: "OKした記事" },
   { value: "week", label: "今週" },
   { value: "all", label: "すべて" },
+  { value: "discarded", label: "出さないもの" },
 ];
 
 export function ArticleList({

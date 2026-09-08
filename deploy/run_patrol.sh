@@ -12,3 +12,5 @@ cd "$(dirname "$0")"
 # 先に承認ぶんを片づける。実行の結果が次の見回りに反映される
 /usr/bin/python3 apply_tasks.py || echo "[warn] 承認ぶんの実行に失敗しました"
 /usr/bin/python3 patrol.py      || echo "[warn] 見回りに失敗しました"
+# 破棄して1週間たったものを一覧から外す（データは残す）
+/usr/bin/python3 archive_discarded.py || echo "[warn] 破棄記事の片づけに失敗しました"
