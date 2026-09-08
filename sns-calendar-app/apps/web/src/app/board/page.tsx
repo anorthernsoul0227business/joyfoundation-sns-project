@@ -14,6 +14,7 @@ import { IdeaDock } from "../../components/board/IdeaDock";
 import { CalendarPanel } from "../../components/board/CalendarPanel";
 import { EventsPanel } from "../../components/board/EventsPanel";
 import { GuidePanel } from "../../components/board/GuidePanel";
+import { TasksPanel } from "../../components/board/TasksPanel";
 import { IdeasPanel, SharesPanel } from "../../components/board/SidePanels";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
@@ -21,11 +22,12 @@ import { signOut, syncSessionFromSupabase } from "../../lib/auth";
 import { listArticles, type Article, type ArticleFilter } from "../../lib/board";
 import { useAuthStore } from "../../stores/auth";
 
-type Section = "articles" | "calendar" | "ideas" | "events" | "shares" | "guide";
+type Section = "articles" | "calendar" | "tasks" | "ideas" | "events" | "shares" | "guide";
 
 const SECTIONS: { value: Section; label: string; short: string; icon: string }[] = [
   { value: "articles", label: "記事の確認", short: "記事", icon: "📝" },
   { value: "calendar", label: "投稿予定", short: "予定", icon: "📆" },
+  { value: "tasks", label: "やること", short: "やること", icon: "🔎" },
   { value: "ideas", label: "思いつきメモ", short: "メモ", icon: "💡" },
   { value: "events", label: "イベント", short: "催し", icon: "📅" },
   { value: "shares", label: "資料・お知らせ", short: "資料", icon: "📎" },
@@ -270,6 +272,7 @@ export default function BoardPage() {
                 }}
               />
             )}
+            {section === "tasks" && <TasksPanel userId={user.id} reloadKey={reloadKey} />}
             {section === "guide" && <GuidePanel />}
           </section>
         )}

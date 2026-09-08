@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.joyfoundation.patrol</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/kitakoujirou/agent/loop/run_patrol.sh</string>
+    </array>
+
+    <!-- 朝7時と夕方18時。朝の投稿日決定（8時）より前に見回ることで、
+         承認されたものがその日のうちに反映される -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/kitakoujirou/agent/loop</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/patrol_out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/kitakoujirou/agent/loop/logs/patrol_err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/kitakoujirou/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/kitakoujirou</string>
+    </dict>
+</dict>
+</plist>

@@ -585,3 +585,115 @@ export function calendarDate(a: Article): string | null {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
+
+
+// ---- やること（見回りで見つけたもの） ---------------------------------------
+
+export type TaskStatus =
+  | "open"
+  | "proposed"
+  | "approved"
+  | "done"
+  | "rejected"
+  | "dismissed";
+
+export type TaskKind =
+  | "writing_rule"
+  | "reschedule"
+  | "rewrite_article"
+  | "reply_only"
+  | "manual";
+
+export interface Task {
+  id: string;
+  org_id: string;
+  source: "idea" | "fix_request" | "owner_input" | "schedule" | "system";
+  source_key: string;
+  title: string;
+  detail: string | null;
+  status: TaskStatus;
+  proposal: string | null;
+  proposal_kind: TaskKind | null;
+  decision_note: string | null;
+  result_note: string | null;
+  created_at: string;
+  done_at: string | null;
+}
+
+export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
+  open: "見つけました",
+  proposed: "こう直します（ご確認ください）",
+  approved: "承認ずみ・作業まち",
+  done: "終わりました",
+  rejected: "やり直します",
+  dismissed: "やらないことにしました",
+};
+
+export const TASK_SOURCE_LABEL: Record<Task["source"], string> = {
+  idea: "思いつきメモ",
+  fix_request: "直しの依頼",
+  owner_input: "お尋ねしたこと",
+  schedule: "投稿の予定",
+  system: "見回りで発見",
+};
+
+export const TASK_KIND_LABEL: Record<TaskKind, string> = {
+  writing_rule: "これからの記事すべてに効かせます",
+  rewrite_article: "この記事を書き直します",
+  reschedule: "投稿日を決め直します",
+  reply_only: "お返事をします",
+  manual: "人の手が必要です",
+};
+
+/** 未決着のやること。新しい順 */
+export async function listTasks(includeDone = false): Promise<Task[]> {
+  const supabase = requireSupabaseClient();
+  let q = supabase
+    .from("tasks")
+    .select(
+      "id, org_id, source, source_key, title, detail, status, proposal, proposal_kind, " +
+        "decision_note, result_note, created_at, done_at",
+    )
+    .order("created_at", { ascending: false });
+  if (!includeDone) {
+    q = q.in("status", ["open", "proposed", "approved", "rejected"]);
+  }
+  const { data, error } = await q.limit(200);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Task[];
+}
+
+/**
+ * 案を承認する。実際の作業は Mac mini の処理が拾って行う。
+ * ここで実行まで行わないのは、記事の書き直しに数十秒かかり、
+ * 画面を待たせてしまうため。
+ */
+export async function decideTask(params: {
+  task: Task;
+  approve: boolean;
+  note: string;
+  userId: string;
+}): Promise<Task> {
+  const { task, approve, userId } = params;
+  const note = params.note.trim();
+  if (!approve && !note) {
+    throw new Error("どこが違うかを一言お書きください。");
+  }
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({
+      status: approve ? "approved" : "rejected",
+      decision_note: note || null,
+      decided_by: userId,
+      decided_at: new Date().toISOString(),
+    })
+    .eq("id", task.id)
+    .select(
+      "id, org_id, source, source_key, title, detail, status, proposal, proposal_kind, " +
+        "decision_note, result_note, created_at, done_at",
+    )
+    .single();
+  if (error) throw new Error(error.message);
+  return data as unknown as Task;
+}

@@ -49,6 +49,9 @@ SCRIPTS=(
   announce_plan.py      # イベント告知の日取りを決める
   generate_event_posts.py  # イベントの告知記事を作る
   check_ideas.py        # 返事をしていない思いつきメモを知らせる
+  patrol.py             # 1日2回の見回り。やることを見つけて案を添える
+  apply_tasks.py        # 承認されたやることを実行する
+  writing_rules.py      # 書き方の決まりを DB から読む
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }

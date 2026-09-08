@@ -143,8 +143,11 @@ MAX_HEDGES = 1
 
 def write_body(events: list[dict], platform: str, timeout: int) -> str:
     from run_weekly_loop import run_llm
+    import writing_rules
     prompt = PROMPT.format(event=describe_event(events),
                            platform=PLATFORM_JA[platform], limit=LIMITS[platform])
+    # 圭一郎さんの指摘から積み上がった決まりを足す（2026-09-08）
+    prompt += writing_rules.as_prompt("event")
     limit = HARD_LIMIT.get(platform)
 
     base = prompt

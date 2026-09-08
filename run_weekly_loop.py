@@ -931,6 +931,13 @@ def generate(prompt: str, timeout: int = 900) -> list:
     """
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     (LOGDIR / f"prompt_{stamp}.txt").write_text(prompt, encoding="utf-8")
+    # 圭一郎さんの指摘から積み上がった決まりを足す（2026-09-08）
+    try:
+        import writing_rules
+        prompt += writing_rules.as_prompt("weekly")
+    except Exception as e:
+        logger.warning(f"書き方の決まりを読めませんでした: {type(e).__name__}")
+
     logger.info(f"生成を開始します（claude -p / プロンプト {len(prompt):,}字）")
 
     started = datetime.now()
