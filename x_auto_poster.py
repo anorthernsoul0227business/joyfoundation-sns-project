@@ -12,6 +12,7 @@ X自動投稿システム - スプレッドシート連携版
 """
 
 import os
+import re
 import sys
 import io
 import time
