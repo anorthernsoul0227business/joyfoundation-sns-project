@@ -53,6 +53,7 @@ SCRIPTS=(
   apply_tasks.py        # 承認されたやることを実行する
   writing_rules.py      # 書き方の決まりを DB から読む
   archive_discarded.py  # 破棄して1週間たった記事を一覧から外す
+  notify_owner.py       # 圭一郎さんに確認のお願いをメールする
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }
