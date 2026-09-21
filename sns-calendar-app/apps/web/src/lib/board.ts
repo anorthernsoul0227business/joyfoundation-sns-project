@@ -417,6 +417,31 @@ export async function undiscardArticle(article: Article): Promise<Article> {
   return data as unknown as Article;
 }
 
+/** 自動で投稿できない媒体。note は公開APIが無く、手で投稿する必要がある */
+export const MANUAL_PLATFORMS: Platform[] = ["note", "youtube", "line"];
+
+/**
+ * 手で投稿し終えたことを記録する。
+ *
+ * 2026-09-21: note は自動投稿できないため、投稿したかどうかが分からず
+ * 予定のまま残り続けていた（ART-0078 は10日放置され開催日を過ぎた）。
+ */
+export async function markPostedManually(article: Article, userId: string): Promise<Article> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from("articles")
+    .update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      posted_manually_by: userId,
+    })
+    .eq("id", article.id)
+    .select(ARTICLE_COLUMNS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as unknown as Article;
+}
+
 // ---- 思いつきメモ ----------------------------------------------------------
 
 export async function listIdeas(): Promise<Idea[]> {

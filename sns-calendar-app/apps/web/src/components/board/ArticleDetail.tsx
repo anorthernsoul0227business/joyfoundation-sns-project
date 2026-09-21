@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
   decideArticle,
   discardArticle,
+  MANUAL_PLATFORMS,
+  markPostedManually,
   editArticleBody,
   undiscardArticle,
   formatDateJa,
@@ -46,6 +48,7 @@ export function ArticleDetail({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"approve" | "request_fix" | "edit" | "discard" | null>(null);
   const [discardOpen, setDiscardOpen] = useState(false);
+  const [posting, setPosting] = useState(false);
   const [discardReason, setDiscardReason] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -128,6 +131,21 @@ export function ArticleDetail({
     }
   }
 
+  /** note などを手で投稿し終えたときに押す */
+  async function markPosted() {
+    if (!window.confirm("noteに投稿し終えましたか。「投稿済」にします。")) return;
+    setPosting(true);
+    setError(null);
+    try {
+      onUpdated(await markPostedManually(article, userId));
+      setDone("投稿済にしました。ありがとうございます。");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPosting(false);
+    }
+  }
+
   async function discard() {
     setBusy("discard");
     setError(null);
@@ -206,6 +224,40 @@ export function ArticleDetail({
             : "開催日に間に合うように投稿日を決めます。"}
         </div>
       )}
+
+      {MANUAL_PLATFORMS.includes(article.platform) &&
+        (article.status === "scheduled" || article.status === "approved") && (
+          <div className="mb-4 rounded border-2 border-brand-ocean/40 bg-brand-ocean/5 px-5 py-4">
+            <div className="mb-1 text-[0.8em] font-semibold tracking-wider text-brand-ocean">
+              この記事は手で投稿します
+            </div>
+            <p className="text-[0.95em] leading-relaxed text-brand-ink">
+              {PLATFORM_LABEL[article.platform]}には自動で投稿する仕組みがありません。
+              下の本文をコピーして、ご自身で投稿してください。
+              {article.scheduled_at && `（予定日：${formatDateJa(article.scheduled_at)}）`}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(body);
+                  setDone("本文をコピーしました。");
+                }}
+                className="rounded-md border border-brand-ocean bg-white px-5 py-2.5 text-[0.95em] font-semibold text-brand-ocean transition hover:bg-brand-ocean/10"
+              >
+                本文をコピーする
+              </button>
+              <button
+                type="button"
+                disabled={posting}
+                onClick={() => void markPosted()}
+                className="rounded-md bg-brand-ocean px-5 py-2.5 text-[0.95em] font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+              >
+                {posting ? "記録しています…" : "投稿しました"}
+              </button>
+            </div>
+          </div>
+        )}
 
       {article.status === "discarded" && (
         <div className="mb-4 rounded border border-slate-300 bg-slate-100 px-5 py-4 text-[0.95em] text-slate-700">

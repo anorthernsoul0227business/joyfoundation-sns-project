@@ -15,6 +15,14 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    date: "2026-09-21",
+    title: "noteの記事を手で投稿しやすくしました",
+    body:
+      "noteには自動で投稿する仕組みがありません。予定日の朝にお知らせが届き、" +
+      "記事の画面から本文をコピーできるようにしました。" +
+      "投稿し終えたら「投稿しました」を押すと記録されます。",
+  },
+  {
     date: "2026-09-19",
     title: "ご確認のお願いをメールでお送りするようにしました",
     body:
