@@ -13,3 +13,6 @@ cd "$(dirname "$0")"
 # note など手で投稿する記事を、予定日の朝に知らせる。
 # 2026-09-19: 知らせる仕組みがなく、ART-0078 が10日放置され開催日を過ぎた
 /usr/bin/python3 notify_manual_posts.py || echo "[warn] 手投稿の通知に失敗しました"
+# 開催が近い告知が未確認のときだけ、圭一郎さんに追加でお知らせする。
+# 週1回では間に合わないことがある（2026-09-20 に3件が出せなくなった）
+/usr/bin/python3 notify_owner.py --urgent-only || echo "[warn] お急ぎの通知に失敗しました"

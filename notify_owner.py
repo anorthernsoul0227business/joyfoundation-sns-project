@@ -63,6 +63,20 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
 
     revised = by.get("revised", [])
     asking = by.get("needs_owner_input", [])
+
+    # 開催が近いイベント告知は、見ていただけないとそのまま出せなくなる。
+    # 2026-09-20: マラマハワイ公演の告知3件が、当日に承認されて間に合わなかった。
+    # 週1回のお知らせでは開催に間に合わないことがあるので、先頭で急を伝える
+    today_s = dt.date.today()
+    urgent = []
+    for a in rows:
+        ed = a.get("event_date")
+        if not ed:
+            continue
+        left = (dt.date.fromisoformat(ed) - today_s).days
+        if 0 <= left <= 4:
+            urgent.append((left, a))
+    urgent.sort(key=lambda x: x[0])
     fresh = [a for s in ("ai_draft", "needs_check", "staff_ok") for a in by.get(s, [])]
     # 「もうすぐ」は今日から1週間以内に限る。86件並べても選べない。
     # 同じ催しの記事が何本も続くので、題名が重複するものは1本だけ挙げる
@@ -79,6 +93,20 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
             continue
         seen_titles.add(t)
         soon_shown.append(a)
+
+    if urgent:
+        lines.append("■ お急ぎでご覧いただきたいものがあります")
+        lines.append("  開催が近いイベントの告知です。")
+        lines.append("  ご確認いただけないと、そのまま出せなくなってしまいます。")
+        seen_u: set[str] = set()
+        for left, a in urgent:
+            t = (a["title"] or "")[:20]
+            if t in seen_u:
+                continue
+            seen_u.add(t)
+            when = "本日" if left == 0 else f"あと{left}日"
+            lines.append(f"   ・{when}　{a['title'][:30]}")
+        lines.append("")
 
     if revised:
         lines.append(f"■ ご指示にそって直しました（{len(revised)}件）")
@@ -122,8 +150,12 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
         "",
         "喜田康二郎",
     ]
-    subject = f"【共有ボード】ご確認をお願いします（{len(revised) + len(asking)}件）" \
-        if (revised or asking) else "【共有ボード】ご確認のお願い"
+    if urgent:
+        subject = f"【共有ボード】お急ぎ：開催が近い告知が{len(urgent)}件あります"
+    elif revised or asking:
+        subject = f"【共有ボード】ご確認をお願いします（{len(revised) + len(asking)}件）"
+    else:
+        subject = "【共有ボード】ご確認のお願い"
     return subject, "\n".join(lines)
 
 
@@ -131,6 +163,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true", help="同じ内容でも送る")
+    ap.add_argument("--urgent-only", action="store_true",
+                    help="開催が近い告知があるときだけ送る（毎朝の見回り用）")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     try:
@@ -140,7 +174,7 @@ def main() -> int:
         pass
 
     statuses = ",".join(WAITING)
-    rows = sb("GET", f"articles?select=article_no,title,status,scheduled_date"
+    rows = sb("GET", f"articles?select=article_no,title,status,scheduled_date,event_date"
                      f"&status=in.({statuses})&order=created_at") or []
     if not rows and not args.force:
         logger.info("ご確認いただくものはありません。送りません。")
@@ -148,6 +182,13 @@ def main() -> int:
 
     subject, body = build_body(rows)
     logger.info(f"確認まち {len(rows)}件")
+
+    # 週1回のお知らせでは、開催が近い告知に間に合わないことがある。
+    # 2026-09-20: 当日に承認されて3件が出せなくなった。
+    # 毎朝この形で呼び、急ぎがある日だけ追加でお知らせする
+    if args.urgent_only and "お急ぎでご覧いただきたい" not in body:
+        logger.info("お急ぎのものはありません。送りません。")
+        return 0
 
     if args.dry_run:
         print("=" * 56)
