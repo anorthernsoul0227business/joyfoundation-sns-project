@@ -714,7 +714,7 @@ export interface Task {
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
   open: "見つけました",
   proposed: "こう直します（ご確認ください）",
-  approved: "承認ずみ・作業まち",
+  approved: "これから直します",
   done: "終わりました",
   rejected: "やり直します",
   dismissed: "やらないことにしました",

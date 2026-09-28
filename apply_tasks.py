@@ -116,11 +116,26 @@ def do_reschedule(task: dict) -> str:
 
 
 def do_reply_only(task: dict) -> str:
+    """お返事をする。宛先はメモか、記事の画面か。"""
     payload = task.get("proposal_payload") or {}
+    text = (payload.get("reply") or "").strip() or (task.get("proposal") or "").strip()
+    if not text:
+        raise RuntimeError("お返しする文章が空です")
+
     if payload.get("idea_id"):
-        reply_to_idea(payload["idea_id"], payload.get("reply", "") or task.get("proposal", ""))
-        return "圭一郎さんにお返事しました。"
-    return "返事の宛先が分からないため、何もしませんでした。"
+        reply_to_idea(payload["idea_id"], text)
+        return "思いつきメモにお返事しました。"
+
+    # 記事から来たタスクは、その記事の画面でお尋ねする。
+    # 2026-09-28: 宛先が無いとして何もしていなかった。
+    # 記事についての問い合わせなのだから、記事の画面に出すのが自然
+    no = payload.get("article_no")
+    if no:
+        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
+           {"status": "needs_owner_input", "revision_note": text})
+        return f"{no} の画面で圭一郎さんにお尋ねしました。"
+
+    raise RuntimeError("返事の宛先が分かりません")
 
 
 HANDLERS = {

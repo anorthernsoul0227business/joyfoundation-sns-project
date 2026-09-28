@@ -45,6 +45,12 @@ import announce_plan
 logger = logging.getLogger("patrol")
 JST = dt.timezone(dt.timedelta(hours=9))
 
+# 承認を待たずに実行してよい種類（2026-09-28 康二郎さんの判断）。
+# 「書き直す」は圭一郎さんの確認に戻るので、間違っていても世に出ない。
+# 「投稿日を決め直す」は出す日が変わるだけ。「返事をする」は文章を送るだけ。
+# writing_rule は今後の記事すべてに効くので承認を残す。manual は人がやるもの
+AUTO_KINDS = {"rewrite_article", "reschedule", "reply_only"}
+
 PROPOSAL_PROMPT = """あなたは、音による健康法を広める団体のSNS運用を任されている担当者です。
 理事長（喜田圭一郎さん）から届いた内容に対して、どう対応するかの案を1つ考えてください。
 
@@ -254,7 +260,9 @@ def main() -> int:
             logger.error(f"   案を作れませんでした: {type(e).__name__}: {e}")
             got = {"title": todo["title"], "kind": "manual",
                    "proposal": "案を作れませんでした。内容をご確認ください。", "reply": ""}
-        logger.info(f"   → {got['kind']}: {got.get('proposal','')[:60]}")
+        auto = got["kind"] in AUTO_KINDS
+        mark = "自動で進めます" if auto else "承認をお待ちします"
+        logger.info(f"   → {got['kind']}（{mark}）: {got.get('proposal','')[:50]}")
 
         if args.dry_run:
             made += 1
@@ -274,7 +282,9 @@ def main() -> int:
             "source": todo["source"], "source_key": todo["source_key"],
             "title": got.get("title") or todo["title"],
             "detail": todo["detail"],
-            "status": "proposed",
+            "status": "approved" if auto else "proposed",
+            "decided_at": dt.datetime.now(JST).isoformat() if auto else None,
+            "decision_note": "元に戻せる内容のため、承認を待たずに進めました" if auto else None,
             "proposal": got.get("proposal", ""),
             "proposal_kind": got["kind"],
             "proposal_payload": payload,

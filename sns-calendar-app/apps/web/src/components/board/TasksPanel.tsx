@@ -236,11 +236,16 @@ export function TasksPanel({ userId, reloadKey }: { userId: string; reloadKey: n
 
       {tab === "todo" ? (
         <>
-          {waiting > 0 && (
+          {waiting > 0 ? (
             <p className="mb-4 rounded border border-amber-300 bg-amber-50 px-5 py-3 text-[0.95em] text-amber-900">
               <strong>{waiting}件</strong>
-              について、こう直そうという案があります。押して中身をご覧いただき、
+              について、ご確認をお願いします。押して中身をご覧いただき、
               よければ「これでお願いします」を押してください。
+            </p>
+          ) : (
+            <p className="mb-4 rounded border border-slate-200 bg-white px-5 py-3 text-[0.92em] text-slate-600">
+              ご確認をお願いするものはありません。
+              記事の書き直しなど、元に戻せるものは承認を待たずに進めています。
             </p>
           )}
           {todo.length === 0 ? (
