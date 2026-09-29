@@ -84,6 +84,12 @@ def main() -> int:
              + "\n".join(lines)),
         )
         logger.info("メールで知らせました")
+
+        import line_channel
+        line_channel.notify_line(
+            f"💡 圭一郎さんのメモ {len(ideas)}件に返事がまだです",
+            "\n".join(f"・{i['body'].splitlines()[0][:34]}" for i in ideas),
+            "https://shc-sns-calendar-web.vercel.app/board")
     except Exception as e:
         logger.error(f"通知に失敗しました: {type(e).__name__}: {e}")
         return 1

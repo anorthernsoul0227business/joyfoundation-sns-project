@@ -104,6 +104,16 @@ def main() -> int:
         )
         ch.send(f"【手で投稿】note の記事が{len(rows)}件あります", body_text)
         logger.info(f"お知らせしました（{len(rows)}件）")
+
+        # LINE にも短く送る。本文はメールにあるので、ここでは何があるかだけ
+        import line_channel
+        lines_short = [f"・{a['article_no']} {a['title'][:24]}"
+                       + (f"（予定 {a['scheduled_date']}）" if a.get("scheduled_date") else "")
+                       for a in rows]
+        line_channel.notify_line(
+            f"📝 note に手で投稿する記事が{len(rows)}件あります",
+            "\n".join(lines_short) + "\n\n本文はメールに入れてあります。",
+            BOARD_URL)
     except Exception as e:
         logger.error(f"送れませんでした: {type(e).__name__}: {e}")
         return 1

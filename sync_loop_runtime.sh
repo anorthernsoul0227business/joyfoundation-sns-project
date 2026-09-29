@@ -55,6 +55,7 @@ SCRIPTS=(
   archive_discarded.py  # 破棄して1週間たった記事を一覧から外す
   notify_owner.py       # 圭一郎さんに確認のお願いをメールする
   notify_manual_posts.py  # note など手で投稿する記事を予定日の朝に知らせる
+  line_channel.py       # 康二郎さんの LINE へのお知らせ
 )
 for f in "${SCRIPTS[@]}"; do
   [ -f "$PROJECT/$f" ] || { echo "❌ $f が見つかりません" >&2; exit 1; }

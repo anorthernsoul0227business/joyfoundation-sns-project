@@ -227,6 +227,14 @@ def main() -> int:
         STAMP.parent.mkdir(exist_ok=True)
         STAMP.write_text(json.dumps({"digest": digest, "date": today}, ensure_ascii=False))
         logger.info(f"お知らせしました → {to}")
+
+        # 康二郎さんには「こう送りました」という控えを LINE で
+        import line_channel
+        head = [l for l in body.splitlines() if l.startswith("■")]
+        line_channel.notify_line(
+            "📨 圭一郎さんにお知らせを送りました",
+            f"件名：{subject}\n\n" + "\n".join(head),
+            BOARD_URL)
     except Exception as e:
         logger.error(f"送れませんでした: {type(e).__name__}: {e}")
         return 1
