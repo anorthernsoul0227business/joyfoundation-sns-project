@@ -9,8 +9,10 @@ import {
   approveBy,
   formatDateJa,
   listAnnounceArticles,
+  listEventsBetween,
   PLATFORM_LABEL,
   type Article,
+  type EventItem,
   type Platform,
 } from "../../lib/board";
 
@@ -29,6 +31,10 @@ const STATE_STYLE: Record<string, { chip: string; label: string }> = {
   done: { chip: "bg-slate-300 text-slate-600", label: "投稿ずみ" },
   missed: { chip: "bg-rose-200 text-rose-800 line-through", label: "間に合いませんでした" },
 };
+
+// 2026-09-30 康二郎さん: 実際に催しが行われる日も出す。ほかと違う分かりやすい色で。
+// 告知は amber（承認まち）/ ocean / slate / rose を使っているので、紫にした
+const EVENT_CHIP = "bg-violet-600 text-white ring-1 ring-violet-800";
 
 function ymd(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -55,6 +61,8 @@ export function AnnounceCalendar({
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [articles, setArticles] = useState<Article[]>([]);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [showEvents, setShowEvents] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -64,7 +72,12 @@ export function AnnounceCalendar({
     try {
       const from = new Date(month.getFullYear(), month.getMonth(), -7);
       const to = new Date(month.getFullYear(), month.getMonth() + 1, 14);
-      setArticles(await listAnnounceArticles(from, to));
+      const [as, es] = await Promise.all([
+        listAnnounceArticles(from, to),
+        listEventsBetween(from, to),
+      ]);
+      setArticles(as);
+      setEvents(es);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -94,6 +107,19 @@ export function AnnounceCalendar({
     }
     return map;
   }, [visible]);
+
+  // 終日の催しは starts_at が 0時(JST)。端末の時刻で日付に直す
+  const eventsByDay = useMemo(() => {
+    const map = new Map<string, EventItem[]>();
+    if (!showEvents) return map;
+    for (const e of events) {
+      const key = ymd(new Date(e.starts_at));
+      const list = map.get(key) ?? [];
+      list.push(e);
+      map.set(key, list);
+    }
+    return map;
+  }, [events, showEvents]);
 
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -134,6 +160,19 @@ export function AnnounceCalendar({
     );
   }
 
+  function EventChip({ e }: { e: EventItem }) {
+    const at = new Date(e.starts_at);
+    const time = e.all_day ? "終日" : `${at.getHours()}:${String(at.getMinutes()).padStart(2, "0")}`;
+    return (
+      <div
+        title={`${e.title}／${time}${e.venue ? `／${e.venue}` : ""}`}
+        className={"truncate rounded px-1.5 py-0.5 text-[0.72em] font-semibold " + EVENT_CHIP}
+      >
+        ● {e.title}
+      </div>
+    );
+  }
+
   return (
     <div className={peek ? "mx-auto max-w-[70rem]" : "mx-auto max-w-[52rem]"}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -165,7 +204,10 @@ export function AnnounceCalendar({
           今月
         </button>
         <span className="text-[0.85em] text-slate-500">
-          {loading ? "読み込んでいます…" : `この月の告知 ${visible.length}件`}
+          {loading
+            ? "読み込んでいます…"
+            : `この月の告知 ${visible.length}件` +
+              (showEvents ? ` ／ 催し ${events.length}件` : "")}
         </span>
       </div>
 
@@ -182,9 +224,43 @@ export function AnnounceCalendar({
         )}
       </p>
 
-      <PlatformFilter value={shown} onChange={setShown} counts={counts} />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="[&>div]:mb-0">
+          <PlatformFilter value={shown} onChange={setShown} counts={counts} />
+        </div>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={showEvents}
+          onClick={() => setShowEvents((v) => !v)}
+          className={
+            "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.85em] transition " +
+            (showEvents
+              ? "border-violet-700 bg-white font-semibold text-violet-800"
+              : "border-slate-200 bg-slate-50 text-slate-400")
+          }
+        >
+          <span
+            className={
+              "flex h-4 w-4 items-center justify-center rounded text-[0.7em] text-white " +
+              (showEvents ? "bg-violet-600" : "bg-slate-300")
+            }
+            aria-hidden
+          >
+            {showEvents ? "✓" : ""}
+          </span>
+          催しの日
+          <span className="text-[0.85em] text-slate-400">{events.length}</span>
+        </button>
+      </div>
 
       <div className="mb-2 flex flex-wrap items-center gap-3 text-[0.8em] text-slate-600">
+        {showEvents && (
+          <span className="flex items-center gap-1.5">
+            <span className={`inline-block h-3 w-6 rounded ${EVENT_CHIP}`} />
+            催しの日
+          </span>
+        )}
         {(["waiting", "fixed", "done", "missed"] as const).map((k) => (
           <span key={k} className="flex items-center gap-1.5">
             <span className={`inline-block h-3 w-6 rounded ${STATE_STYLE[k].chip}`} />
@@ -204,7 +280,12 @@ export function AnnounceCalendar({
       {narrow ? (
         <ul className="space-y-2">
           {cells
-            .filter((d) => d.getMonth() === thisMonth && (byDay.get(ymd(d)) ?? []).length > 0)
+            .filter(
+              (d) =>
+                d.getMonth() === thisMonth &&
+                ((byDay.get(ymd(d)) ?? []).length > 0 ||
+                  (eventsByDay.get(ymd(d)) ?? []).length > 0),
+            )
             .map((d) => {
               const key = ymd(d);
               return (
@@ -220,6 +301,9 @@ export function AnnounceCalendar({
                     {key === today && " 今日"}
                   </p>
                   <div className="space-y-1.5">
+                    {(eventsByDay.get(key) ?? []).map((e) => (
+                      <EventChip key={e.id} e={e} />
+                    ))}
                     {(byDay.get(key) ?? []).map((a) => (
                       <Chip key={a.id} a={a} />
                     ))}
@@ -227,7 +311,7 @@ export function AnnounceCalendar({
                 </li>
               );
             })}
-          {visible.length === 0 && (
+          {visible.length === 0 && eventsByDay.size === 0 && (
             <li className="rounded border border-slate-200 bg-white px-5 py-8 text-center text-[0.92em] text-slate-500">
               この月の告知はありません。
             </li>
@@ -272,6 +356,9 @@ export function AnnounceCalendar({
                   {d.getDate()}
                 </div>
                 <div className="space-y-0.5">
+                  {(eventsByDay.get(key) ?? []).map((e) => (
+                    <EventChip key={e.id} e={e} />
+                  ))}
                   {items.map((a) => (
                     <Chip key={a.id} a={a} />
                   ))}

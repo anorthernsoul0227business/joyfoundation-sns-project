@@ -496,6 +496,25 @@ export async function listEvents(): Promise<EventItem[]> {
   return (data ?? []) as EventItem[];
 }
 
+/**
+ * 期間内の催しを返す。告知のカレンダーに「実際に行われる日」を出すために使う。
+ *
+ * 2026-09-30 康二郎さん: 告知だけ並んでいても、いつ催しがあるのかが見えない。
+ * 終日の催しは starts_at が前日15:00(UTC)＝当日0時(JST)なので、
+ * 日付は必ず端末の時刻（＝日本時間）に直してから見ること。
+ */
+export async function listEventsBetween(from: Date, to: Date): Promise<EventItem[]> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, title, starts_at, ends_at, all_day, venue, price_text, url, description, confirmed_by_owner")
+    .gte("starts_at", from.toISOString())
+    .lte("starts_at", to.toISOString())
+    .order("starts_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EventItem[];
+}
+
 export async function listShares(): Promise<Share[]> {
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase
