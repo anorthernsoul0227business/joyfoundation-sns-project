@@ -1,6 +1,14 @@
 "use client";
 
-import { formatDateJa, PLATFORM_LABEL, type Article, type ArticleFilter } from "../../lib/board";
+import {
+  formatDateJa,
+  PLATFORM_LABEL,
+  type Article,
+  type ArticleFilter,
+  type CalendarScope,
+  type Platform,
+} from "../../lib/board";
+import { FILTERABLE, PlatformFilter } from "./PlatformFilter";
 import { StatusBadge } from "./StatusBadge";
 
 const FILTERS: { value: ArticleFilter; label: string }[] = [
@@ -11,21 +19,44 @@ const FILTERS: { value: ArticleFilter; label: string }[] = [
   { value: "discarded", label: "出さないもの" },
 ];
 
+// 2026-09-30 康二郎さん: 記事の確認ページもイベントと通常記事を分けて見たい。
+// 投稿予定カレンダーと同じ3分割・同じ文言にしてある
+const SCOPES: { value: CalendarScope; label: string }[] = [
+  { value: "all", label: "すべての記事" },
+  { value: "normal", label: "イベント以外" },
+  { value: "event", label: "イベント記事" },
+];
+
 export function ArticleList({
   articles,
   filter,
+  scope,
+  platforms,
+  scopeCounts,
+  platformCounts,
   loading,
   selectedId,
   onFilterChange,
+  onScopeChange,
+  onPlatformsChange,
   onSelect,
 }: {
   articles: Article[];
   filter: ArticleFilter;
+  scope: CalendarScope;
+  platforms: Set<Platform>;
+  /** 絞り込む前の件数。選ぶ前に「イベント記事が何件あるか」が分かるように */
+  scopeCounts: Record<CalendarScope, number>;
+  platformCounts: Record<string, number>;
   loading: boolean;
   selectedId: string | null;
   onFilterChange: (next: ArticleFilter) => void;
+  onScopeChange: (next: CalendarScope) => void;
+  onPlatformsChange: (next: Set<Platform>) => void;
   onSelect: (article: Article) => void;
 }) {
+  const narrowed = scope !== "all" || platforms.size < FILTERABLE.length;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap gap-1.5 border-b border-slate-200 px-3 py-2.5">
@@ -47,12 +78,46 @@ export function ArticleList({
         ))}
       </div>
 
+      <div className="border-b border-slate-200 bg-slate-50/70 px-3 py-2.5">
+        <div className="flex gap-1" role="tablist" aria-label="記事の種類">
+          {SCOPES.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              role="tab"
+              aria-selected={scope === s.value}
+              onClick={() => onScopeChange(s.value)}
+              className={
+                "flex-1 rounded-lg border px-2 py-1.5 text-[0.78em] transition " +
+                (scope === s.value
+                  ? "border-brand-ocean bg-white font-semibold text-brand-ink shadow-sm"
+                  : "border-transparent text-slate-500 hover:bg-white/70")
+              }
+            >
+              {s.label}
+              <span className="ml-1 text-[0.85em] text-slate-400">{scopeCounts[s.value]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 [&>div]:mb-0">
+          <PlatformFilter value={platforms} onChange={onPlatformsChange} counts={platformCounts} />
+        </div>
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading && articles.length === 0 ? (
           <p className="px-4 py-6 text-[0.9em] text-slate-500">読み込んでいます…</p>
         ) : articles.length === 0 ? (
           <div className="px-4 py-8 text-center text-[0.9em] text-slate-500">
-            {filter === "pending" ? (
+            {narrowed ? (
+              // 絞り込みのせいで空なのか、本当に無いのかが分からないと迷う
+              <>
+                <p>この絞り込みでは記事がありません。</p>
+                <p className="mt-1 text-[0.9em]">
+                  「すべての記事」に戻すか、見る媒体を増やしてみてください。
+                </p>
+              </>
+            ) : filter === "pending" ? (
               <>
                 <p className="text-[1.4em]">✓</p>
                 <p className="mt-1">確認をお願いする記事はありません。</p>

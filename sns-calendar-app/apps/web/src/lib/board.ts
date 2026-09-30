@@ -654,6 +654,26 @@ export async function saveAnnouncePlan(params: {
  */
 export type CalendarScope = "all" | "normal" | "event";
 
+/**
+ * イベントの告知記事かどうか。開催日を持っているかで決める。
+ *
+ * カレンダーも記事の確認ページも同じこの判定を使う。別々に書くと、
+ * 「カレンダーでは告知なのに確認ページでは通常記事」ということが起きる。
+ */
+export function isEventArticle(a: Pick<Article, "event_date">): boolean {
+  return a.event_date !== null;
+}
+
+/** すべて／イベント以外／イベント記事 に絞る */
+export function filterByScope<T extends Pick<Article, "event_date">>(
+  list: T[],
+  scope: CalendarScope,
+): T[] {
+  if (scope === "all") return list;
+  const want = scope === "event";
+  return list.filter((a) => isEventArticle(a) === want);
+}
+
 export async function listCalendarArticles(
   from: Date,
   to: Date,

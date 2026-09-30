@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArticleDetail } from "../../components/board/ArticleDetail";
 import { ArticleList } from "../../components/board/ArticleList";
 import {
@@ -19,7 +19,16 @@ import { IdeasPanel, SharesPanel } from "../../components/board/SidePanels";
 import { useAuthGuard } from "../../hooks/useAuthGuard";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import { signOut, syncSessionFromSupabase } from "../../lib/auth";
-import { listArticles, type Article, type ArticleFilter } from "../../lib/board";
+import { FILTERABLE, filterByPlatform } from "../../components/board/PlatformFilter";
+import {
+  filterByScope,
+  isEventArticle,
+  listArticles,
+  type Article,
+  type ArticleFilter,
+  type CalendarScope,
+  type Platform,
+} from "../../lib/board";
 import { useAuthStore } from "../../stores/auth";
 
 type Section = "articles" | "calendar" | "tasks" | "ideas" | "events" | "shares" | "guide";
@@ -53,6 +62,9 @@ export default function BoardPage() {
   const [fontScale, setFontScale] = useState<FontScale>("large");
   const [section, setSection] = useState<Section>("articles");
   const [filter, setFilter] = useState<ArticleFilter>("pending");
+  // 2026-09-30 康二郎さん: イベントと通常記事、それに媒体ごとに分けて見たい
+  const [scope, setScope] = useState<CalendarScope>("all");
+  const [platforms, setPlatforms] = useState<Set<Platform>>(() => new Set(FILTERABLE));
   const [articles, setArticles] = useState<Article[]>([]);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [selected, setSelected] = useState<Article | null>(null);
@@ -73,6 +85,9 @@ export default function BoardPage() {
     if (no) {
       setWanted(no);
       setFilter("all");
+      // 絞り込みが残っていると、指定の記事が一覧に出ないことがある
+      setScope("all");
+      setPlatforms(new Set(FILTERABLE));
     }
   }, []);
 
@@ -113,24 +128,47 @@ export default function BoardPage() {
         }
       }
 
-      setSelected((cur) => {
-        if (cur) {
-          const still = list.find((a) => a.id === cur.id);
-          if (still) return still;
-        }
-        // 狭い画面では一覧と本文を同時に置けないので、勝手に開かない
-        return narrow ? null : list[0] ?? null;
-      });
+      // 開いていた記事は、読み直した中身に差し替える。
+      // どれを開くかは絞り込みを見て決めるので、下の useEffect にまかせる
+      setSelected((cur) => (cur ? list.find((a) => a.id === cur.id) ?? null : null));
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [filter, isReady, narrow, wanted]);
+    // 絞り込み（scope・platforms）は手元で掛けるだけなので、読み直さない
+  }, [filter, isReady, wanted]);
 
   useEffect(() => {
     void reload();
   }, [reload, reloadKey]);
+
+  // 一覧に出す記事。件数は「もう一方の絞り込みを掛けたあと」の数を出す。
+  // そうしないと、イベント記事だけ見ているときに媒体の件数が合わなくなる
+  const byPlatform = useMemo(() => filterByPlatform(articles, platforms), [articles, platforms]);
+  const byScope = useMemo(() => filterByScope(articles, scope), [articles, scope]);
+  const visible = useMemo(() => filterByScope(byPlatform, scope), [byPlatform, scope]);
+
+  const scopeCounts = useMemo(() => {
+    const ev = byPlatform.filter(isEventArticle).length;
+    return { all: byPlatform.length, normal: byPlatform.length - ev, event: ev };
+  }, [byPlatform]);
+
+  const platformCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const a of byScope) out[a.platform] = (out[a.platform] ?? 0) + 1;
+    return out;
+  }, [byScope]);
+
+  // どの記事を開くか。一覧に出ていない記事が開いたままだと戸惑うので、
+  // 絞り込みから外れたら閉じ、広い画面では先頭を開く
+  useEffect(() => {
+    setSelected((cur) => {
+      if (cur && visible.some((a) => a.id === cur.id)) return cur;
+      // 狭い画面では一覧と本文を同時に置けないので、勝手に開かない
+      return narrow ? null : visible[0] ?? null;
+    });
+  }, [narrow, visible]);
 
   function handleUpdated(next: Article) {
     setArticles((prev) => prev.map((a) => (a.id === next.id ? next : a)));
@@ -248,11 +286,17 @@ export default function BoardPage() {
                   </p>
                 )}
                 <ArticleList
-                  articles={articles}
+                  articles={visible}
                   filter={filter}
+                  scope={scope}
+                  platforms={platforms}
+                  scopeCounts={scopeCounts}
+                  platformCounts={platformCounts}
                   loading={loading}
                   selectedId={selected?.id ?? null}
                   onFilterChange={setFilter}
+                  onScopeChange={setScope}
+                  onPlatformsChange={setPlatforms}
                   onSelect={setSelected}
                 />
               </aside>
