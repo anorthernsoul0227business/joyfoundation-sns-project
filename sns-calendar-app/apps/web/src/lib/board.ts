@@ -659,17 +659,15 @@ export async function listCalendarArticles(from: Date, to: Date): Promise<Articl
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   };
 
-  // 2026-09-30: これまで scheduled_at（日時）だけを見ており、
-  // 承認前の記事（scheduled_date はあるが scheduled_at はまだ無い）が
-  // 123件まるごと表示されていなかった。メールには出るのにカレンダーに無い、
-  // という食い違いの原因。予定の「日」でも拾う
+  // 2026-09-30 康二郎さん: 投稿予定カレンダーは承認済みだけでよい。
+  // 未承認のものは「イベントの告知」カレンダーで見る
   const [scheduled, published] = await Promise.all([
     supabase
       .from("articles")
       .select(ARTICLE_COLUMNS)
       .gte("scheduled_date", day(from))
       .lt("scheduled_date", day(to))
-      .neq("status", "discarded"),
+      .in("status", APPROVED_STATUSES),
     supabase
       .from("articles")
       .select(ARTICLE_COLUMNS)
@@ -808,4 +806,48 @@ export async function decideTask(params: {
     .single();
   if (error) throw new Error(error.message);
   return data as unknown as Task;
+}
+
+
+/**
+ * イベント告知のカレンダー用。承認前のものも含めて返す。
+ *
+ * 2026-09-30 康二郎さんの設計:
+ *   圭一郎さんはこのカレンダーを見て、投稿希望日の前日までに承認すればよい。
+ *   「まだ承認していないが希望日が決まっているもの」と
+ *   「承認済みで予定が決まっているもの」を見分けられるようにする。
+ */
+export async function listAnnounceArticles(from: Date, to: Date): Promise<Article[]> {
+  const supabase = requireSupabaseClient();
+  const day = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  };
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_COLUMNS)
+    .not("event_date", "is", null)
+    .gte("scheduled_date", day(from))
+    .lt("scheduled_date", day(to))
+    .neq("status", "discarded")
+    .order("scheduled_date", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Article[];
+}
+
+/** 告知記事が「承認まち」か「決まっている」か。カレンダーの見分けに使う */
+export function announceState(a: Article): "waiting" | "fixed" | "done" | "missed" {
+  if (a.status === "published") return "done";
+  if (a.status === "missed") return "missed";
+  if (APPROVED_STATUSES.includes(a.status)) return "fixed";
+  return "waiting";
+}
+
+/** その記事を承認しないと間に合わなくなる日（＝投稿希望日の前日） */
+export function approveBy(a: Article): string | null {
+  if (!a.scheduled_date) return null;
+  const d = new Date(`${a.scheduled_date}T00:00:00`);
+  d.setDate(d.getDate() - 1);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }

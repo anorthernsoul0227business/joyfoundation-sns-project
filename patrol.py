@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import argparse
+import collections
 import datetime as dt
 import json
 import logging
@@ -183,6 +184,30 @@ def find_todos(today: dt.date) -> list[dict]:
                            f"見送りになっていますが、開催は {ev}（あと{(ev - today).days}日）で\n"
                            f"まだ告知が間に合います。"),
             })
+
+    # 未承認のイベント告知が同じ日に3件以上たまっていないか。
+    # 2026-09-30 康二郎さん:「三件以上溜まったら注意喚起してください。
+    # その時は投稿日時を考えましょう」
+    pend = sb("GET", "articles?select=article_no,platform,scheduled_date,event_run_key,title"
+                     "&status=in.(ai_draft,needs_check,staff_ok,revised,needs_owner_input)"
+                     f"&event_date=not.is.null&scheduled_date=gte.{today.isoformat()}"
+                     "&order=scheduled_date") or []
+    byday: dict[str, list[dict]] = collections.defaultdict(list)
+    for a in pend:
+        byday[a["scheduled_date"]].append(a)
+    for day, items in sorted(byday.items()):
+        if len(items) < 3:
+            continue
+        names = "、".join(f"{a['article_no']}（{a['platform']}）" for a in items[:6])
+        todos.append({
+            "source": "schedule", "source_key": f"crowded:{day}",
+            "title": f"{day} に未承認の告知が{len(items)}件たまっています",
+            "detail": (f"{day} に投稿する予定の告知が {len(items)}件あり、"
+                       f"いずれもまだ承認されていません。\n"
+                       f"このまま承認されると同じ日に集中します。"
+                       f"日をずらすか、一部を見送るかをご検討ください。\n\n"
+                       f"対象: {names}"),
+        })
 
     # 告知記事が1本も無い催し
     events = sb("GET", "events?select=series_run_key,title,starts_at,announce_skip,"

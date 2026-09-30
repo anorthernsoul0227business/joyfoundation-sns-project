@@ -1,25 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnnounceCalendar } from "./AnnounceCalendar";
+import { ArticlePeek } from "./ArticlePeek";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import {
-  calendarDate,
-  listCalendarArticles,
+  announceState,
+  approveBy,
+  formatDateJa,
+  listAnnounceArticles,
   PLATFORM_LABEL,
-  STATUS_LABEL,
   type Article,
 } from "../../lib/board";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-/** 媒体ごとの色。並べたときに一目で見分けられるようにする */
-const PLATFORM_TONE: Record<string, string> = {
-  x: "bg-slate-800 text-white",
-  ig: "bg-rose-600 text-white",
-  note: "bg-emerald-700 text-white",
-  youtube: "bg-red-700 text-white",
-  line: "bg-lime-700 text-white",
+/**
+ * 告知の状態ごとの見た目。
+ *
+ * 2026-09-30 康二郎さんの設計: 圭一郎さんはこのカレンダーを見て、
+ * 投稿希望日の前日までに承認すればよい。そのため
+ * 「まだ承認していない（＝要対応）」を一番目立たせる。
+ */
+const STATE_STYLE: Record<string, { chip: string; label: string }> = {
+  waiting: { chip: "bg-amber-400 text-amber-950 ring-1 ring-amber-600", label: "承認まち" },
+  fixed: { chip: "bg-brand-ocean text-white", label: "決まりました" },
+  done: { chip: "bg-slate-300 text-slate-600", label: "投稿ずみ" },
+  missed: { chip: "bg-rose-200 text-rose-800 line-through", label: "間に合いませんでした" },
 };
 
 function ymd(d: Date): string {
@@ -27,23 +33,24 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-export function CalendarPanel({
+export function AnnounceCalendar({
   reloadKey,
   userId,
   onSelectArticle,
 }: {
   reloadKey: number;
   userId: string;
+  /** 記事の画面へ移りたいときだけ使う。ふだんは横のプレビューで済ませる */
   onSelectArticle: (a: Article) => void;
 }) {
+  // 2026-09-30 康二郎さん: カレンダーから記事を開くと確認ページに移ってしまい、
+  // 戻りにくい。カレンダーを見たまま横で読めるようにする
+  const [peek, setPeek] = useState<Article | null>(null);
+  const narrow = useIsNarrow();
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const narrow = useIsNarrow();
-  // 2026-09-30 康二郎さん: 投稿予定は承認済みだけ。
-  // 未承認の告知は「イベントの告知」に切り替えて見る
-  const [tab, setTab] = useState<"posts" | "announce">("posts");
   const [articles, setArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,10 +59,9 @@ export function CalendarPanel({
     setLoading(true);
     setError(null);
     try {
-      // 前後の月にはみ出した週も表示するので、少し広めに取る
       const from = new Date(month.getFullYear(), month.getMonth(), -7);
       const to = new Date(month.getFullYear(), month.getMonth() + 1, 14);
-      setArticles(await listCalendarArticles(from, to));
+      setArticles(await listAnnounceArticles(from, to));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -70,19 +76,14 @@ export function CalendarPanel({
   const byDay = useMemo(() => {
     const map = new Map<string, Article[]>();
     for (const a of articles) {
-      const key = calendarDate(a);
-      if (!key) continue;
-      const list = map.get(key) ?? [];
+      if (!a.scheduled_date) continue;
+      const list = map.get(a.scheduled_date) ?? [];
       list.push(a);
-      map.set(key, list);
-    }
-    for (const list of map.values()) {
-      list.sort((x, y) => x.platform.localeCompare(y.platform));
+      map.set(a.scheduled_date, list);
     }
     return map;
   }, [articles]);
 
-  // 月の初日を含む週の日曜から、6週間ぶんを並べる
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
     const start = new Date(first);
@@ -96,47 +97,35 @@ export function CalendarPanel({
 
   const today = ymd(new Date());
   const thisMonth = month.getMonth();
-  const total = articles.filter((a) => {
-    const k = calendarDate(a);
-    return k && new Date(k).getMonth() === thisMonth;
-  }).length;
-
-  return (
-    <div className="mx-auto max-w-[52rem]">
-      <div className="mb-4 flex flex-wrap gap-2">
-        {([
-          ["posts", "投稿の予定（承認ずみ）"],
-          ["announce", "イベントの告知（承認まちも）"],
-        ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={tab === value}
-            onClick={() => setTab(value)}
-            className={
-              "rounded-full border px-4 py-2 text-[0.9em] transition " +
-              (tab === value
-                ? "border-brand-ink bg-brand-ink font-semibold text-white"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "announce" ? (
-        <AnnounceCalendar reloadKey={reloadKey} userId={userId} onSelectArticle={onSelectArticle} />
-      ) : (
-        <PostCalendar />
-      )}
-    </div>
+  const waiting = articles.filter(
+    (a) => announceState(a) === "waiting" && (a.scheduled_date ?? "") >= today,
   );
 
-  function PostCalendar() {
+  function Chip({ a }: { a: Article }) {
+    const st = announceState(a);
+    const by = approveBy(a);
+    const late = st === "waiting" && by !== null && by < today;
+    return (
+      <button
+        type="button"
+        onClick={() => setPeek(a)}
+        title={`${a.article_no}／${PLATFORM_LABEL[a.platform]}／${STATE_STYLE[st].label}${
+          st === "waiting" && by ? `／${formatDateJa(by)}までに承認` : ""
+        }`}
+        className={
+          "block w-full truncate rounded px-1.5 py-0.5 text-left text-[0.72em] transition hover:opacity-80 " +
+          STATE_STYLE[st].chip
+        }
+      >
+        {late && "⚠ "}
+        {PLATFORM_LABEL[a.platform]} {a.title || a.article_no}
+      </button>
+    );
+  }
+
   return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+    <div className={peek ? "mx-auto max-w-[70rem]" : "mx-auto max-w-[52rem]"}>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
@@ -165,8 +154,30 @@ export function CalendarPanel({
           今月
         </button>
         <span className="text-[0.85em] text-slate-500">
-          {loading ? "読み込んでいます…" : `この月の投稿 ${total}件`}
+          {loading ? "読み込んでいます…" : `この月の告知 ${articles.length}件`}
         </span>
+      </div>
+
+      <p className="mb-3 rounded border border-amber-300 bg-amber-50 px-5 py-3 text-[0.93em] leading-relaxed text-amber-900">
+        <strong className="mr-1">使い方</strong>
+        黄色い帯が「まだ承認していない記事」です。
+        <strong>その日の前日までに「このまま出す」を押していただければ</strong>
+        、書かれている日に投稿されます。
+        押していただけなかった場合は、承認の翌日以降に自動でずらします。
+        {waiting.length > 0 && (
+          <span className="mt-1 block">
+            いま承認をお待ちしているのは <strong>{waiting.length}件</strong> です。
+          </span>
+        )}
+      </p>
+
+      <div className="mb-2 flex flex-wrap items-center gap-3 text-[0.8em] text-slate-600">
+        {(["waiting", "fixed", "done", "missed"] as const).map((k) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span className={`inline-block h-3 w-6 rounded ${STATE_STYLE[k].chip}`} />
+            {STATE_STYLE[k].label}
+          </span>
+        ))}
       </div>
 
       {error && (
@@ -175,28 +186,14 @@ export function CalendarPanel({
         </p>
       )}
 
-      <div className="mb-2 flex flex-wrap items-center gap-3 text-[0.8em] text-slate-500">
-        {Object.entries(PLATFORM_LABEL).map(([key, label]) =>
-          key === "youtube" || key === "line" ? null : (
-            <span key={key} className="flex items-center gap-1.5">
-              <span className={`inline-block h-3 w-3 rounded ${PLATFORM_TONE[key]}`} />
-              {label}
-            </span>
-          ),
-        )}
-        <span>薄い色は投稿ずみ</span>
-      </div>
-
+      {withPeek(
+        <>
       {narrow ? (
-        /* 携帯では7列の表が入りきらず横スクロールになる。
-           もともと横スクロールをなくすために作った画面なので、
-           狭いときは日付順の一覧にする（2026-09-06） */
         <ul className="space-y-2">
           {cells
             .filter((d) => d.getMonth() === thisMonth && (byDay.get(ymd(d)) ?? []).length > 0)
             .map((d) => {
               const key = ymd(d);
-              const items = byDay.get(key) ?? [];
               return (
                 <li
                   key={key}
@@ -205,51 +202,21 @@ export function CalendarPanel({
                     (key === today ? "border-brand-ocean" : "border-slate-200")
                   }
                 >
-                  <p
-                    className={
-                      "mb-2 text-[0.9em] font-semibold " +
-                      (key === today ? "text-brand-ocean" : "text-slate-700")
-                    }
-                  >
+                  <p className="mb-2 text-[0.9em] font-semibold text-slate-700">
                     {d.getMonth() + 1}月{d.getDate()}日（{WEEKDAYS[d.getDay()]}）
                     {key === today && " 今日"}
                   </p>
                   <div className="space-y-1.5">
-                    {items.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => onSelectArticle(a)}
-                        className="flex w-full items-center gap-2 rounded border border-slate-200 px-3 py-2.5 text-left transition hover:bg-slate-50"
-                      >
-                        <span
-                          className={
-                            "shrink-0 rounded px-2 py-0.5 text-[0.75em] font-semibold " +
-                            PLATFORM_TONE[a.platform] +
-                            (a.status === "published" ? " opacity-50" : "")
-                          }
-                        >
-                          {PLATFORM_LABEL[a.platform]}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-[0.9em] text-brand-ink">
-                          <span className="mr-1.5 font-mono text-[0.85em] text-slate-500">
-                            {a.article_no}
-                          </span>
-                          {a.title || "（題なし）"}
-                        </span>
-                        {a.status === "published" && (
-                          <span className="shrink-0 text-[0.75em] text-slate-400">投稿ずみ</span>
-                        )}
-                      </button>
+                    {(byDay.get(key) ?? []).map((a) => (
+                      <Chip key={a.id} a={a} />
                     ))}
                   </div>
                 </li>
               );
             })}
-          {cells.filter((d) => d.getMonth() === thisMonth && (byDay.get(ymd(d)) ?? []).length > 0)
-            .length === 0 && (
+          {articles.length === 0 && (
             <li className="rounded border border-slate-200 bg-white px-5 py-8 text-center text-[0.92em] text-slate-500">
-              この月の投稿予定はありません。
+              この月の告知はありません。
             </li>
           )}
         </ul>
@@ -293,19 +260,7 @@ export function CalendarPanel({
                 </div>
                 <div className="space-y-0.5">
                   {items.map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      onClick={() => onSelectArticle(a)}
-                      title={`${PLATFORM_LABEL[a.platform]}／${STATUS_LABEL[a.status]}／${a.title}`}
-                      className={
-                        "block w-full truncate rounded px-1.5 py-0.5 text-left text-[0.72em] transition hover:opacity-80 " +
-                        PLATFORM_TONE[a.platform] +
-                        (a.status === "published" ? " opacity-50" : "")
-                      }
-                    >
-                      {a.article_no}　{a.title || PLATFORM_LABEL[a.platform]}
-                    </button>
+                    <Chip key={a.id} a={a} />
                   ))}
                 </div>
               </div>
@@ -313,11 +268,31 @@ export function CalendarPanel({
           })}
         </div>
       )}
+        </>,
+      )}
 
       <p className="mt-3 text-[0.85em] text-slate-500">
-        押すと、その記事を開きます。投稿はお昼の12時です。
+        押すと、右（携帯では下）に記事が出ます。投稿はお昼の12時です。
       </p>
     </div>
   );
+
+  function withPeek(cal: React.ReactNode) {
+    if (!peek) return cal;
+    return (
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div className="min-w-0">{cal}</div>
+        <ArticlePeek
+          article={peek}
+          userId={userId}
+          onUpdated={(next) => {
+            setPeek(next);
+            setArticles((prev) => prev.map((x) => (x.id === next.id ? next : x)));
+          }}
+          onClose={() => setPeek(null)}
+          onOpenFull={() => onSelectArticle(peek)}
+        />
+      </div>
+    );
   }
 }

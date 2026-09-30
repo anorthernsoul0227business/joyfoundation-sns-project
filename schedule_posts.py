@@ -136,12 +136,18 @@ def main() -> int:
     # すでに予約済みの枠を埋めておく。二重に同じ日へ入れないため
     taken: set[tuple[str, dt.date]] = set()
     event_used: set[tuple[str, dt.date]] = set()
-    for a in sb("GET", "articles?select=platform,scheduled_at,event_date&status=in.(scheduled,published)") or []:
+    # 同じ催しの告知が同じ日に重ならないようにする。
+    # 別の催しどうしなら同じ日でも構わない（2026-09-30 康二郎さん）
+    run_used: set[tuple[str, dt.date]] = set()
+    for a in sb("GET", "articles?select=platform,scheduled_at,event_date,event_run_key"
+                       "&status=in.(scheduled,published)") or []:
         if a.get("scheduled_at"):
             d = dt.datetime.fromisoformat(a["scheduled_at"].replace("Z", "+00:00")).astimezone(JST).date()
             taken.add((a["platform"], d))
             if a.get("event_date"):
                 event_used.add((a["event_date"], d))
+            # 同じ催しの告知が同じ日に重ならないようにするための控え
+            run_used.add((a.get("event_run_key") or a.get("event_date") or "", d))
 
     logger.info(f"{len(approved)}件の投稿日を決めます（今日 {today}）")
     plan, missed = [], []
@@ -166,11 +172,15 @@ def main() -> int:
                     # 開催が明日以前。前日にも間に合わないので見送る
                     missed.append((a, ev or slot))
                     continue
-                # 空いている日へ寄せる。前日より後には置かない
+                # 空いている日へ寄せる。前日より後には置かない。
+                # 2026-09-30 康二郎さん:「同じイベントでなければ、同じ日に
+                # 重なってもそこまで気にならない」。媒体ではなく催しで見る
                 slot = today + dt.timedelta(days=1)
                 limit = ev_day - dt.timedelta(days=1)
-                while (plat, slot) in taken and slot < limit:
+                run = a.get("event_run_key") or a.get("event_date") or ""
+                while (run, slot) in run_used and slot < limit:
                     slot += dt.timedelta(days=1)
+                run_used.add((run, slot))
                 if slot > limit:
                     missed.append((a, ev or ev_day))
                     continue

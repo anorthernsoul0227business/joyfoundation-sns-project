@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnnounceCalendar } from "./AnnounceCalendar";
 import { AnnounceRuleTable } from "./GuidePanel";
 import { ANNOUNCE_NOTES } from "../../lib/rules";
+import type { Article } from "../../lib/board";
 import {
   formatDateJa,
   listEventRuns,
@@ -165,7 +167,16 @@ function EventCard({ run, onChanged }: { run: EventRun; onChanged: () => void })
   );
 }
 
-export function EventsPanel({ reloadKey }: { reloadKey: number }) {
+export function EventsPanel({
+  reloadKey,
+  userId,
+  onSelectArticle,
+}: {
+  reloadKey: number;
+  userId: string;
+  onSelectArticle: (a: Article) => void;
+}) {
+  const [tab, setTab] = useState<"list" | "calendar">("list");
   const [runs, setRuns] = useState<EventRun[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -189,8 +200,19 @@ export function EventsPanel({ reloadKey }: { reloadKey: number }) {
 
   const needDecision = runs.filter((r) => !r.announceSkip && !r.announceFrom);
 
+  if (tab === "calendar") {
+    return (
+      <div className="mx-auto max-w-[52rem]">
+        <TabSwitch tab={tab} setTab={setTab} />
+        <AnnounceCalendar reloadKey={reloadKey} userId={userId} onSelectArticle={onSelectArticle} />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-[46rem]">
+      <TabSwitch tab={tab} setTab={setTab} />
+
       {/* 何も指定しなかったらどうなるかを、毎回目に入る場所に置く */}
       <details className="mb-4 rounded border border-slate-200 bg-white px-5 py-3 shadow-sm">
         <summary className="cursor-pointer list-none text-[0.95em] font-semibold text-brand-ink">
@@ -224,6 +246,39 @@ export function EventsPanel({ reloadKey }: { reloadKey: number }) {
           <EventCard key={run.runKey} run={run} onChanged={() => setTick((t) => t + 1)} />
         ))}
       </ul>
+    </div>
+  );
+}
+
+
+function TabSwitch({
+  tab,
+  setTab,
+}: {
+  tab: "list" | "calendar";
+  setTab: (t: "list" | "calendar") => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {([
+        ["list", "催しの一覧"],
+        ["calendar", "告知のカレンダー"],
+      ] as const).map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={tab === value}
+          onClick={() => setTab(value)}
+          className={
+            "rounded-full border px-4 py-2 text-[0.9em] transition " +
+            (tab === value
+              ? "border-brand-ink bg-brand-ink font-semibold text-white"
+              : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")
+          }
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -281,11 +281,22 @@ export default function BoardPage() {
               {SECTIONS.find((s) => s.value === section)?.label}
             </h2>
             {section === "ideas" && <IdeasPanel reloadKey={reloadKey} />}
-            {section === "events" && <EventsPanel reloadKey={reloadKey} />}
+            {section === "events" && (
+              <EventsPanel
+                reloadKey={reloadKey}
+                userId={user.id}
+                onSelectArticle={(a) => {
+                  setSelected(a);
+                  setSection("articles");
+                  if (!articles.some((x) => x.id === a.id)) setFilter("all");
+                }}
+              />
+            )}
             {section === "shares" && <SharesPanel reloadKey={reloadKey} />}
             {section === "calendar" && (
               <CalendarPanel
                 reloadKey={reloadKey}
+                userId={user.id}
                 onSelectArticle={(a) => {
                   // カレンダーから記事を開く。一覧に無い記事でも直接見せる
                   setSelected(a);
