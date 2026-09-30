@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import logging
 import os
@@ -25,6 +26,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 logger = logging.getLogger("check_ideas")
+# 同じ知らせをくり返さないための控え（notify_owner.py と同じやり方）
+STAMP = ROOT / "logs" / "check_ideas_last.json"
 JST = dt.timezone(dt.timedelta(hours=9))
 
 
@@ -69,27 +72,33 @@ def main() -> int:
     if args.dry_run:
         return 0
 
-    try:
-        from notifier import build_default_notifier
-        notifier = build_default_notifier()
-        if notifier is None:
-            logger.warning("通知の設定がないため、メールは送りません")
-            return 0
-        # notifier の公開メソッドは投稿の成否向け。汎用の送信はこれを使う
-        notifier._broadcast(
-            f"💡 圭一郎さんのメモ {len(ideas)}件に返事がまだです",
-            ("圭一郎さんの思いつきメモのうち、まだ返事をしていないものです。\n"
-             "共有ボードの「💡 思いつきメモ」で確認できます。\n"
-             "https://shc-sns-calendar-web.vercel.app/board\n\n"
-             + "\n".join(lines)),
-        )
-        logger.info("メールで知らせました")
+    # 同じ知らせを毎日くり返さない。
+    # 2026-09-30 圭一郎さんから「同じメールが何度も来る」とのご報告。
+    # 返事が付くまで毎朝送り続けていた（送った記録を持っていなかった）
+    digest = hashlib.sha256("\n".join(sorted(i["id"] for i in ideas)).encode()).hexdigest()[:16]
+    today = now.date().isoformat()
+    if STAMP.exists():
+        try:
+            last = json.loads(STAMP.read_text())
+            if last.get("digest") == digest and last.get("date") == today:
+                logger.info("同じ内容を今日すでに知らせています。送りません。")
+                return 0
+        except Exception:
+            pass
 
+    try:
+        # メールは送らない。
+        # 2026-09-30: 宛先が NOTIFY_GMAIL_TO（＝圭一郎さん）になっており、
+        # 「あなたのメモにまだ返事がありません」とご本人に毎日届いていた。
+        # これは返事をする側（康二郎さん）への連絡なので LINE だけにする
         import line_channel
         line_channel.notify_line(
             f"💡 圭一郎さんのメモ {len(ideas)}件に返事がまだです",
             "\n".join(f"・{i['body'].splitlines()[0][:34]}" for i in ideas),
             "https://shc-sns-calendar-web.vercel.app/board")
+        logger.info("LINE でお知らせしました")
+        STAMP.parent.mkdir(exist_ok=True)
+        STAMP.write_text(json.dumps({"digest": digest, "date": today}, ensure_ascii=False))
     except Exception as e:
         logger.error(f"通知に失敗しました: {type(e).__name__}: {e}")
         return 1

@@ -66,7 +66,9 @@ PROPOSAL_PROMPT = """あなたは、音による健康法を広める団体のSN
    言葉づかい、使ってよい言い回し、避けるべき表現など、
    これからの記事すべてに効かせたいときに選びます。
 2. rewrite_article … 特定の記事を書き直す。記事番号がはっきりしているときだけ。
-3. reschedule … 投稿日を決め直す。
+3. reschedule … 投稿日を決め直す。記事番号（ART-0094 のような番号）が
+   分かるときだけ選んでください。番号が書かれていない、どの記事か決められない
+   ときは reply_only を選び、どの記事のことか尋ねてください。
 4. reply_only … お礼や確認の返事をするだけでよいもの。
 5. manual … 上のどれでもなく、人が手を動かす必要があるもの
    （写真の差し替え、外部サービスの設定など）。
@@ -81,8 +83,15 @@ PROPOSAL_PROMPT = """あなたは、音による健康法を広める団体のSN
   "proposal": "理事長と康二郎さんが読んで判断できるよう、何をするかを3〜5行で書く",
   "rule_body": "kind が writing_rule のとき、記事を書くAIに渡す決まりの文。
                 「〜してください」「〜しないでください」の形で具体的に。それ以外は空文字",
+  "article_no": "kind が rewrite_article / reschedule のとき、対象の記事番号
+                 （例 ART-0094）。本文に書かれていなければ空文字",
+  "want_date": "kind が reschedule で、希望の投稿日が示されているとき YYYY-MM-DD。
+                示されていなければ空文字",
   "reply": "理事長にお返しする言葉。ていねいに、専門用語を使わずに2〜4行"
 }}
+
+今日は {today} です。「来週」「1週間早く」のような言い方は、今日を起点に
+実際の日付へ直してから書いてください。
 """
 
 
@@ -232,9 +241,10 @@ def find_todos(today: dt.date) -> list[dict]:
 
 # --- 案を作る ---------------------------------------------------------------
 
-def make_proposal(todo: dict, timeout: int) -> dict:
+def make_proposal(todo: dict, timeout: int, today: dt.date) -> dict:
     from run_weekly_loop import run_llm
-    prompt = PROPOSAL_PROMPT.format(source=todo["source"], detail=todo["detail"])
+    prompt = PROPOSAL_PROMPT.format(source=todo["source"], detail=todo["detail"],
+                                    today=today.isoformat())
     out = run_llm(["claude", "-p", prompt, "--output-format", "text"],
                   f"解決案（{todo['source']}）", timeout, timeout + 300)
     text = out.stdout if hasattr(out, "stdout") else str(out)
@@ -280,7 +290,7 @@ def main() -> int:
             continue
         logger.info(f"■ {todo['title']}")
         try:
-            got = make_proposal(todo, args.timeout)
+            got = make_proposal(todo, args.timeout, today)
         except Exception as e:
             logger.error(f"   案を作れませんでした: {type(e).__name__}: {e}")
             got = {"title": todo["title"], "kind": "manual",
@@ -301,6 +311,20 @@ def main() -> int:
             payload["article_no"] = todo["source_key"]
         if todo["source"] == "idea":
             payload["idea_id"] = todo["source_key"]
+            # メモには記事番号が書かれていることがある（「ART-0094を…」）。
+            # 2026-09-30: ここで拾っていなかったため、メモ由来の reschedule は
+            # 必ず「記事番号が分かりません」で失敗していた。
+            # 圭一郎さんの9/29の依頼2件が、誰にも知らされないまま止まっていた
+            if got.get("article_no"):
+                payload["article_no"] = got["article_no"].strip()
+        if got.get("want_date"):
+            payload["want_date"] = got["want_date"].strip()
+
+        # 対象が分からない reschedule は動かしようがない。
+        # 自動で進めて失敗を繰り返すより、承認待ちにして人の目に入れる
+        if got["kind"] == "reschedule" and not payload.get("article_no"):
+            logger.warning("   記事番号が分からないので、自動では進めません")
+            auto = False
 
         sb("POST", "tasks", body=[{
             "org_id": org_id,

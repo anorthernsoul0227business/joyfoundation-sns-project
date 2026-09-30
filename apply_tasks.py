@@ -108,7 +108,33 @@ def do_reschedule(task: dict) -> str:
     no = payload.get("article_no")
     if not no:
         raise RuntimeError("記事番号が分かりません")
-    # 承認済みに戻すだけ。実際の日取りは毎朝の schedule_posts.py が決める。
+
+    got = sb("GET", f"articles?select=article_no,event_date"
+                    f"&article_no=eq.{urllib.parse.quote(no)}") or []
+    if not got:
+        raise RuntimeError(f"{no} という記事が見つかりません")
+
+    # 希望日が示されていればそれを使う。
+    # 2026-09-30: 圭一郎さんが「9月30日に投稿してください」と日を指定されても、
+    # 受け取る口が無く、翌朝の処理が勝手に日を決め直していた
+    want = (payload.get("want_date") or "").strip()
+    if want:
+        try:
+            day = dt.date.fromisoformat(want)
+        except ValueError as e:
+            raise RuntimeError(f"希望日が読めません: {want}") from e
+        today = dt.datetime.now(JST).date()
+        if day < today:
+            raise RuntimeError(f"希望日 {day} はもう過ぎています")
+        ev = got[0].get("event_date")
+        if ev and day >= dt.date.fromisoformat(ev):
+            raise RuntimeError(f"希望日 {day} は開催日 {ev} より後です")
+        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
+           {"status": "approved", "scheduled_at": None,
+            "scheduled_date": day.isoformat()})
+        return f"{no} を {day} の投稿に変えました。翌朝の処理でキューに入ります。"
+
+    # 希望日が無ければ、実際の日取りは毎朝の schedule_posts.py が決める。
     # ここで日を決めると、他の予定との重なりを見られない
     sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
        {"status": "approved", "scheduled_at": None})
@@ -163,6 +189,7 @@ def main() -> int:
         return 0
     logger.info(f"{len(tasks)}件を実行します")
 
+    failed: list[tuple[dict, str]] = []
     for t in tasks:
         kind = t.get("proposal_kind")
         logger.info(f"■ {t['title']}（{kind}）")
@@ -182,6 +209,21 @@ def main() -> int:
             logger.error(f"   失敗: {msg[:160]}")
             sb("PATCH", f"tasks?id=eq.{t['id']}",
                {"result_note": f"実行に失敗しました。{msg[:300]}"})
+            failed.append((t, msg))
+
+    # 失敗は黙って置いておかない。
+    # 2026-09-30: 圭一郎さんの依頼2件が「記事番号が分かりません」で失敗したまま、
+    # 見回りのたびに同じ失敗を繰り返し、誰にも知らされていなかった。
+    # 承認まで済んでいる以上、止まっていることは人に伝わらなければならない
+    if failed:
+        try:
+            import line_channel
+            line_channel.notify_line(
+                f"⚠ やることの実行に失敗しました（{len(failed)}件）",
+                "\n".join(f"・{t['title']}\n　{m[:70]}" for t, m in failed),
+                "https://shc-sns-calendar-web.vercel.app/board")
+        except Exception as e:
+            logger.error(f"失敗の連絡ができませんでした: {type(e).__name__}: {e}")
     return 0
 
 
