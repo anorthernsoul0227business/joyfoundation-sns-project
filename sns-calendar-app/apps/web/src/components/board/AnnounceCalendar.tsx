@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArticlePeek } from "./ArticlePeek";
+import { FILTERABLE, PlatformFilter, filterByPlatform } from "./PlatformFilter";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import {
   announceState,
@@ -10,6 +11,7 @@ import {
   listAnnounceArticles,
   PLATFORM_LABEL,
   type Article,
+  type Platform,
 } from "../../lib/board";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -46,6 +48,7 @@ export function AnnounceCalendar({
   // 2026-09-30 康二郎さん: カレンダーから記事を開くと確認ページに移ってしまい、
   // 戻りにくい。カレンダーを見たまま横で読めるようにする
   const [peek, setPeek] = useState<Article | null>(null);
+  const [shown, setShown] = useState<Set<Platform>>(() => new Set(FILTERABLE));
   const narrow = useIsNarrow();
   const [month, setMonth] = useState(() => {
     const d = new Date();
@@ -73,16 +76,24 @@ export function AnnounceCalendar({
     void load();
   }, [load, reloadKey]);
 
+  const visible = useMemo(() => filterByPlatform(articles, shown), [articles, shown]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const a of articles) c[a.platform] = (c[a.platform] ?? 0) + 1;
+    return c;
+  }, [articles]);
+
   const byDay = useMemo(() => {
     const map = new Map<string, Article[]>();
-    for (const a of articles) {
+    for (const a of visible) {
       if (!a.scheduled_date) continue;
       const list = map.get(a.scheduled_date) ?? [];
       list.push(a);
       map.set(a.scheduled_date, list);
     }
     return map;
-  }, [articles]);
+  }, [visible]);
 
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -97,7 +108,7 @@ export function AnnounceCalendar({
 
   const today = ymd(new Date());
   const thisMonth = month.getMonth();
-  const waiting = articles.filter(
+  const waiting = visible.filter(
     (a) => announceState(a) === "waiting" && (a.scheduled_date ?? "") >= today,
   );
 
@@ -154,7 +165,7 @@ export function AnnounceCalendar({
           今月
         </button>
         <span className="text-[0.85em] text-slate-500">
-          {loading ? "読み込んでいます…" : `この月の告知 ${articles.length}件`}
+          {loading ? "読み込んでいます…" : `この月の告知 ${visible.length}件`}
         </span>
       </div>
 
@@ -170,6 +181,8 @@ export function AnnounceCalendar({
           </span>
         )}
       </p>
+
+      <PlatformFilter value={shown} onChange={setShown} counts={counts} />
 
       <div className="mb-2 flex flex-wrap items-center gap-3 text-[0.8em] text-slate-600">
         {(["waiting", "fixed", "done", "missed"] as const).map((k) => (
@@ -214,7 +227,7 @@ export function AnnounceCalendar({
                 </li>
               );
             })}
-          {articles.length === 0 && (
+          {visible.length === 0 && (
             <li className="rounded border border-slate-200 bg-white px-5 py-8 text-center text-[0.92em] text-slate-500">
               この月の告知はありません。
             </li>

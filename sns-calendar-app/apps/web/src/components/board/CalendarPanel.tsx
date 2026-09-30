@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnnounceCalendar } from "./AnnounceCalendar";
+import { FILTERABLE, PlatformFilter, filterByPlatform } from "./PlatformFilter";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import {
   calendarDate,
@@ -9,6 +10,7 @@ import {
   PLATFORM_LABEL,
   STATUS_LABEL,
   type Article,
+  type Platform,
 } from "../../lib/board";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -44,6 +46,8 @@ export function CalendarPanel({
   // 2026-09-30 康二郎さん: 投稿予定は承認済みだけ。
   // 未承認の告知は「イベントの告知」に切り替えて見る
   const [tab, setTab] = useState<"posts" | "announce">("posts");
+  // 媒体の絞り込み。既定はすべて表示（2026-09-30 康二郎さん）
+  const [shown, setShown] = useState<Set<Platform>>(() => new Set(FILTERABLE));
   const [articles, setArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,9 +71,17 @@ export function CalendarPanel({
     void load();
   }, [load, reloadKey]);
 
+  const visible = useMemo(() => filterByPlatform(articles, shown), [articles, shown]);
+
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const a of articles) c[a.platform] = (c[a.platform] ?? 0) + 1;
+    return c;
+  }, [articles]);
+
   const byDay = useMemo(() => {
     const map = new Map<string, Article[]>();
-    for (const a of articles) {
+    for (const a of visible) {
       const key = calendarDate(a);
       if (!key) continue;
       const list = map.get(key) ?? [];
@@ -80,7 +92,7 @@ export function CalendarPanel({
       list.sort((x, y) => x.platform.localeCompare(y.platform));
     }
     return map;
-  }, [articles]);
+  }, [visible]);
 
   // 月の初日を含む週の日曜から、6週間ぶんを並べる
   const cells = useMemo(() => {
@@ -96,7 +108,7 @@ export function CalendarPanel({
 
   const today = ymd(new Date());
   const thisMonth = month.getMonth();
-  const total = articles.filter((a) => {
+  const total = visible.filter((a) => {
     const k = calendarDate(a);
     return k && new Date(k).getMonth() === thisMonth;
   }).length;
@@ -105,7 +117,7 @@ export function CalendarPanel({
     <div className="mx-auto max-w-[52rem]">
       <div className="mb-4 flex flex-wrap gap-2">
         {([
-          ["posts", "投稿の予定（承認ずみ）"],
+          ["posts", "すべての投稿（承認ずみ）"],
           ["announce", "イベントの告知（承認まちも）"],
         ] as const).map(([value, label]) => (
           <button
@@ -174,6 +186,8 @@ export function CalendarPanel({
           {error}
         </p>
       )}
+
+      <PlatformFilter value={shown} onChange={setShown} counts={counts} />
 
       <div className="mb-2 flex flex-wrap items-center gap-3 text-[0.8em] text-slate-500">
         {Object.entries(PLATFORM_LABEL).map(([key, label]) =>
