@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   formatDateJa,
   PLATFORM_LABEL,
@@ -10,6 +11,10 @@ import {
 } from "../../lib/board";
 import { FILTERABLE, PlatformFilter } from "./PlatformFilter";
 import { StatusBadge } from "./StatusBadge";
+
+// 開いているか閉じているかは端末に覚えておく。
+// 2026-09-30 康二郎さん: 絞り込みは開いたり閉じたりできるようにしてほしい
+const OPEN_KEY = "jf-board-filters-open";
 
 const FILTERS: { value: ArticleFilter; label: string }[] = [
   { value: "pending", label: "未対応だけ" },
@@ -57,6 +62,35 @@ export function ArticleList({
 }) {
   const narrowed = scope !== "all" || platforms.size < FILTERABLE.length;
 
+  // 最初は開いておく。閉じたままだと「イベント以外だけ見る」ができることに
+  // 気づけないため。一度閉じたら次からは閉じたまま
+  const [open, setOpen] = useState(true);
+  useEffect(() => {
+    const saved = window.localStorage.getItem(OPEN_KEY);
+    if (saved !== null) setOpen(saved === "1");
+  }, []);
+
+  function toggleOpen() {
+    const next = !open;
+    setOpen(next);
+    window.localStorage.setItem(OPEN_KEY, next ? "1" : "0");
+  }
+
+  // 閉じているときは、いま何で絞っているかを一行で見せる。
+  // 閉じたせいで「なぜこの件数なのか」が分からなくなると困る
+  const summary = narrowed
+    ? [
+        SCOPES.find((s) => s.value === scope)?.label,
+        platforms.size < FILTERABLE.length
+          ? FILTERABLE.filter((p) => platforms.has(p))
+              .map((p) => PLATFORM_LABEL[p])
+              .join("・")
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" / ")
+    : "すべての記事・すべての媒体";
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap gap-1.5 border-b border-slate-200 px-3 py-2.5">
@@ -78,30 +112,78 @@ export function ArticleList({
         ))}
       </div>
 
-      <div className="border-b border-slate-200 bg-slate-50/70 px-3 py-2.5">
-        <div className="flex gap-1" role="tablist" aria-label="記事の種類">
-          {SCOPES.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              role="tab"
-              aria-selected={scope === s.value}
-              onClick={() => onScopeChange(s.value)}
+      <div className="border-b border-slate-200 bg-slate-50/70">
+        <button
+          type="button"
+          onClick={toggleOpen}
+          aria-expanded={open}
+          aria-controls="article-filters"
+          className="flex w-full items-center gap-2 px-3 py-2 text-left transition hover:bg-slate-100/70"
+        >
+          <span aria-hidden className="text-[0.7em] text-slate-400">
+            {open ? "▼" : "▶"}
+          </span>
+          <span className="text-[0.8em] font-semibold text-slate-600">絞り込み</span>
+          {!open && (
+            <span
               className={
-                "flex-1 rounded-lg border px-2 py-1.5 text-[0.78em] transition " +
-                (scope === s.value
-                  ? "border-brand-ocean bg-white font-semibold text-brand-ink shadow-sm"
-                  : "border-transparent text-slate-500 hover:bg-white/70")
+                "min-w-0 flex-1 truncate text-[0.78em] " +
+                (narrowed ? "font-semibold text-brand-ink" : "text-slate-400")
               }
             >
-              {s.label}
-              <span className="ml-1 text-[0.85em] text-slate-400">{scopeCounts[s.value]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 [&>div]:mb-0">
-          <PlatformFilter value={platforms} onChange={onPlatformsChange} counts={platformCounts} />
-        </div>
+              {summary}
+            </span>
+          )}
+          {!open && narrowed && (
+            <span className="shrink-0 rounded-full bg-brand-ocean/15 px-2 py-0.5 text-[0.7em] font-semibold text-brand-ink">
+              {articles.length}件
+            </span>
+          )}
+        </button>
+
+        {open && (
+          <div id="article-filters" className="px-3 pb-2.5">
+            <div className="flex gap-1" role="tablist" aria-label="記事の種類">
+              {SCOPES.map((s) => (
+                <button
+                  key={s.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={scope === s.value}
+                  onClick={() => onScopeChange(s.value)}
+                  className={
+                    "flex-1 rounded-lg border px-2 py-1.5 text-[0.78em] transition " +
+                    (scope === s.value
+                      ? "border-brand-ocean bg-white font-semibold text-brand-ink shadow-sm"
+                      : "border-transparent text-slate-500 hover:bg-white/70")
+                  }
+                >
+                  {s.label}
+                  <span className="ml-1 text-[0.85em] text-slate-400">{scopeCounts[s.value]}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 [&>div]:mb-0">
+              <PlatformFilter
+                value={platforms}
+                onChange={onPlatformsChange}
+                counts={platformCounts}
+              />
+            </div>
+            {narrowed && (
+              <button
+                type="button"
+                onClick={() => {
+                  onScopeChange("all");
+                  onPlatformsChange(new Set(FILTERABLE));
+                }}
+                className="mt-2 text-[0.78em] text-brand-ink underline underline-offset-2"
+              >
+                絞り込みを外す
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
