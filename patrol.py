@@ -69,6 +69,10 @@ PROPOSAL_PROMPT = """あなたは、音による健康法を広める団体のSN
 3. reschedule … 投稿日を決め直す。記事番号（ART-0094 のような番号）が
    分かるときだけ選んでください。番号が書かれていない、どの記事か決められない
    ときは reply_only を選び、どの記事のことか尋ねてください。
+   同じ日に告知が集中しているときは、動かす記事と移動先の日付を
+   moves にすべて書いてください。1日に1件だけ残し、ほかを別の日へ散らします。
+   開催日の前日に出す記事は動かさないでください（前日投稿は必ず守ります）。
+   開催日より後には置かないでください。
 4. reply_only … お礼や確認の返事をするだけでよいもの。
 5. manual … 上のどれでもなく、人が手を動かす必要があるもの
    （写真の差し替え、外部サービスの設定など）。
@@ -87,6 +91,9 @@ PROPOSAL_PROMPT = """あなたは、音による健康法を広める団体のSN
                  （例 ART-0094）。本文に書かれていなければ空文字",
   "want_date": "kind が reschedule で、希望の投稿日が示されているとき YYYY-MM-DD。
                 示されていなければ空文字",
+  "moves": "kind が reschedule で、複数の記事を動かすとき
+            [{{\"article_no\": \"ART-0128\", \"want_date\": \"2026-10-20\"}}] の形で
+            動かす記事ぶんすべて書く。1件だけなら空の配列 []",
   "reply": "理事長にお返しする言葉。ていねいに、専門用語を使わずに2〜4行"
 }}
 
@@ -307,8 +314,14 @@ def main() -> int:
         if got["kind"] == "writing_rule":
             payload["rule_body"] = got.get("rule_body", "")
             payload["scope"] = "both"
+        # source_key が記事番号とはかぎらない。
+        # 2026-09-30: 同じ日に集中した告知の source_key は "crowded:2026-10-18" で、
+        # これを記事番号として渡していたため、7件が「記事が見つかりません」で失敗した。
+        # （それ以前は0件の書き換えが黙って成功扱いになり、何もしていなかった）
         if todo["source"] in ("fix_request", "owner_input", "schedule"):
-            payload["article_no"] = todo["source_key"]
+            key = todo["source_key"]
+            if key.startswith("ART-"):
+                payload["article_no"] = key
         if todo["source"] == "idea":
             payload["idea_id"] = todo["source_key"]
             # メモには記事番号が書かれていることがある（「ART-0094を…」）。
@@ -319,11 +332,20 @@ def main() -> int:
                 payload["article_no"] = got["article_no"].strip()
         if got.get("want_date"):
             payload["want_date"] = got["want_date"].strip()
+        moves = [m for m in (got.get("moves") or [])
+                 if isinstance(m, dict) and str(m.get("article_no", "")).startswith("ART-")]
+        if moves:
+            payload["moves"] = moves
+
+        # 同じ日に集中している件は「注意喚起してください」というご依頼だった。
+        # 何本もまとめて動かすのは、こちらの判断だけで進めるものではない
+        if todo["source_key"].startswith("crowded:"):
+            auto = False
 
         # 対象が分からない reschedule は動かしようがない。
         # 自動で進めて失敗を繰り返すより、承認待ちにして人の目に入れる
-        if got["kind"] == "reschedule" and not payload.get("article_no"):
-            logger.warning("   記事番号が分からないので、自動では進めません")
+        if got["kind"] == "reschedule" and not (payload.get("article_no") or payload.get("moves")):
+            logger.warning("   対象の記事が分からないので、自動では進めません")
             auto = False
 
         sb("POST", "tasks", body=[{

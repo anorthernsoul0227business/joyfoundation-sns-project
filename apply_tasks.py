@@ -102,43 +102,57 @@ def do_rewrite_article(task: dict) -> str:
     return f"{no} を直しました。圭一郎さんの確認まちです。"
 
 
-def do_reschedule(task: dict) -> str:
-    """投稿日を決め直す。見送りのものは承認済みに戻す。"""
-    payload = task.get("proposal_payload") or {}
-    no = payload.get("article_no")
-    if not no:
-        raise RuntimeError("記事番号が分かりません")
-
-    got = sb("GET", f"articles?select=article_no,event_date"
+def move_one(no: str, want: str | None) -> str:
+    """記事1本の投稿日を変える。希望日が無ければ翌朝の処理にまかせる。"""
+    got = sb("GET", f"articles?select=article_no,event_date,announce_role"
                     f"&article_no=eq.{urllib.parse.quote(no)}") or []
     if not got:
         raise RuntimeError(f"{no} という記事が見つかりません")
+    a = got[0]
 
-    # 希望日が示されていればそれを使う。
+    if not want:
+        # 実際の日取りは毎朝の schedule_posts.py が決める。
+        # ここで日を決めると、他の予定との重なりを見られない
+        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
+           {"status": "approved", "scheduled_at": None})
+        return f"{no} を投稿日の決め直しに回しました"
+
     # 2026-09-30: 圭一郎さんが「9月30日に投稿してください」と日を指定されても、
     # 受け取る口が無く、翌朝の処理が勝手に日を決め直していた
-    want = (payload.get("want_date") or "").strip()
-    if want:
-        try:
-            day = dt.date.fromisoformat(want)
-        except ValueError as e:
-            raise RuntimeError(f"希望日が読めません: {want}") from e
-        today = dt.datetime.now(JST).date()
-        if day < today:
-            raise RuntimeError(f"希望日 {day} はもう過ぎています")
-        ev = got[0].get("event_date")
-        if ev and day >= dt.date.fromisoformat(ev):
-            raise RuntimeError(f"希望日 {day} は開催日 {ev} より後です")
-        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
-           {"status": "approved", "scheduled_at": None,
-            "scheduled_date": day.isoformat()})
-        return f"{no} を {day} の投稿に変えました。翌朝の処理でキューに入ります。"
+    try:
+        day = dt.date.fromisoformat(want)
+    except ValueError as e:
+        raise RuntimeError(f"{no}: 希望日が読めません（{want}）") from e
+    if day < dt.datetime.now(JST).date():
+        raise RuntimeError(f"{no}: 希望日 {day} はもう過ぎています")
+    ev = a.get("event_date")
+    if ev and day >= dt.date.fromisoformat(ev):
+        raise RuntimeError(f"{no}: 希望日 {day} は開催日 {ev} より後です")
+    # 前日投稿は動かさない（2026-09-04 に圭一郎さんと決めた絶対の決まり）
+    if a.get("announce_role") == "day_before":
+        raise RuntimeError(f"{no} は開催の前日に出す記事なので動かせません")
 
-    # 希望日が無ければ、実際の日取りは毎朝の schedule_posts.py が決める。
-    # ここで日を決めると、他の予定との重なりを見られない
     sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
-       {"status": "approved", "scheduled_at": None})
-    return f"{no} を投稿日の決め直しに回しました。翌朝の処理で日が決まります。"
+       {"status": "approved", "scheduled_at": None, "scheduled_date": day.isoformat()})
+    return f"{no} を {day} へ"
+
+
+def do_reschedule(task: dict) -> str:
+    """投稿日を決め直す。1本でも、同じ日に集中したぶんをまとめてでも。"""
+    payload = task.get("proposal_payload") or {}
+
+    # 同じ日に集中した告知を散らす場合は、動かす記事が複数ある
+    moves = payload.get("moves") or []
+    if moves:
+        done = [move_one(str(m["article_no"]).strip(), (m.get("want_date") or "").strip() or None)
+                for m in moves]
+        return "、".join(done) + " に変えました。翌朝の処理でキューに入ります。"
+
+    no = payload.get("article_no")
+    if not no:
+        raise RuntimeError("記事番号が分かりません")
+    return move_one(no, (payload.get("want_date") or "").strip() or None) + \
+        "。翌朝の処理でキューに入ります。"
 
 
 def do_reply_only(task: dict) -> str:
@@ -207,8 +221,13 @@ def main() -> int:
         except Exception as e:
             msg = f"{type(e).__name__}: {e}"
             logger.error(f"   失敗: {msg[:160]}")
+            # 失敗したものは承認まちに戻す。
+            # 2026-09-30: approved のまま置いたため、見回りのたびに同じ失敗を
+            # くり返し、同じ知らせが1日2回届いていた。
+            # 承認まちにすれば画面に出るし、勝手に動き続けることもない
             sb("PATCH", f"tasks?id=eq.{t['id']}",
-               {"result_note": f"実行に失敗しました。{msg[:300]}"})
+               {"status": "proposed", "decided_at": None,
+                "result_note": f"実行に失敗しました。{msg[:300]}"})
             failed.append((t, msg))
 
     # 失敗は黙って置いておかない。
