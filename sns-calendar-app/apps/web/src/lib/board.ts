@@ -652,7 +652,13 @@ export async function saveAnnouncePlan(params: {
  * 予定が決まっているもの（scheduled_at）と、投稿し終えたもの（published_at）の
  * 両方を拾う。カレンダーでは「これから出るもの」と「もう出たもの」を並べて見せる。
  */
-export async function listCalendarArticles(from: Date, to: Date): Promise<Article[]> {
+export type CalendarScope = "all" | "normal" | "event";
+
+export async function listCalendarArticles(
+  from: Date,
+  to: Date,
+  scope: CalendarScope = "all",
+): Promise<Article[]> {
   const supabase = requireSupabaseClient();
   const day = (d: Date) => {
     const p = (n: number) => String(n).padStart(2, "0");
@@ -661,18 +667,29 @@ export async function listCalendarArticles(from: Date, to: Date): Promise<Articl
 
   // 2026-09-30 康二郎さん: 投稿予定カレンダーは承認済みだけでよい。
   // 未承認のものは「イベントの告知」カレンダーで見る
+  // 2026-09-30 康二郎さん: すべて／イベント以外／イベント の3つに分けて見たい
+  const scoped = <T extends { not: (a: string, b: string, c: null) => T; is: (a: string, b: null) => T }>(q: T): T => {
+    if (scope === "event") return q.not("event_date", "is", null);
+    if (scope === "normal") return q.is("event_date", null);
+    return q;
+  };
+
   const [scheduled, published] = await Promise.all([
-    supabase
-      .from("articles")
-      .select(ARTICLE_COLUMNS)
-      .gte("scheduled_date", day(from))
-      .lt("scheduled_date", day(to))
-      .in("status", APPROVED_STATUSES),
-    supabase
-      .from("articles")
-      .select(ARTICLE_COLUMNS)
-      .gte("published_at", from.toISOString())
-      .lt("published_at", to.toISOString()),
+    scoped(
+      supabase
+        .from("articles")
+        .select(ARTICLE_COLUMNS)
+        .gte("scheduled_date", day(from))
+        .lt("scheduled_date", day(to))
+        .in("status", APPROVED_STATUSES),
+    ),
+    scoped(
+      supabase
+        .from("articles")
+        .select(ARTICLE_COLUMNS)
+        .gte("published_at", from.toISOString())
+        .lt("published_at", to.toISOString()),
+    ),
   ]);
   if (scheduled.error) throw new Error(scheduled.error.message);
   if (published.error) throw new Error(published.error.message);

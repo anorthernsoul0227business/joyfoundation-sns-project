@@ -44,9 +44,10 @@ export function CalendarPanel({
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const narrow = useIsNarrow();
-  // 2026-09-30 康二郎さん: 投稿予定は承認済みだけ。
-  // 未承認の告知は「イベントの告知」に切り替えて見る
-  const [tab, setTab] = useState<"posts" | "announce">("posts");
+  // 2026-09-30 康二郎さん: すべて／イベント以外／イベント の3つに分ける。
+  // いずれも承認済みだけを出す。まだ承認していないものは
+  // 「承認まちも見る」（イベント告知カレンダー）で確認する
+  const [tab, setTab] = useState<"all" | "normal" | "event" | "announce">("all");
   // 媒体の絞り込み。既定はすべて表示（2026-09-30 康二郎さん）
   const [shown, setShown] = useState<Set<Platform>>(() => new Set(FILTERABLE));
   // 2026-09-30 康二郎さん: 告知と同じく、通常の投稿もカレンダーを見たまま読めるように
@@ -62,17 +63,19 @@ export function CalendarPanel({
       // 前後の月にはみ出した週も表示するので、少し広めに取る
       const from = new Date(month.getFullYear(), month.getMonth(), -7);
       const to = new Date(month.getFullYear(), month.getMonth() + 1, 14);
-      setArticles(await listCalendarArticles(from, to));
+      const scope = tab === "normal" ? "normal" : tab === "event" ? "event" : "all";
+      setArticles(await listCalendarArticles(from, to, scope));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, [month, tab]);
 
   useEffect(() => {
+    if (tab === "announce") return;
     void load();
-  }, [load, reloadKey]);
+  }, [load, reloadKey, tab]);
 
   const visible = useMemo(() => filterByPlatform(articles, shown), [articles, shown]);
 
@@ -117,11 +120,13 @@ export function CalendarPanel({
   }).length;
 
   return (
-    <div className={peek && tab === "posts" ? "mx-auto max-w-[70rem]" : "mx-auto max-w-[52rem]"}>
+    <div className={peek && tab !== "announce" ? "mx-auto max-w-[70rem]" : "mx-auto max-w-[52rem]"}>
       <div className="mb-4 flex flex-wrap gap-2">
         {([
-          ["posts", "すべての投稿（承認ずみ）"],
-          ["announce", "イベントの告知（承認まちも）"],
+          ["all", "すべての記事"],
+          ["normal", "イベント以外"],
+          ["event", "イベント記事"],
+          ["announce", "承認まちも見る"],
         ] as const).map(([value, label]) => (
           <button
             key={value}
