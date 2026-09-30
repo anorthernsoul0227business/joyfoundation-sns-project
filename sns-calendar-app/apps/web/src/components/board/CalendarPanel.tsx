@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnnounceCalendar } from "./AnnounceCalendar";
+import { ArticlePeek } from "./ArticlePeek";
 import { FILTERABLE, PlatformFilter, filterByPlatform } from "./PlatformFilter";
 import { useIsNarrow } from "../../hooks/useIsNarrow";
 import {
@@ -48,6 +49,8 @@ export function CalendarPanel({
   const [tab, setTab] = useState<"posts" | "announce">("posts");
   // 媒体の絞り込み。既定はすべて表示（2026-09-30 康二郎さん）
   const [shown, setShown] = useState<Set<Platform>>(() => new Set(FILTERABLE));
+  // 2026-09-30 康二郎さん: 告知と同じく、通常の投稿もカレンダーを見たまま読めるように
+  const [peek, setPeek] = useState<Article | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -114,7 +117,7 @@ export function CalendarPanel({
   }).length;
 
   return (
-    <div className="mx-auto max-w-[52rem]">
+    <div className={peek && tab === "posts" ? "mx-auto max-w-[70rem]" : "mx-auto max-w-[52rem]"}>
       <div className="mb-4 flex flex-wrap gap-2">
         {([
           ["posts", "すべての投稿（承認ずみ）"],
@@ -146,7 +149,7 @@ export function CalendarPanel({
   );
 
   function PostCalendar() {
-  return (
+    const cal = (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <button
@@ -233,7 +236,7 @@ export function CalendarPanel({
                       <button
                         key={a.id}
                         type="button"
-                        onClick={() => onSelectArticle(a)}
+                        onClick={() => setPeek(a)}
                         className="flex w-full items-center gap-2 rounded border border-slate-200 px-3 py-2.5 text-left transition hover:bg-slate-50"
                       >
                         <span
@@ -310,7 +313,7 @@ export function CalendarPanel({
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => onSelectArticle(a)}
+                      onClick={() => setPeek(a)}
                       title={`${PLATFORM_LABEL[a.platform]}／${STATUS_LABEL[a.status]}／${a.title}`}
                       className={
                         "block w-full truncate rounded px-1.5 py-0.5 text-left text-[0.72em] transition hover:opacity-80 " +
@@ -329,9 +332,26 @@ export function CalendarPanel({
       )}
 
       <p className="mt-3 text-[0.85em] text-slate-500">
-        押すと、その記事を開きます。投稿はお昼の12時です。
+        押すと、右（携帯では下）に記事が出ます。投稿はお昼の12時です。
       </p>
     </div>
-  );
+    );
+
+    if (!peek) return cal;
+    return (
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div className="min-w-0">{cal}</div>
+        <ArticlePeek
+          article={peek}
+          userId={userId}
+          onUpdated={(next) => {
+            setPeek(next);
+            setArticles((prev) => prev.map((x) => (x.id === next.id ? next : x)));
+          }}
+          onClose={() => setPeek(null)}
+          onOpenFull={() => onSelectArticle(peek)}
+        />
+      </div>
+    );
   }
 }
