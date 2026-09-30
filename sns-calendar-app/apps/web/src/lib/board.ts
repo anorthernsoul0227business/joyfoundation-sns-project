@@ -186,14 +186,24 @@ function isoWeek(d: Date): string {
 
 export async function listArticles(filter: ArticleFilter): Promise<Article[]> {
   const supabase = requireSupabaseClient();
-  let query = supabase
-    .from("articles")
-    .select(ARTICLE_COLUMNS)
-    .order("scheduled_date", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  let query = supabase.from("articles").select(ARTICLE_COLUMNS);
 
   if (filter === "pending") {
-    query = query.in("status", PENDING_STATUSES);
+    // 2026-09-30 康二郎さん: 確認する記事、特にイベントのものが日付バラバラで
+    // 見にくい。開催日の早い順に並べ、イベントでないものは新しい順で後ろに置く
+    query = query
+      .in("status", PENDING_STATUSES)
+      .order("event_date", { ascending: true, nullsFirst: false })
+      .order("scheduled_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+  } else {
+    query = query
+      .order("scheduled_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+  }
+
+  if (filter === "pending") {
+    // 並び順は上で決めてある
   } else if (filter === "approved") {
     query = query.in("status", APPROVED_STATUSES);
   } else if (filter === "discarded") {
@@ -644,12 +654,22 @@ export async function saveAnnouncePlan(params: {
  */
 export async function listCalendarArticles(from: Date, to: Date): Promise<Article[]> {
   const supabase = requireSupabaseClient();
+  const day = (d: Date) => {
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  };
+
+  // 2026-09-30: これまで scheduled_at（日時）だけを見ており、
+  // 承認前の記事（scheduled_date はあるが scheduled_at はまだ無い）が
+  // 123件まるごと表示されていなかった。メールには出るのにカレンダーに無い、
+  // という食い違いの原因。予定の「日」でも拾う
   const [scheduled, published] = await Promise.all([
     supabase
       .from("articles")
       .select(ARTICLE_COLUMNS)
-      .gte("scheduled_at", from.toISOString())
-      .lt("scheduled_at", to.toISOString()),
+      .gte("scheduled_date", day(from))
+      .lt("scheduled_date", day(to))
+      .neq("status", "discarded"),
     supabase
       .from("articles")
       .select(ARTICLE_COLUMNS)
@@ -659,7 +679,6 @@ export async function listCalendarArticles(from: Date, to: Date): Promise<Articl
   if (scheduled.error) throw new Error(scheduled.error.message);
   if (published.error) throw new Error(published.error.message);
 
-  // 投稿済みは両方に出てくることがあるので、id で重複を除く
   const seen = new Map<string, Article>();
   for (const a of [...(scheduled.data ?? []), ...(published.data ?? [])]) {
     const art = a as unknown as Article;
@@ -670,11 +689,13 @@ export async function listCalendarArticles(from: Date, to: Date): Promise<Articl
 
 /** カレンダーで日ごとに並べるための日付。投稿済みは実際に出た日を使う */
 export function calendarDate(a: Article): string | null {
-  const iso = a.published_at ?? a.scheduled_at;
-  if (!iso) return null;
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  // 投稿済みは実際に出た日。まだなら予定の日（scheduled_date は日付そのもの）
+  if (a.published_at) {
+    const d = new Date(a.published_at);
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+  return a.scheduled_date ?? null;
 }
 
 

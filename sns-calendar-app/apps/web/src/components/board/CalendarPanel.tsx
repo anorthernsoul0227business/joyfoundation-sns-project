@@ -193,6 +193,9 @@ export function CalendarPanel({
                           {PLATFORM_LABEL[a.platform]}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[0.9em] text-brand-ink">
+                          <span className="mr-1.5 font-mono text-[0.85em] text-slate-500">
+                            {a.article_no}
+                          </span>
                           {a.title || "（題なし）"}
                         </span>
                         {a.status === "published" && (
@@ -262,7 +265,7 @@ export function CalendarPanel({
                         (a.status === "published" ? " opacity-50" : "")
                       }
                     >
-                      {a.title || PLATFORM_LABEL[a.platform]}
+                      {a.article_no}　{a.title || PLATFORM_LABEL[a.platform]}
                     </button>
                   ))}
                 </div>

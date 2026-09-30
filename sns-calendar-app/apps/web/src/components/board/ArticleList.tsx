@@ -77,7 +77,12 @@ export function ArticleList({
                   (on ? "bg-brand-ocean/10 shadow-[inset_3px_0_0_#0f766e]" : "hover:bg-slate-50")
                 }
               >
-                <div className="mb-1 flex items-center gap-2 text-[0.75em] text-slate-500">
+                <div className="mb-1 flex flex-wrap items-center gap-2 text-[0.75em] text-slate-500">
+                  {/* 2026-09-30: メールから来たとき、どれが指定された記事か
+                      分かるように番号を出す */}
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono font-semibold text-slate-700">
+                    {a.article_no}
+                  </span>
                   <span className="font-semibold text-slate-600">{PLATFORM_LABEL[a.platform]}</span>
                   <span>
                     ・

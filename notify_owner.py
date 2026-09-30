@@ -105,7 +105,8 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
                 continue
             seen_u.add(t)
             when = "本日" if left == 0 else f"あと{left}日"
-            lines.append(f"   ・{when}　{a['title'][:30]}")
+            lines.append(f"   ・{when}　{a['article_no']}　{a['title'][:26]}")
+            lines.append(f"     {BOARD_URL}?article={a['article_no']}")
         lines.append("")
 
     if revised:
@@ -113,14 +114,16 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
         lines.append("  直した箇所を色分けしてお見せします。")
         lines.append("  よろしければ「このまま出す」を押してください。")
         for a in revised[:6]:
-            lines.append(f"   ・{a['title'][:34]}")
+            lines.append(f"   ・{a['article_no']}　{a['title'][:30]}")
+            lines.append(f"     {BOARD_URL}?article={a['article_no']}")
         lines.append("")
 
     if asking:
         lines.append(f"■ 教えていただきたいことがあります（{len(asking)}件）")
         lines.append("  ご指示だけでは直し方が決まらなかったものです。")
         for a in asking[:4]:
-            lines.append(f"   ・{a['title'][:34]}")
+            lines.append(f"   ・{a['article_no']}　{a['title'][:30]}")
+            lines.append(f"     {BOARD_URL}?article={a['article_no']}")
         lines.append("")
 
     # 未確認の総数（129件など）をそのまま出すと、受け取る側に圧迫感を与える。
@@ -131,7 +134,8 @@ def build_body(rows: list[dict]) -> tuple[str, str]:
         for a in soon_shown[:5]:
             when = a.get("scheduled_date") or ""
             head = f"{when[5:7]}/{when[8:10]} " if len(when) == 10 else ""
-            lines.append(f"   ・{head}{a['title'][:30]}")
+            lines.append(f"   ・{head}{a['article_no']}　{a['title'][:26]}")
+            lines.append(f"     {BOARD_URL}?article={a['article_no']}")
         lines.append("")
     elif fresh:
         lines.append("■ そのほか、お手すきのときにご覧いただける記事もございます。")

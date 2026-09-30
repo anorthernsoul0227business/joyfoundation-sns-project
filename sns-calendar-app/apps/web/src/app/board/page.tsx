@@ -65,6 +65,17 @@ export default function BoardPage() {
     void syncSessionFromSupabase();
   }, []);
 
+  // メールのリンクから特定の記事を開く（?article=ART-0114）。
+  // 2026-09-30 康二郎さん: 通知から飛んでも、どれが指定の記事か分からなかった
+  const [wanted, setWanted] = useState<string | null>(null);
+  useEffect(() => {
+    const no = new URLSearchParams(window.location.search).get("article");
+    if (no) {
+      setWanted(no);
+      setFilter("all");
+    }
+  }, []);
+
   // 文字サイズは端末に記憶し、ページ全体の基準サイズ（html の font-size）に反映する
   useEffect(() => {
     const saved = window.localStorage.getItem(FONT_KEY) as FontScale | null;
@@ -91,6 +102,17 @@ export default function BoardPage() {
       ]);
       setArticles(list);
       setPendingCount((pending ?? list).length);
+
+      // メールで指定された記事があれば、それを開く
+      if (wanted) {
+        const hit = list.find((a) => a.article_no === wanted);
+        if (hit) {
+          setSelected(hit);
+          setWanted(null);
+          return;
+        }
+      }
+
       setSelected((cur) => {
         if (cur) {
           const still = list.find((a) => a.id === cur.id);
@@ -104,7 +126,7 @@ export default function BoardPage() {
     } finally {
       setLoading(false);
     }
-  }, [filter, isReady, narrow]);
+  }, [filter, isReady, narrow, wanted]);
 
   useEffect(() => {
     void reload();
