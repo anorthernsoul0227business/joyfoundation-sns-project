@@ -1320,6 +1320,27 @@ def verify(post: dict, cards: dict, claims: list = None) -> dict:
 # ④ レビューシートへ投入
 # --------------------------------------------------------------------------
 
+def open_sheet(gc):
+    """スプレッドシートを開く。切れていたら繋ぎ直す。
+
+    2026-09-30: 生成に10分前後かかるあいだ gspread の接続が放置され、
+    そのあと最初にシートを触るところで必ず
+    Connection reset by peer になっていた（9/2 から13回連続）。
+    つなぎっぱなしの接続は、長い待ち時間をはさむと相手側に切られる。
+    """
+    import time
+    last = None
+    for i in range(3):
+        try:
+            return gc.open_by_key(SPREADSHEET_KEY)
+        except Exception as e:
+            last = e
+            logger.warning(f"   シートに繋ぎ直します（{type(e).__name__}）")
+            gc = gspread.service_account()
+            time.sleep(2 * (i + 1))
+    raise last
+
+
 def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> int:
     """記事を共有ボード（Supabase）へ、内訳をスプレッドシートへ書く。
 
@@ -1327,12 +1348,12 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
     圭一郎さんの確認はブラウザの共有ボードで行う。内訳（生成の内訳・レビュー指摘）は
     康二郎さんが見る診断情報なので、当面シートに残す。
     """
-    sh = gc.open_by_key(SPREADSHEET_KEY)
-    bd = sh.worksheet(TAB_BREAKDOWN)
-
     today = date.today()
     week = f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
 
+    # 先に記事を入れる。シートに書く内訳は診断情報で、記事より後でよい。
+    # 2026-09-30: シートを開くところで落ちていたため、9/2 以降の週次13回すべてで
+    # 記事が1本も共有ボードに入っていなかった（生成そのものは成功していた）
     # 記事番号は DB のシーケンスが採る。行数から数えると、行を消したときに
     # 同じ番号が再発行される（2026-09-02 に ART-0040 が重複していた）
     inserted = supabase_store.insert_articles(posts, results, week, test_mode)
@@ -1371,9 +1392,15 @@ def publish(gc, posts: list, results: list, reviews: list, test_mode: bool) -> i
                 time.sleep(wait)
         raise last
 
-    bd_existing = bd.get_all_values()
-    bd_start = len(bd_existing) + 1 if len(bd_existing) > 1 else 2
-    write(bd, breakdown, f"A{bd_start}")
+    # 記事はもう入っている。内訳が書けなくても、そこで止めない
+    try:
+        bd = open_sheet(gc).worksheet(TAB_BREAKDOWN)
+        bd_existing = bd.get_all_values()
+        bd_start = len(bd_existing) + 1 if len(bd_existing) > 1 else 2
+        write(bd, breakdown, f"A{bd_start}")
+    except Exception as e:
+        logger.warning(f"   内訳をシートに書けませんでした: {type(e).__name__}: {str(e)[:100]}")
+        logger.warning("   記事は共有ボードに入っています。内訳は診断用なので先へ進みます")
     return len(inserted)
 
 
