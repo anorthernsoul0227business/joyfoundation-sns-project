@@ -14,3 +14,11 @@ cd "$(dirname "$0")"
 /usr/bin/python3 patrol.py      || echo "[warn] 見回りに失敗しました"
 # 破棄して1週間たったものを一覧から外す（データは残す）
 /usr/bin/python3 archive_discarded.py || echo "[warn] 破棄記事の片づけに失敗しました"
+
+# 2026-09-30 康二郎さん:
+#   「その知識や画像が次までロックされてしまうのは避けたい。
+#     記事としてはいったんばらし、知識や画像はフラットに戻したい」
+# 画面の「破棄」ボタンからでは、この Mac の中にある画像カードは戻せない。
+# 捨てた記事だけが使っていた画像を、ここで「無かったこと」にする。
+# 台帳（released_images.txt）があるので何度回しても二重に減らない
+/usr/bin/python3 discard_articles.py --release-orphans || echo "[warn] 画像の解放に失敗しました"

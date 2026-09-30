@@ -355,6 +355,31 @@ def recent_kinds(limit: int = 3) -> list:
     return out
 
 
+def undo_use(card_id: str, cards: list = None) -> bool:
+    """画像の使用実績を取り消す。「無かったこと」にする。
+
+    2026-09-30 康二郎さん: 記事を破棄したときに、その記事のためだけに使った
+    画像がロックされたままになるのは避けたい。
+    使用回数が1回減り、最終使用日は消える（クールダウンも解ける）。
+
+    使用回数が0のものは触らない。他の記事も使っている画像は、
+    呼び出し側で除外してから渡すこと。
+    """
+    for c in (cards if cards is not None else load_cards()):
+        if c["id"] != card_id:
+            continue
+        n = int(c.get("使用回数") or 0)
+        if n <= 0:
+            return False
+        save_field(c, "使用回数", str(n - 1))
+        # 最終使用日を戻すとクールダウン（45日）も解ける。
+        # 空にすると _field の \s* が改行をまたいで次の行を読んでしまうので、
+        # 未使用カードと同じ "null" を書く
+        save_field(c, "最終使用日", "null")
+        return True
+    return False
+
+
 def record_use(card: dict, when: date = None) -> None:
     """使用実績を書き戻す。次回以降この画像は選ばれにくくなる。"""
     when = when or date.today()
