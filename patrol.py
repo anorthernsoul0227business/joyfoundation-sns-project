@@ -25,7 +25,6 @@
 from __future__ import annotations
 
 import argparse
-import collections
 import datetime as dt
 import json
 import logging
@@ -201,55 +200,13 @@ def find_todos(today: dt.date) -> list[dict]:
                            f"まだ告知が間に合います。"),
             })
 
-    # 未承認のイベント告知が同じ日に3件以上たまっていないか。
-    # 2026-09-30 康二郎さん:「三件以上溜まったら注意喚起してください。
-    # その時は投稿日時を考えましょう」
-    pend = sb("GET", "articles?select=article_no,platform,scheduled_date,event_run_key,title,"
-                     "event_date,announce_role"
-                     "&status=in.(ai_draft,needs_check,staff_ok,revised,needs_owner_input)"
-                     f"&event_date=not.is.null&scheduled_date=gte.{today.isoformat()}"
-                     "&order=scheduled_date") or []
-    byday: dict[str, list[dict]] = collections.defaultdict(list)
-    for a in pend:
-        byday[a["scheduled_date"]].append(a)
-    for day, items in sorted(byday.items()):
-        if len(items) < 3:
-            continue
-        # 前日投稿は動かせない。どれが前日かを見せないと、AI はそれを
-        # 動かす案を書いてしまう（2026-10-01: 15件中6件が前日投稿だった）
-        def _label(a: dict) -> str:
-            fixed = "／開催前日・動かせません" if a.get("announce_role") == "day_before" else ""
-            return (f"{a['article_no']}（{a['platform']}"
-                    f"／開催 {a.get('event_date') or '不明'}{fixed}）")
-        names = "、".join(_label(a) for a in items[:6])
-        todos.append({
-            "source": "schedule", "source_key": f"crowded:{day}",
-            "title": f"{day} に未承認の告知が{len(items)}件たまっています",
-            "detail": (f"{day} に投稿する予定の告知が {len(items)}件あり、"
-                       f"いずれもまだ承認されていません。\n"
-                       f"このまま承認されると同じ日に集中します。"
-                       f"日をずらすか、一部を見送るかをご検討ください。\n\n"
-                       f"対象: {names}"),
-        })
+    # 同じ日に未承認の告知が3件以上たまっていないか、という見回りはやめた。
+    # 2026-10-01 康二郎さん: 7日ぶんの中身を見たところ、6日までが
+    # 「開催前日の X と Instagram のペア＋別の催し1件」だった。
+    # 前日ペアは圭一郎さんと決めた決まりそのもので、異常ではない。
+    # 別の催しどうしの重なりは「同じイベントでなければ気にならない」とのご方針。
+    # 同じ催し・同じ媒体の重複は schedule_posts.py の run_used が防いでいる。
 
-    # 告知記事が1本も無い催し
-    events = sb("GET", "events?select=series_run_key,title,starts_at,announce_skip,"
-                       "articles_generated_at&order=starts_at") or []
-    seen = set()
-    for e in events:
-        key = e.get("series_run_key")
-        if not key or key in seen or e.get("announce_skip"):
-            continue
-        seen.add(key)
-        day = jst_date(e["starts_at"])
-        if day <= today or e.get("articles_generated_at"):
-            continue
-        todos.append({
-            "source": "system", "source_key": f"noposts:{key}",
-            "title": f"「{e['title'][:20]}」の告知がまだです",
-            "detail": (f"{day}（あと{(day - today).days}日）の「{e['title']}」について、\n"
-                       f"告知記事がまだ作られていません。"),
-        })
     return todos
 
 
@@ -310,10 +267,6 @@ def main() -> int:
             got = {"title": todo["title"], "kind": "manual",
                    "proposal": "案を作れませんでした。内容をご確認ください。", "reply": ""}
         auto = got["kind"] in AUTO_KINDS
-        # 同じ日に集中している件は「注意喚起してください」というご依頼だった。
-        # 何本もまとめて動かすのは、こちらの判断だけで進めるものではない
-        if todo["source_key"].startswith("crowded:"):
-            auto = False
         mark = "自動で進めます" if auto else "承認をお待ちします"
         logger.info(f"   → {got['kind']}（{mark}）: {got.get('proposal','')[:50]}")
 
@@ -325,10 +278,7 @@ def main() -> int:
         if got["kind"] == "writing_rule":
             payload["rule_body"] = got.get("rule_body", "")
             payload["scope"] = "both"
-        # source_key が記事番号とはかぎらない。
-        # 2026-09-30: 同じ日に集中した告知の source_key は "crowded:2026-10-18" で、
-        # これを記事番号として渡していたため、7件が「記事が見つかりません」で失敗した。
-        # （それ以前は0件の書き換えが黙って成功扱いになり、何もしていなかった）
+        # source_key が記事番号とはかぎらないので、形を確かめてから使う
         if todo["source"] in ("fix_request", "owner_input", "schedule"):
             key = todo["source_key"]
             if key.startswith("ART-"):
