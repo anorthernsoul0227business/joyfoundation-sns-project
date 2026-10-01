@@ -166,7 +166,11 @@ def main() -> int:
             # 2026-09-08 に発覚: 圭一郎さんの承認が予定日を過ぎてからだと、
             # 開催まで11日あるのに「間に合いません」になっていた（ART-0077）。
             # 承認が遅れただけで告知を捨ててしまうのは、明らかにやりすぎだった
-            if slot <= today:
+            # 「今日」は過ぎていない。投稿は12時、この処理が動くのは朝8時なので
+            # まだ4時間ある。2026-10-01: 圭一郎さんがご希望の10/1が
+            # 「過ぎている」と判定され、翌日へ送られてしまった（ART-0238）
+            if dt.datetime.combine(slot, dt.time(POST_HOUR, POST_MINUTE),
+                                   tzinfo=JST) <= dt.datetime.now(JST):
                 ev_day = dt.date.fromisoformat(a["event_date"]) if a.get("event_date") else None
                 if ev_day is None or ev_day <= today + dt.timedelta(days=1):
                     # 開催が明日以前。前日にも間に合わないので見送る

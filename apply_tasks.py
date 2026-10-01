@@ -102,23 +102,20 @@ def do_rewrite_article(task: dict) -> str:
     return f"{no} を直しました。圭一郎さんの確認まちです。"
 
 
-def move_one(no: str, want: str | None) -> str:
-    """記事1本の投稿日を変える。希望日が無ければ翌朝の処理にまかせる。"""
+def check_move(no: str, want: str | None) -> dict:
+    """動かせるかどうかだけ調べる。書き換えはしない。
+
+    2026-10-01: 何本もまとめて動かすとき、途中で失敗すると
+    一部だけ動いた状態で止まってしまう。先に全部を調べる。
+    """
     got = sb("GET", f"articles?select=article_no,event_date,announce_role"
                     f"&article_no=eq.{urllib.parse.quote(no)}") or []
     if not got:
         raise RuntimeError(f"{no} という記事が見つかりません")
     a = got[0]
-
     if not want:
-        # 実際の日取りは毎朝の schedule_posts.py が決める。
-        # ここで日を決めると、他の予定との重なりを見られない
-        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
-           {"status": "approved", "scheduled_at": None})
-        return f"{no} を投稿日の決め直しに回しました"
+        return a
 
-    # 2026-09-30: 圭一郎さんが「9月30日に投稿してください」と日を指定されても、
-    # 受け取る口が無く、翌朝の処理が勝手に日を決め直していた
     try:
         day = dt.date.fromisoformat(want)
     except ValueError as e:
@@ -131,10 +128,25 @@ def move_one(no: str, want: str | None) -> str:
     # 前日投稿は動かさない（2026-09-04 に圭一郎さんと決めた絶対の決まり）
     if a.get("announce_role") == "day_before":
         raise RuntimeError(f"{no} は開催の前日に出す記事なので動かせません")
+    return a
 
+
+def move_one(no: str, want: str | None) -> str:
+    """記事1本の投稿日を変える。希望日が無ければ翌朝の処理にまかせる。"""
+    a = check_move(no, want)
+
+    if not want:
+        # 実際の日取りは毎朝の schedule_posts.py が決める。
+        # ここで日を決めると、他の予定との重なりを見られない
+        sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
+           {"status": "approved", "scheduled_at": None})
+        return f"{no} を投稿日の決め直しに回しました"
+
+    # 2026-09-30: 圭一郎さんが「9月30日に投稿してください」と日を指定されても、
+    # 受け取る口が無く、翌朝の処理が勝手に日を決め直していた
     sb("PATCH", f"articles?article_no=eq.{urllib.parse.quote(no)}",
-       {"status": "approved", "scheduled_at": None, "scheduled_date": day.isoformat()})
-    return f"{no} を {day} へ"
+       {"status": "approved", "scheduled_at": None, "scheduled_date": want})
+    return f"{no} を {want} へ"
 
 
 def do_reschedule(task: dict) -> str:
@@ -144,8 +156,12 @@ def do_reschedule(task: dict) -> str:
     # 同じ日に集中した告知を散らす場合は、動かす記事が複数ある
     moves = payload.get("moves") or []
     if moves:
-        done = [move_one(str(m["article_no"]).strip(), (m.get("want_date") or "").strip() or None)
-                for m in moves]
+        pairs = [(str(m["article_no"]).strip(), (m.get("want_date") or "").strip() or None)
+                 for m in moves]
+        # 先に全部を調べる。1本でも動かせないなら、1本も動かさない
+        for no, want in pairs:
+            check_move(no, want)
+        done = [move_one(no, want) for no, want in pairs]
         return "、".join(done) + " に変えました。翌朝の処理でキューに入ります。"
 
     no = payload.get("article_no")

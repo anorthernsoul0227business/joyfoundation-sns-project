@@ -204,7 +204,8 @@ def find_todos(today: dt.date) -> list[dict]:
     # 未承認のイベント告知が同じ日に3件以上たまっていないか。
     # 2026-09-30 康二郎さん:「三件以上溜まったら注意喚起してください。
     # その時は投稿日時を考えましょう」
-    pend = sb("GET", "articles?select=article_no,platform,scheduled_date,event_run_key,title"
+    pend = sb("GET", "articles?select=article_no,platform,scheduled_date,event_run_key,title,"
+                     "event_date,announce_role"
                      "&status=in.(ai_draft,needs_check,staff_ok,revised,needs_owner_input)"
                      f"&event_date=not.is.null&scheduled_date=gte.{today.isoformat()}"
                      "&order=scheduled_date") or []
@@ -214,7 +215,13 @@ def find_todos(today: dt.date) -> list[dict]:
     for day, items in sorted(byday.items()):
         if len(items) < 3:
             continue
-        names = "、".join(f"{a['article_no']}（{a['platform']}）" for a in items[:6])
+        # 前日投稿は動かせない。どれが前日かを見せないと、AI はそれを
+        # 動かす案を書いてしまう（2026-10-01: 15件中6件が前日投稿だった）
+        def _label(a: dict) -> str:
+            fixed = "／開催前日・動かせません" if a.get("announce_role") == "day_before" else ""
+            return (f"{a['article_no']}（{a['platform']}"
+                    f"／開催 {a.get('event_date') or '不明'}{fixed}）")
+        names = "、".join(_label(a) for a in items[:6])
         todos.append({
             "source": "schedule", "source_key": f"crowded:{day}",
             "title": f"{day} に未承認の告知が{len(items)}件たまっています",
@@ -303,6 +310,10 @@ def main() -> int:
             got = {"title": todo["title"], "kind": "manual",
                    "proposal": "案を作れませんでした。内容をご確認ください。", "reply": ""}
         auto = got["kind"] in AUTO_KINDS
+        # 同じ日に集中している件は「注意喚起してください」というご依頼だった。
+        # 何本もまとめて動かすのは、こちらの判断だけで進めるものではない
+        if todo["source_key"].startswith("crowded:"):
+            auto = False
         mark = "自動で進めます" if auto else "承認をお待ちします"
         logger.info(f"   → {got['kind']}（{mark}）: {got.get('proposal','')[:50]}")
 
@@ -324,23 +335,29 @@ def main() -> int:
                 payload["article_no"] = key
         if todo["source"] == "idea":
             payload["idea_id"] = todo["source_key"]
-            # メモには記事番号が書かれていることがある（「ART-0094を…」）。
-            # 2026-09-30: ここで拾っていなかったため、メモ由来の reschedule は
-            # 必ず「記事番号が分かりません」で失敗していた。
-            # 圭一郎さんの9/29の依頼2件が、誰にも知らされないまま止まっていた
-            if got.get("article_no"):
-                payload["article_no"] = got["article_no"].strip()
+        # AI が挙げた記事番号は、どの種類のやることでも使う。
+        # 2026-09-30: メモ由来で拾っていなかったため、圭一郎さんの依頼2件が
+        # 「記事番号が分かりません」で止まっていた。
+        # 2026-10-01: 同じ日に集中した件でも拾えず、3件が同じ形で止まった
+        if not payload.get("article_no") and str(got.get("article_no") or "").startswith("ART-"):
+            payload["article_no"] = got["article_no"].strip()
         if got.get("want_date"):
             payload["want_date"] = got["want_date"].strip()
         moves = [m for m in (got.get("moves") or [])
                  if isinstance(m, dict) and str(m.get("article_no", "")).startswith("ART-")]
+        # 前日投稿が混じっていたら、保存する前に落とす。
+        # 2026-10-01: 指示しても AI は前日投稿を動かす案を書いてきた。
+        # 実行時に弾くだけでは、途中まで動かしてから失敗する
+        if moves:
+            fixed = {a["article_no"] for a in sb(
+                "GET", "articles?select=article_no&announce_role=eq.day_before"
+                       "&article_no=in.(" + ",".join(
+                           str(m["article_no"]).strip() for m in moves) + ")") or []}
+            if fixed:
+                logger.warning(f"   前日投稿は動かしません: {'、'.join(sorted(fixed))}")
+                moves = [m for m in moves if str(m["article_no"]).strip() not in fixed]
         if moves:
             payload["moves"] = moves
-
-        # 同じ日に集中している件は「注意喚起してください」というご依頼だった。
-        # 何本もまとめて動かすのは、こちらの判断だけで進めるものではない
-        if todo["source_key"].startswith("crowded:"):
-            auto = False
 
         # 対象が分からない reschedule は動かしようがない。
         # 自動で進めて失敗を繰り返すより、承認待ちにして人の目に入れる
